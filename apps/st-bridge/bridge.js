@@ -17,6 +17,99 @@
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
+  function clone(value, fallback = null) {
+    if (value === undefined || value === null) return fallback;
+    try {
+      return JSON.parse(JSON.stringify(value));
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  function makeDefaultMamaState() {
+    const now = new Date().toISOString();
+    return {
+      meta: {
+        schemaVersion: 1,
+        product: 'mama-ena',
+        contentVersion: '0.1.0',
+        createdAt: now,
+        updatedAt: now
+      },
+      player: {
+        name: '',
+        affection: 0,
+        energy: 100,
+        flags: {}
+      },
+      world: {
+        day: 1,
+        period: 'morning',
+        location: ''
+      },
+      dashboard: {
+        activePanel: 'overview',
+        payload: null
+      },
+      runtime: {
+        flags: {},
+        caches: {}
+      }
+    };
+  }
+
+  function clampNumber(value, min, max, fallback = 0) {
+    const next = Number(value);
+    if (!Number.isFinite(next)) return fallback;
+    return Math.max(min, Math.min(max, Math.round(next)));
+  }
+
+  function normalizeMamaState(value) {
+    const defaults = makeDefaultMamaState();
+    const source = isObject(value) ? clone(value, {}) : {};
+    const meta = isObject(source.meta) ? source.meta : {};
+    const player = isObject(source.player) ? source.player : {};
+    const world = isObject(source.world) ? source.world : {};
+    const dashboard = isObject(source.dashboard) ? source.dashboard : {};
+    const runtime = isObject(source.runtime) ? source.runtime : {};
+
+    return {
+      meta: {
+        ...defaults.meta,
+        ...meta,
+        schemaVersion: 1,
+        product: 'mama-ena',
+        updatedAt: new Date().toISOString()
+      },
+      player: {
+        ...defaults.player,
+        ...player,
+        name: typeof player.name === 'string' ? player.name : '',
+        affection: clampNumber(player.affection, 0, 255, defaults.player.affection),
+        energy: clampNumber(player.energy, 0, 100, defaults.player.energy),
+        flags: isObject(player.flags) ? clone(player.flags, {}) : {}
+      },
+      world: {
+        ...defaults.world,
+        ...world,
+        day: clampNumber(world.day, 1, 99999, defaults.world.day),
+        period: typeof world.period === 'string' && world.period ? world.period : defaults.world.period,
+        location: typeof world.location === 'string' ? world.location : ''
+      },
+      dashboard: {
+        ...defaults.dashboard,
+        ...dashboard,
+        activePanel: typeof dashboard.activePanel === 'string' && dashboard.activePanel ? dashboard.activePanel : defaults.dashboard.activePanel
+      },
+      runtime: {
+        ...defaults.runtime,
+        ...runtime,
+        flags: isObject(runtime.flags) ? clone(runtime.flags, {}) : {},
+        caches: isObject(runtime.caches) ? clone(runtime.caches, {}) : {}
+      }
+    };
+  }
+
   function isUsableBridgeUrl(value) {
     if (!value || typeof value !== 'string') return false;
     if (!/^https?:\/\//i.test(value)) return false;
@@ -100,7 +193,9 @@
 
   async function readVariables(options = {}) {
     const type = options.type || 'message';
-    if (typeof ROOT.getVariables !== 'function') return {};
+    if (typeof ROOT.getVariables !== 'function') {
+      return isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? clone(ROOT.__MAMA_ST_BRIDGE_MEMORY__, {}) : {};
+    }
     try {
       const vars = await ROOT.getVariables({ type });
       return isObject(vars) ? vars : {};
@@ -119,7 +214,11 @@
     if (typeof ROOT.updateVariablesWith === 'function') {
       return ROOT.updateVariablesWith((vars) => ({ ...(isObject(vars) ? vars : {}), ...data }), { type });
     }
-    throw new Error('No supported MVU variable writer is available');
+    ROOT.__MAMA_ST_BRIDGE_MEMORY__ = {
+      ...(isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? ROOT.__MAMA_ST_BRIDGE_MEMORY__ : {}),
+      ...data
+    };
+    return data;
   }
 
   async function readState(rootKey = 'stat_data', stateKey = null, options = {}) {
@@ -142,9 +241,70 @@
 
   async function patchState(rootKey = 'stat_data', stateKey = null, patcher, options = {}) {
     const current = await readState(rootKey, stateKey, options);
-    const draft = JSON.parse(JSON.stringify(current || {}));
+    const draft = clone(current, {});
     const result = await patcher(draft, current);
     return writeState(rootKey, stateKey, result || draft, options);
+  }
+
+  const schemaRegistry = isObject(ROOT.__MAMA_MVUZ_SCHEMAS__) ? ROOT.__MAMA_MVUZ_SCHEMAS__ : {};
+  ROOT.__MAMA_MVUZ_SCHEMAS__ = schemaRegistry;
+
+  function registerSchema(namespace, schema) {
+    if (!namespace || !isObject(schema)) return null;
+    schemaRegistry[namespace] = {
+      namespace,
+      version: schema.version || '0.1.0',
+      rootKey: schema.rootKey || 'stat_data',
+      makeDefaultState: typeof schema.makeDefaultState === 'function' ? schema.makeDefaultState : () => clone(schema.defaults, {}),
+      normalize: typeof schema.normalize === 'function' ? schema.normalize : (value) => (isObject(value) ? clone(value, {}) : clone(schema.defaults, {})),
+      migrate: typeof schema.migrate === 'function' ? schema.migrate : null
+    };
+    return schemaRegistry[namespace];
+  }
+
+  function getSchema(namespace = 'mama') {
+    return schemaRegistry[namespace] || null;
+  }
+
+  function normalizeNamespaceState(namespace = 'mama', value = null) {
+    const schema = getSchema(namespace);
+    if (!schema) return isObject(value) ? clone(value, {}) : {};
+    const base = value === undefined || value === null ? schema.makeDefaultState() : value;
+    return schema.normalize(base);
+  }
+
+  async function readNamespace(namespace = 'mama', options = {}) {
+    const schema = getSchema(namespace);
+    const rootKey = options.rootKey || schema?.rootKey || 'stat_data';
+    return normalizeNamespaceState(namespace, await readState(rootKey, namespace, options));
+  }
+
+  async function writeNamespace(namespace = 'mama', state, options = {}) {
+    const schema = getSchema(namespace);
+    const rootKey = options.rootKey || schema?.rootKey || 'stat_data';
+    const normalized = normalizeNamespaceState(namespace, state);
+    await writeState(rootKey, namespace, normalized, options);
+    try {
+      ROOT.dispatchEvent && ROOT.dispatchEvent(new CustomEvent('mama:mvuz-written', {
+        detail: { namespace, rootKey, state: normalized }
+      }));
+    } catch (_) {}
+    return normalized;
+  }
+
+  async function patchNamespace(namespace = 'mama', patcher, options = {}) {
+    const current = await readNamespace(namespace, options);
+    const draft = clone(current, {});
+    const result = await patcher(draft, current);
+    return writeNamespace(namespace, result || draft, options);
+  }
+
+  async function migrateNamespace(namespace = 'mama', legacyVars = null, options = {}) {
+    const schema = getSchema(namespace);
+    if (!schema || typeof schema.migrate !== 'function') {
+      return writeNamespace(namespace, legacyVars || {}, options);
+    }
+    return writeNamespace(namespace, await schema.migrate(legacyVars || await readVariables(options)), options);
   }
 
   function exposeApi(state) {
@@ -156,6 +316,16 @@
       state,
       actionHandlers,
       mvu: { readVariables, writeVariables, readState, writeState, patchState },
+      mvuz: {
+        schemas: schemaRegistry,
+        registerSchema,
+        getSchema,
+        normalize: normalizeNamespaceState,
+        read: readNamespace,
+        write: writeNamespace,
+        patch: patchNamespace,
+        migrate: migrateNamespace
+      },
       utils: { resolveUrl, withCache, bridgeRoot: bridgeRoot.href },
       registerActions(namespace, handlers) {
         if (!namespace || !isObject(handlers)) return;
@@ -209,6 +379,13 @@
       exposeApi(registry[registryKey]);
       return registry[registryKey];
     }
+
+    registerSchema('mama', {
+      version: '0.1.0',
+      rootKey: 'stat_data',
+      makeDefaultState: makeDefaultMamaState,
+      normalize: normalizeMamaState
+    });
 
     applyGlobals(pack, packId);
     const state = {

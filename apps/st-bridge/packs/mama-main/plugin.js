@@ -19,6 +19,23 @@
         ok: true,
         url: ROOT.MAMA_APP_URL || ''
       };
+    },
+    async readState() {
+      return {
+        ok: true,
+        state: await bridge.mvuz.read('mama')
+      };
+    },
+    async patchState(payload) {
+      const patch = payload && typeof payload === 'object' ? payload : {};
+      const state = await bridge.mvuz.patch('mama', (draft) => {
+        draft.dashboard = {
+          ...(draft.dashboard || {}),
+          payload: patch
+        };
+        return draft;
+      });
+      return { ok: true, state };
     }
   });
 

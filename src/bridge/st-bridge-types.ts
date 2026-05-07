@@ -20,9 +20,28 @@ export interface MamaSTBridgeApi {
     writeState(rootKey: string, stateKey: string | null, state: unknown, options?: { type?: string }): Promise<unknown>;
     patchState(rootKey: string, stateKey: string | null, patcher: (draft: unknown, current: unknown) => unknown | Promise<unknown>, options?: { type?: string }): Promise<unknown>;
   };
+  mvuz: {
+    schemas: Record<string, MamaMvuzSchema>;
+    registerSchema(namespace: string, schema: Partial<MamaMvuzSchema>): MamaMvuzSchema | null;
+    getSchema(namespace?: string): MamaMvuzSchema | null;
+    normalize(namespace?: string, value?: unknown): unknown;
+    read(namespace?: string, options?: { type?: string; rootKey?: string }): Promise<unknown>;
+    write(namespace: string, state: unknown, options?: { type?: string; rootKey?: string }): Promise<unknown>;
+    patch(namespace: string, patcher: (draft: any, current: unknown) => unknown | Promise<unknown>, options?: { type?: string; rootKey?: string }): Promise<unknown>;
+    migrate(namespace?: string, legacyVars?: unknown, options?: { type?: string; rootKey?: string }): Promise<unknown>;
+  };
   registerActions(namespace: string, handlers: Record<string, (payload?: unknown) => unknown | Promise<unknown>>): void;
   dispatch(namespace: string, action: string, payload?: unknown): Promise<unknown>;
   reload(): Promise<unknown>;
+}
+
+export interface MamaMvuzSchema {
+  namespace: string;
+  version: string;
+  rootKey: string;
+  makeDefaultState(): unknown;
+  normalize(value: unknown): unknown;
+  migrate: ((legacyVars: unknown) => unknown | Promise<unknown>) | null;
 }
 
 declare global {

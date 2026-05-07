@@ -21,3 +21,15 @@ npm run preview
 - `apps/st-bridge/bridge.js` is the stable SillyTavern loader.
 - `apps/st-bridge/manifest.json` selects bridge packs and load order.
 - `apps/concept-preview/index.html` preserves the original visual concept page.
+
+## Bridge MVUZ
+
+The bridge exposes a minimal MVUZ layer on `window.STBridge.mvuz`:
+
+- `registerSchema(namespace, schema)`
+- `read(namespace)`
+- `write(namespace, state)`
+- `patch(namespace, patcher)`
+- `migrate(namespace, legacyVars)`
+
+The default namespace is `mama`, stored at `stat_data.mama`.
