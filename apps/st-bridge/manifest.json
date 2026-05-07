@@ -1,0 +1,22 @@
+{
+  "version": "0.1.0",
+  "defaultPack": "mama-main",
+  "activePack": "mama-main",
+  "packs": {
+    "mama-main": {
+      "label": "MAMA Main",
+      "product": "mama-ena",
+      "globals": {
+        "MAMA_APP_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=dashboard",
+        "MAMA_CONCEPT_PREVIEW_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=concept-preview"
+      },
+      "scripts": [
+        {
+          "id": "mama-main-pack",
+          "type": "script",
+          "url": "./packs/mama-main/plugin.js"
+        }
+      ]
+    }
+  }
+}

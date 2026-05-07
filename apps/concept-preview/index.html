@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M.A.M.A. PROTOCOL V2.0 - UI REBUILD</title>
+    <style>
+        /* =================全区变量 & 字体设定================= */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&family=Noto+Sans+SC:wght@500;700;900&display=swap');
+
+        :root {
+            /* 主题色系 */
+            --bg-outer: #f0edf2;
+            --bg-glass: #FDFCFC;
+            --text-main: #332d36;
+            --text-sub: #8d8592;
+            
+            /* 点缀色 */
+            --theme-purple: #9d80d1;
+            --theme-purple-light: #e5def2;
+            --theme-pink: #f28bb2;
+            --theme-pink-light: #ffe5ec;
+            --theme-blue: #61d4f2;
+            
+            /* 特殊区块色 */
+            --dark-panel: #29242d;
+            --alert-red: #f35677;
+            --locked-bg: #f8f5fa;
+            
+            /* 通用阴影 */
+            --shadow-soft: 0 8px 24px rgba(45, 35, 50, 0.06);
+            --shadow-card: 0 4px 12px rgba(45, 35, 50, 0.04);
+            --shadow-solid: 2px 4px 0 rgba(45, 35, 50, 0.05);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        
+        body {
+            background-color: var(--bg-outer);
+            background-image: repeating-linear-gradient(
+                -45deg,
+                transparent, transparent 15px,
+                rgba(0,0,0,0.015) 15px, rgba(0,0,0,0.015) 30px
+            );
+            font-family: "Nunito", "Noto Sans SC", sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* 这是游戏的分辨率容器，固定比例 16:9 宽屏感 */
+        .game-window {
+            width: 1440px;
+            height: 810px;
+            background: var(--bg-glass);
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1), inset 0 0 0 4px #ffffff;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            transform: scale(0.9); /* 适应小屏幕 */
+            overflow: hidden;
+        }
+
+        /* 顶部导航栏 */
+        .header-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 32px 10px 32px;
+        }
+        .header-title {
+            font-size: 16px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: var(--text-main);
+            opacity: 0.8;
+        }
+        .sys-badge {
+            background: var(--dark-panel);
+            color: #fff;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        /* ---------------- 主体三列网格布局 ---------------- */
+        .main-content {
+            display: grid;
+            grid-template-columns: 382px 1fr;
+            gap: 18px;
+            padding: 8px 30px 30px 30px;
+            flex: 1;
+            position: relative;
+            align-items: start;
+        }
+
+        .stage-panel {
+            position: relative;
+            background-color: #fcfaf7;
+            background-image:
+                radial-gradient(rgba(196, 187, 176, 0.14) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(255,255,253,0.98), rgba(252,250,247,0.98));
+            background-size: 18px 18px, auto;
+            background-position: 0 0, 0 0;
+            border-radius: 28px;
+            box-shadow:
+                0 5px 0 rgba(210, 201, 190, 0.74),
+                0 8px 0 rgba(236, 229, 220, 0.9),
+                inset 0 0 0 2px #ffffff,
+                inset 0 0 0 1px rgba(95, 77, 52, 0.03);
+            padding: 20px 24px 22px 24px;
+            display: grid;
+            grid-template-columns: minmax(368px, 1fr) 396px;
+            gap: 10px;
+            align-items: start;
+        }
+
+        .main-content > * {
+            align-self: start;
+            position: relative;
+            z-index: 1;
+        }
+
+        /* ==================== 左侧专区：日程与动作 ==================== */
+        .left-col {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            transform: scale(0.98);
+            transform-origin: top left;
+            grid-column: 1;
+            grid-row: 1;
+            margin-top: -10px;
+        }
+
+        .stage-panel {
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        /* 纸质便签区：日期与阶段 */
+        .date-note-card {
+            width: 356px;
+            background: #fff;
+            border-radius: 12px;
+            box-shadow: var(--shadow-card);
+            padding: 24px 18px 28px 18px;
+            position: relative;
+            transform: rotate(-1.5deg);
+            margin-top: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #f0edf2;
+        }
+        
+        .paperclip-wrapper {
+            position: absolute;
+            top: -22px;
+            left: 26px;
+            transform: rotate(-12deg);
+            z-index: 10;
+        }
+
+        .tape-group {
+            position: absolute;
+            top: -2px;
+            right: 55px;
+            z-index: 5;
+        }
+        .tape {
+            position: absolute;
+            width: 78px;
+            height: 24px;
+            clip-path: polygon(0% 0%, 100% 0%, 97% 10%, 100% 20%, 97% 30%, 100% 40%, 97% 50%, 100% 60%, 97% 70%, 100% 80%, 97% 90%, 100% 100%, 0% 100%, 3% 90%, 0% 80%, 3% 70%, 0% 60%, 3% 50%, 0% 40%, 3% 30%, 0% 20%, 3% 10%);
+        }
+        .tape-light {
+            background: rgba(226, 218, 238, 0.7);
+            transform: rotate(4deg) translate(-13px, 10px);
+        }
+        .tape-dark {
+            background: rgba(181, 161, 216, 0.85);
+            transform: rotate(-14deg);
+        }
+
+        .date-header { text-align: center; margin-bottom: 24px; }
+        .week-txt { font-size: 13px; font-weight: 900; color: var(--text-sub); letter-spacing: 2.5px; }
+        .day-txt { font-size: 38px; font-weight: 900; color: var(--text-main); margin-top: -4px; letter-spacing: 1px; }
+
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: relative;
+            padding: 0 12px;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 31px;
+            right: 31px;
+            height: 3px;
+            background: #e6e2ea;
+            z-index: 1;
+            transform: translateY(-50%);
+        }
+
+        .tl-node {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #f8f5fa;
+            border: 3px solid #e6e2ea;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--text-sub);
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s;
+        }
+
+        .tl-node.active {
+            width: 48px;
+            height: 48px;
+            background: #815bc2;
+            border: none;
+            color: #fff;
+            font-size: 16px;
+            box-shadow: 0 6px 15px rgba(129, 91, 194, 0.35);
+            border-radius: 46% 54% 50% 50% / 54% 46% 50% 50%;
+        }
+
+        .tl-node.active::before {
+            content: '';
+            position: absolute;
+            bottom: -3px;
+            left: -2px;
+            width: 12px;
+            height: 14px;
+            background: #815bc2;
+            border-radius: 50% 40% 60% 40% / 60% 50% 40% 50%;
+            transform: rotate(-25deg);
+        }
+
+        .tl-node.active::after {
+            content: '';
+            position: absolute;
+            top: -14px;
+            right: -20px;
+            width: 28px;
+            height: 28px;
+            background-image: url("data:image/svg+xml;utf8,<svg viewBox='0 0 24 24' fill='none' stroke='%23C0B2DF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' xmlns='http://www.w3.org/2000/svg'><polygon points='12 2 15 8.5 22 9.5 17 14 18.5 21 12 17.5 5.5 21 7 14 2 9.5 9 8.5 12 2'/></svg>");
+            background-size: cover;
+            transform: rotate(15deg);
+            z-index: -1;
+        }
+
+        /* 黑底黄牌的“执行中事件” */
+        .current-event-pill {
+            width: 360px;
+            display: flex;
+            background: var(--dark-panel);
+            border-radius: 14px;
+            padding: 9px 15px 9px 9px;
+            align-items: center;
+            gap: 12px;
+            transform: rotate(1.5deg);
+            box-shadow: 0 8px 24px rgba(45, 35, 50, 0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+        }
+        .event-tag {
+            flex-shrink: 0;
+            background: #f5cc5a;
+            color: var(--dark-panel);
+            font-size: 11px;
+            font-weight: 900;
+            padding: 7px 12px;
+            border-radius: 9px;
+            white-space: nowrap;
+            line-height: 1;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(245, 204, 90, 0.15);
+        }
+        .event-desc {
+            color: #fff;
+            font-weight: 800;
+            font-size: 13px;
+            line-height: 1.45;
+            letter-spacing: 0.2px;
+        }
+
+        /* 动作面板区 */
+        .action-category { margin-top: 15px; }
+        .daily-category {
+            width: 360px;
+            margin-top: 8px;
+        }
+        .daily-category .cat-title {
+            display: flex; align-items: center; gap: 8px;
+            font-size: 12px; font-weight: 900;
+            color: var(--text-sub); letter-spacing: 1.2px;
+            text-transform: uppercase; margin-bottom: 12px;
+        }
+        .daily-category .cat-stars { color: #d0c8da; display: flex; gap: 4px; font-size: 14px;}
+        
+        .daily-category .action-btn {
+            background: #fff;
+            border: 2px solid #f6f3f8;
+            border-radius: 16px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 10px;
+            box-shadow: var(--shadow-card);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+            cursor: pointer;
+        }
+        .daily-category .action-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 24px rgba(45, 35, 50, 0.08);
+            border-color: #e5def2;
+        }
+
+        .daily-category .action-icon {
+            width: 40px; height: 40px;
+            border-radius: 14px;
+            display: flex; justify-content: center; align-items: center;
+            flex-shrink: 0;
+            transition: transform 0.3s ease;
+        }
+        .daily-category .icon-red {
+            background: linear-gradient(135deg, #fff0f3, #ffe4e9);
+            color: #d65c7a;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.8);
+        }
+        .daily-category .icon-blue {
+            background: linear-gradient(135deg, #eef4ff, #e2eafe);
+            color: #5c6bc0;
+            box-shadow: inset 0 2px 0 rgba(255,255,255,0.8);
+        }
+        .daily-category .action-btn:hover .action-icon {
+            transform: scale(1.08) rotate(-6deg);
+        }
+        .daily-category .icon-svg { width: 21px; height: 21px; fill: currentColor; }
+
+        .action-info { flex: 1; }
+        .daily-category .act-title { font-size: 15px; font-weight: 900; color: var(--text-main); margin-bottom: 3px; }
+        .daily-category .act-desc { font-size: 11px; font-weight: 700; color: var(--text-sub); }
+        .daily-category .act-cost {
+            font-size: 13px; font-weight: 900; color: var(--text-main);
+            background: #f0edf2; padding: 5px 12px; border-radius: 9px;
+            flex-shrink: 0;
+        }
+
+        .icon-svg { width: 18px; height: 18px; fill: currentColor; }
+        .act-title { font-size: 15px; font-weight: 900; color: var(--text-main); margin-bottom: 4px; }
+        .act-desc { font-size: 11px; font-weight: 700; color: var(--text-sub); line-height: 1.4; }
+        .act-cost {
+            font-size: 13px; font-weight: 900; color: var(--text-main);
+            background: #f0edf2; padding: 4px 10px; border-radius: 8px;
+        }
+
+        .dependence-category {
+            width: 360px;
+            display: flex;
+            flex-direction: column;
+            margin-top: -7px;
+        }
+        .dependence-category .cat-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--text-sub);
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+            padding-left: 4px;
+        }
+        .scroll-wrapper {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border: 2px solid #f6f3f8;
+            border-radius: 18px;
+            box-shadow: 0 4px 16px rgba(45, 35, 50, 0.04);
+            overflow: hidden;
+            padding: 10px 0;
+        }
+        .scroll-wrapper::before,
+        .scroll-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 24px;
+            z-index: 10;
+            pointer-events: none;
+        }
+        .scroll-wrapper::before {
+            left: 0;
+            background: linear-gradient(to right, #ffffff, rgba(255,255,255,0));
+        }
+        .scroll-wrapper::after {
+            right: 0;
+            background: linear-gradient(to left, #ffffff, rgba(255,255,255,0));
+        }
+        .scroll-track {
+            display: flex;
+            gap: 10px;
+            padding: 0 16px;
+            overflow-x: auto;
+            scroll-snap-type: x mandatory;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+        .scroll-track::-webkit-scrollbar { display: none; }
+        .scroll-track { -ms-overflow-style: none; scrollbar-width: none; }
+        .action-card {
+            flex-shrink: 0;
+            width: 224px;
+            scroll-snap-align: center;
+            background: var(--theme-pink-light);
+            border: 2px solid #f8c9d9;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .action-card:hover {
+            transform: translateY(-2px);
+            border-color: #eb7aab;
+        }
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+        .dependence-category .act-title {
+            font-size: 15px;
+            font-weight: 900;
+            color: #d15688;
+            white-space: nowrap;
+            margin-bottom: 0;
+        }
+        .dependence-category .act-cost {
+            font-size: 11px;
+            font-weight: 900;
+            color: #fff;
+            background: #eb7aab;
+            padding: 4px 8px;
+            border-radius: 7px;
+            white-space: nowrap;
+        }
+        .dependence-category .act-desc {
+            font-size: 11px;
+            font-weight: 700;
+            color: #d687a4;
+            line-height: 1.4;
+        }
+        .card-locked {
+            background: var(--locked-bg);
+            border-color: #ece8ef;
+            pointer-events: none;
+        }
+        .card-locked .act-title { color: #b6b0bc; }
+        .card-locked .act-desc { color: #cdc8d2; }
+        .card-locked .act-cost { background: #e3dfee; color: #fff; }
+
+        /* 底部异常干预横向面板 */
+        .combat-section {
+            display: flex;
+            flex-direction: column;
+            margin-top: 12px;
+            width: 94%;
+        }
+        .combat-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 6px;
+            padding-left: 2px;
+        }
+        .combat-header .header-title {
+            font-size: 11px;
+            font-weight: 900;
+            color: #888290;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            line-height: 1;
+        }
+        .header-line {
+            flex: 1;
+            border-bottom: 2px dashed #d9d4df;
+            opacity: 0.7;
+        }
+        .combat-panel {
+            background: #2d2b32;
+            border-radius: 12px;
+            padding: 14px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            cursor: pointer;
+            box-shadow: 0 8px 24px rgba(45, 35, 50, 0.08);
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 86%;
+        }
+        .combat-panel:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(239, 83, 120, 0.15);
+        }
+        .combat-info {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            flex: 1;
+        }
+        .combat-title {
+            font-size: 13px;
+            font-weight: 900;
+            color: #ef5378;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+        .combat-desc {
+            font-size: 11px;
+            color: rgba(158, 154, 172, 0.76);
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .fatal-btn {
+            background: #ef5378;
+            color: #ffffff;
+            padding: 8px 13px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .alert-icon {
+            width: 14px;
+            height: 14px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2.5;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+            transform: translateY(-1px);
+        }
+
+        /* ==================== 中间专区：立绘与照片框 ==================== */
+        .center-col {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            position: relative;
+            margin-top: -30px;
+            margin-left: -44px;
+            grid-column: 1;
+            grid-row: 1;
+        }
+
+        .showcase-wrapper {
+            position: relative;
+            width: 404px;
+            height: 530px;
+            margin: 2px 8px 4px 0;
+        }
+
+        .purple-backdrop {
+            position: absolute;
+            top: 20px; left: 15px; right: -25px; bottom: -10px;
+            background: #dfd1eb;
+            transform: rotate(2.5deg);
+            border-radius: 4px;
+            box-shadow: 2px 8px 20px rgba(0,0,0,0.06);
+            z-index: 1;
+        }
+
+        .white-frame {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #ffffff;
+            padding: 16px;
+            transform: rotate(-1.5deg);
+            border-radius: 6px;
+            box-shadow: 0 10px 30px rgba(45, 35, 50, 0.08), inset 0 0 0 1px rgba(0,0,0,0.03);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-viewport {
+            flex: 1;
+            background: #f8f6fa;
+            border: 2px solid #edebf0;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .character-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            transform: scale(1.05);
+        }
+
+        .status-dots {
+            position: absolute;
+            top: 22px; right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 3;
+        }
+        .dot {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .dot-red { background: #ed738c; }
+        .dot-blue { background: #3d5fb6; }
+        .dot-yellow { background: #fcce4c; }
+
+        .top-torn-label {
+            position: absolute;
+            top: -20px; left: -35px;
+            background: #fdfcff;
+            color: #55505e;
+            font-size: 20px;
+            font-weight: 900;
+            padding: 12px 24px;
+            transform: rotate(-6deg);
+            box-shadow: 2px 8px 15px rgba(0,0,0,0.06);
+            z-index: 5;
+            letter-spacing: 1px;
+            clip-path: polygon(1% 2%, 99% -1%, 98% 97%, 94% 100%, 88% 96%, 82% 102%, 76% 97%, 70% 103%, 64% 96%, 58% 101%, 52% 98%, 46% 102%, 40% 96%, 34% 100%, 28% 97%, 22% 103%, 16% 96%, 10% 101%, 4% 97%, -1% 94%);
+        }
+
+        .bottom-tag-note {
+            position: absolute;
+            bottom: 20px; left: -10px;
+            background: #f7f6f9;
+            padding: 24px;
+            width: 250px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08), 2px 2px 0 rgba(0,0,0,0.02);
+            transform: rotate(2deg);
+            z-index: 6;
+            border-bottom-right-radius: 20px;
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .display-tape {
+            position: absolute;
+            width: 45px; height: 18px;
+            background: #afa2d6;
+            opacity: 0.85;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .tape-bottom { top: -8px; left: 20px; transform: rotate(-10deg); }
+
+        .note-title { font-size: 16px; font-weight: 900; color: #3d3b40; }
+        .note-sub { font-size: 15px; font-weight: 700; color: #787382; }
+
+        .stamp-badge {
+            position: absolute;
+            bottom: 35px; right: 25px;
+            width: 140px; height: 140px;
+            color: #9686b8;
+            z-index: 10;
+            transform: rotate(-12deg);
+            opacity: 0.65;
+            mix-blend-mode: multiply;
+        }
+        .stamp-badge svg {
+            width: 100%; height: 100%;
+        }
+
+        /* 底部对话框 */
+        .dialogue-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 15px;
+            width: 100%;
+        }
+        .sticker-img {
+            width: 92px;
+            flex-shrink: 0;
+        }
+        .msg-bubble {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border: 1.5px solid #f2e2e6;
+            border-radius: 8px;
+            padding: 13px 18px 12px 14px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+            display: flex;
+            align-items: center;
+            min-height: 74px;
+        }
+        .name-label {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            background: #514d52;
+            color: #ffffff;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            padding: 3px 12px;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+        }
+        .vertical-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 24px;
+            width: 1px;
+            border-right: 1.5px solid #efe8e9;
+        }
+        .flat-pin {
+            position: absolute;
+            top: -6px;
+            right: 48px;
+            width: 14px;
+            height: 14px;
+            background: #e47c9a;
+            border-radius: 50%;
+        }
+        .flat-pin::after {
+            content: '';
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+        }
+        .msg-text {
+            font-size: 14px;
+            font-weight: 700;
+            color: #585558;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+            margin: 0;
+        }
+
+        .bottom-shared-row {
+            grid-column: 1 / -1;
+            grid-row: 2;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 44px;
+            margin-top: -46px;
+            align-items: start;
+        }
+
+        .bottom-dialogue {
+            position: relative;
+            left: auto;
+            bottom: auto;
+            width: 94%;
+        }
+
+        /* ==================== 右侧专区：监控与槽位 ==================== */
+        .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            margin-left: -8px;
+            grid-column: 2;
+            grid-row: 1;
+        }
+
+        .resource-section {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            position: relative;
+            padding: 18px 16px 28px 16px;
+            background: rgba(255,255,255,0.9);
+            border-radius: 16px;
+            box-shadow:
+                0 10px 28px rgba(45, 35, 50, 0.04),
+                inset 0 0 0 2px rgba(255,255,255,0.95),
+                inset 0 0 0 1px rgba(0,0,0,0.03);
+            margin-top: -8px;
+        }
+
+        .resource-section .cat-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--text-sub);
+            letter-spacing: 1.4px;
+            margin-bottom: 6px;
+            padding-left: 4px;
+        }
+
+        .res-card {
+            background: #ffffff;
+            border: 2px solid #f2eef5;
+            border-radius: 13px;
+            padding: 13px 15px;
+            display: flex;
+            align-items: center;
+            gap: 13px;
+            box-shadow: 0 6px 16px rgba(45, 35, 50, 0.04);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .res-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 24px rgba(45, 35, 50, 0.06);
+        }
+
+        .circle-progress-wrap {
+            position: relative;
+            width: 46px;
+            height: 46px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        .inner-icon-bg {
+            position: absolute;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2;
+        }
+        .inner-icon-bg.blue { background-color: #e6f6ff; color: #54c5f8; }
+        .inner-icon-bg.pink { background-color: #fcedf2; color: #f07ca8; }
+        .inner-icon-bg svg {
+            width: 19px;
+            height: 19px;
+            fill: currentColor;
+        }
+
+        .ring-svg {
+            position: absolute;
+            width: 46px;
+            height: 46px;
+            transform: rotate(-90deg);
+            z-index: 1;
+        }
+        .ring-track {
+            fill: none;
+            stroke: #f0edf4;
+            stroke-width: 4;
+        }
+        .ring-fill {
+            fill: none;
+            stroke-width: 4;
+            stroke-linecap: round;
+            stroke-dasharray: 163.36;
+            transition: stroke-dashoffset 1s ease-out;
+        }
+        .ring-fill.blue { stroke: #54c5f8; }
+        .ring-fill.pink { stroke: #f07ca8; }
+        .mana-progress { stroke-dashoffset: 32.67; }
+        .fatigue-progress { stroke-dashoffset: 89.84; }
+
+        .res-info {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .res-text-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+            margin-bottom: 6px;
+        }
+        .res-name {
+            font-size: 11px;
+            font-weight: 700;
+            color: #b5adb9;
+            letter-spacing: 0.3px;
+        }
+        .res-val {
+            font-size: 19px;
+            font-weight: 900;
+            line-height: 1;
+            letter-spacing: 0.6px;
+        }
+        .val-blue { color: #54c5f8; }
+        .val-pink { color: #f07ca8; }
+
+        .line-track {
+            width: 100%;
+            height: 4px;
+            background: #f0edf4;
+            border-radius: 4px;
+            position: relative;
+            overflow: hidden;
+        }
+        .line-fill {
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            border-radius: 4px;
+        }
+        .line-fill.blue { background: #54c5f8; width: 80%; }
+        .line-fill.pink { background: #f07ca8; width: 45%; }
+
+        .mama-card {
+            background: #fff2f6;
+            border: 2px solid #f8c9d9;
+            border-radius: 11px;
+            padding: 11px 16px;
+            box-shadow: 0 4px 16px rgba(235, 122, 171, 0.08);
+            display: flex;
+            flex-direction: column;
+            gap: 9px;
+            min-width: 0;
+            width: calc(100% - 68px);
+            align-self: flex-start;
+            margin-top: 8px;
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-wrap: nowrap;
+            gap: 8px;
+        }
+
+        .info-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            min-width: 0;
+            flex: 1;
+        }
+
+        .en-subtitle {
+            font-size: 10px;
+            font-weight: 900;
+            color: #e39ab3;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .title-row {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 0;
+            flex-wrap: nowrap;
+            white-space: nowrap;
+        }
+
+        .heart-icon {
+            width: 14px;
+            height: 14px;
+            fill: #e85d75;
+            animation: heartbeat 2s infinite ease-in-out;
+            flex-shrink: 0;
+        }
+
+        @keyframes heartbeat {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        .card-title {
+            font-weight: 900;
+            font-size: 14px;
+            color: #d15688;
+            letter-spacing: 0.2px;
+            white-space: nowrap;
+        }
+
+        .card-val {
+            color: #e85d75;
+            font-size: 18px;
+            font-weight: 900;
+            line-height: 1;
+            transform: translateY(1px);
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 6px;
+            background: #fce4ec;
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background: #e85d75;
+            border-radius: 4px;
+            width: 82%;
+        }
+
+        .sticky-note {
+            position: absolute;
+            right: -10px;
+            bottom: 34px;
+            width: 70px;
+            height: 70px;
+            background: #fffcdb;
+            border: 1px solid #f2eab5;
+            box-shadow: 3px 4px 0 rgba(235, 122, 171, 0.12);
+            transform: rotate(5deg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-bottom-right-radius: 12px;
+        }
+
+        .pin {
+            position: absolute;
+            top: 6px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 10px;
+            height: 10px;
+            background: #e85d75;
+            border-radius: 50%;
+            box-shadow: 1px 2px 0 rgba(0,0,0,0.1);
+        }
+
+        .mascot-sketch {
+            font-size: 14px;
+            font-weight: 800;
+            color: #b59b86;
+            margin-top: 6px;
+            display: flex;
+            align-items: center;
+            gap: 1px;
+        }
+        .anger-mark {
+            color: #e85d75;
+            font-size: 13px;
+        }
+
+        /* 行动预览槽位 */
+        .preview-category .cat-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--text-sub);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 12px;
+        }
+        .preview-box {
+            position: relative;
+            border: 2px dashed #dcd6e2;
+            border-radius: 16px;
+            padding: 22px;
+            display: flex; justify-content: space-between; gap: 12px;
+        }
+        .slot-card {
+            flex: 1; height: 126px;
+            background: #fff; border-radius: 14px;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.03);
+            color: #d0c8da; font-weight: 900; font-size: 28px;
+        }
+        .slot-card.locked { background: var(--locked-bg); font-size: 12px; gap: 8px; }
+        .tape-deco {
+            position: absolute;
+            bottom: -14px;
+            right: -24px;
+            width: 85px;
+            height: 28px;
+            background-color: rgba(226, 218, 238, 0.85);
+            background-image: repeating-linear-gradient(
+                180deg,
+                transparent,
+                transparent 5px,
+                rgba(175, 160, 190, 0.35) 5px,
+                rgba(175, 160, 190, 0.35) 8px
+            );
+            transform: rotate(-22deg);
+            z-index: 10;
+            clip-path: polygon(1% 2%, 99% -1%, 98% 10%, 100% 20%, 97% 30%, 100% 40%, 97% 50%, 100% 60%, 97% 70%, 100% 80%, 97% 90%, 99% 100%, 1% 98%, 3% 90%, 0% 80%, 3% 70%, 0% 60%, 3% 50%, 0% 40%, 3% 30%, 0% 20%, 3% 10%);
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="game-window">
+    
+    <!-- 顶部导航栏 -->
+    <div class="header-bar">
+        <div class="header-title">M.A.M.A. PROTOCOL V2.0</div>
+        <div class="sys-badge">SYSTEM ONLINE</div>
+    </div>
+
+    <!-- 主体内三列布局 -->
+    <div class="main-content">
+        
+        <!-- 左侧 ========================================= -->
+        <div class="left-col">
+            <!-- 纸质属性切片 -->
+            <div class="date-note-card">
+                <div class="paperclip-wrapper">
+                    <svg width="32" height="72" viewBox="0 0 28 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <g filter="url(#clipShadow)">
+                            <path d="M14,35 L14,15 A 3,3 0 0,0 8,15 L8,54 A 6,6 0 0,0 20,54 L20,11 A 9,9 0 0,0 2,11 L2,42"
+                                  stroke="#a09ca6" stroke-width="3" stroke-linecap="round"/>
+                        </g>
+                        <defs>
+                            <filter id="clipShadow" x="-5" y="-5" width="40" height="80" filterUnits="userSpaceOnUse">
+                                <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.15"/>
+                            </filter>
+                        </defs>
+                    </svg>
+                </div>
+
+                <div class="tape-group">
+                    <div class="tape tape-light"></div>
+                    <div class="tape tape-dark"></div>
+                </div>
+                
+                <div class="date-header">
+                    <div class="week-txt">WEEK 02</div>
+                    <div class="day-txt">DAY 14</div>
+                </div>
+                
+                <div class="timeline">
+                    <div class="tl-node">晨</div>
+                    <div class="tl-node">午</div>
+                    <div class="tl-node active">暮</div>
+                    <div class="tl-node">夜</div>
+                </div>
+            </div>
+
+            <!-- 执行中事件 -->
+            <div class="current-event-pill">
+                <div class="event-tag">CURRENT EVENT</div>
+                <div class="event-desc">执行中：膝枕安抚... <br><span style="opacity: 0.7; font-size: 13px;">(变异判定通过)</span></div>
+            </div>
+
+            <div class="action-category daily-category">
+                <div class="cat-title">
+                    <span class="cat-stars">★★</span>
+                    DAILY
+                </div>
+                
+                <div class="action-btn">
+                    <div class="action-icon icon-red">
+                        <svg class="icon-svg" viewBox="2 2 92 92">
+                            <path d="M77,32.36A7.48,7.48,0,0,1,77,43L45.15,74.83l5.07,5.08-3.53,3.53-5.08-5.07h0L31.39,68.15,19,80.54l4.62,4.62-3.53,3.53L7.31,75.91l3.53-3.53L15.46,77,27.85,64.61,17.63,54.39h0l-5.07-5.08,3.53-3.53,5.08,5.07,5.75-5.75L41.14,59.32l3.54-3.54L30.46,41.56l5.76-5.76L50.44,50,54,46.49,39.75,32.27l5.76-5.76L59.73,40.73l3.54-3.54L49.05,23l4-4a7.48,7.48,0,0,1,10.6,0l4.92,4.91L85.16,7.31l3.53,3.53L72.1,27.44Z"/>
+                        </svg>
+                    </div>
+                    <div class="action-info">
+                        <div class="act-title">强忍痛楚</div>
+                        <div class="act-desc">强制压制变异进度。生命 -1</div>
+                    </div>
+                    <div class="act-cost">-1 AP</div>
+                </div>
+
+                <div class="action-btn">
+                    <div class="action-icon icon-blue">
+                        <svg class="icon-svg" viewBox="0 0 64 64">
+                            <path d="M62.58,48a2.86,2.86,0,0,0-2.07-2,47.58,47.58,0,0,1-13.71-6.1A2.86,2.86,0,0,0,44,39.76a13.23,13.23,0,0,0-6.35,6.84,73.11,73.11,0,0,1-11.09-9.17A73.11,73.11,0,0,1,17.4,26.34a13,13,0,0,0,4.35-2.89A13.33,13.33,0,0,0,24.25,20a2.89,2.89,0,0,0-.15-2.79A47.46,47.46,0,0,1,18,3.48a2.83,2.83,0,0,0-2-2.06A13.2,13.2,0,0,0,3.76,4.17C.24,8.33,0,15.13,3,23.32c2.8,7.51,8.19,15.49,15.17,22.48S33.16,58.17,40.67,61A29.93,29.93,0,0,0,51,63.09a13.31,13.31,0,0,0,8.8-2.84l0-.06a13,13,0,0,0,2.83-5.51A13.26,13.26,0,0,0,62.58,48Z"/>
+                        </svg>
+                    </div>
+                    <div class="action-info">
+                        <div class="act-title">外卖与打扫</div>
+                        <div class="act-desc">恢复疲劳，但变异持续恶化</div>
+                    </div>
+                    <div class="act-cost">-1 AP</div>
+                </div>
+            </div>
+
+            <!-- 病理特权 (高亮) -->
+            <div class="action-category dependence-category">
+                <div class="cat-title">DEPENDENCE</div>
+
+                <div class="scroll-wrapper">
+                    <div class="scroll-track">
+                        <div class="action-card">
+                            <div class="card-header">
+                                <div class="act-title">求膝枕</div>
+                                <div class="act-cost">-1 AP | MAMA ↑</div>
+                            </div>
+                            <div class="act-desc">压制变异剧痛，补充母性火炮。</div>
+                        </div>
+
+                        <div class="action-card card-locked">
+                            <div class="card-header">
+                                <div class="act-title">求抱睡</div>
+                                <div class="act-cost">LOCKED</div>
+                            </div>
+                            <div class="act-desc">危险的深度依赖，此阶段未解锁。</div>
+                        </div>
+
+                        <div class="action-card card-locked">
+                            <div class="card-header">
+                                <div class="act-title">求亲昵</div>
+                                <div class="act-cost">LOCKED</div>
+                            </div>
+                            <div class="act-desc">过热行为警告，请先提高信赖度。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="stage-panel">
+        <!-- ==================== 中间专区：立绘与照片框 ==================== -->
+        <div class="center-col">
+                <div class="showcase-wrapper">
+                    <div class="purple-backdrop"></div>
+
+                    <div class="white-frame">
+                        <div class="image-viewport">
+                            <img class="character-img" src="https://litter.catbox.moe/yhsxrjq78pursrtb.png" alt="Ena Picture">
+
+                            <div class="status-dots">
+                                <div class="dot dot-red"></div>
+                                <div class="dot dot-blue"></div>
+                                <div class="dot dot-yellow"></div>
+                            </div>
+                        </div>
+
+                        <div class="top-torn-label">{ L2D MODEL }</div>
+
+                        <div class="bottom-tag-note">
+                            <div class="display-tape tape-bottom"></div>
+                            <div class="note-title">立绘展示区</div>
+                            <div class="note-sub">动作：低头顺毛</div>
+                        </div>
+
+                        <div class="stamp-badge">
+                            <svg viewBox="-20 -20 140 140" fill="currentColor">
+                                <circle cx="50" cy="50" r="66" fill="none" stroke="currentColor" stroke-width="2"/>
+                                <circle cx="50" cy="50" r="58" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"/>
+                                <path id="circlePath" d="M 50, -5 A 55 55 0 0 1 50, 105 A 55 55 0 0 1 50, -5" fill="none"/>
+                                <text font-size="8.5" font-weight="900" letter-spacing="2" fill="currentColor">
+                                    <textPath href="#circlePath" startOffset="10%">★ M.A.M.A. PROTOCOL SYSTEM ★</textPath>
+                                </text>
+                                <g transform="translate(10, 8) scale(0.8)">
+                                    <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm0 84.375c-22.398 0-40.625-18.227-40.625-40.625s18.227-40.625 40.625-40.625 40.625 18.227 40.625 40.625-18.227 40.625-40.625 40.625z"/>
+                                    <path d="m51.105 34.992c-0.60938 0.60937-1.5977 0.60937-2.2109 0-2.6875-2.6875-6.2148-4.0273-9.7422-4.0273-3.5234 0-7.0508 1.3438-9.7383 4.0273-5.3672 5.3672-5.3672 14.109 0 19.48l20.586 20.582 20.586-20.586c5.3672-5.3711 5.3672-14.109 0-19.48-5.375-5.3711-14.113-5.3633-19.48 0.003907z"/>
+                                    <path d="m50 12.5c-20.68 0-37.5 16.82-37.5 37.5s16.82 37.5 37.5 37.5 37.5-16.82 37.5-37.5-16.82-37.5-37.5-37.5zm22.793 44.18-21.688 21.688c-0.30469 0.30859-0.70703 0.46094-1.1055 0.46094s-0.80078-0.15234-1.1055-0.45703l-21.688-21.688c-6.5898-6.5938-6.5898-17.312 0-23.898 6.2305-6.2383 16.164-6.5664 22.793-1.0156 6.6289-5.5508 16.566-5.2227 22.793 1.0117 6.5859 6.5898 6.5859 17.309 0 23.898z"/>
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+        <!-- ==================== 右侧专区：资源与排期 ==================== -->
+        <div class="right-col">
+            
+                <div class="resource-section">
+                    <h2 class="cat-title">RESOURCE</h2>
+
+                    <div class="res-card">
+                        <div class="circle-progress-wrap">
+                            <svg class="ring-svg" viewBox="0 0 56 56">
+                                <circle class="ring-track" cx="28" cy="28" r="26"></circle>
+                                <circle class="ring-fill blue mana-progress" cx="28" cy="28" r="26"></circle>
+                            </svg>
+                            <div class="inner-icon-bg blue">
+                                <svg viewBox="8 -2 84 94">
+                                    <path d="m19 84.602c-0.89844 0-1.625-0.72656-1.625-1.625 0-0.89844 0.72656-1.625 1.625-1.625 10.758 0 19.512-8.7539 19.512-19.512 0-0.89844 0.72656-1.625 1.625-1.625 0.89844 0 1.625 0.72656 1.625 1.625 0 12.555-10.211 22.762-22.762 22.762zm31-81.102c-6.1094 8.9336-31.156 46.5-31.156 61.844 0 17.18 13.977 31.156 31.156 31.156s31.156-13.977 31.156-31.156c0-15.348-25.047-52.91-31.156-61.844z"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="res-info">
+                            <div class="res-text-group">
+                                <div class="res-name">Mana / 魔力储备</div>
+                                <div class="res-val val-blue">80 %</div>
+                            </div>
+                            <div class="line-track">
+                                <div class="line-fill blue"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="res-card">
+                        <div class="circle-progress-wrap">
+                            <svg class="ring-svg" viewBox="0 0 56 56">
+                                <circle class="ring-track" cx="28" cy="28" r="26"></circle>
+                                <circle class="ring-fill pink fatigue-progress" cx="28" cy="28" r="26"></circle>
+                            </svg>
+                            <div class="inner-icon-bg pink">
+                                <svg viewBox="-1 0 32 30">
+                                    <path d="M29.4977,21.36351a14.30356,14.30356,0,0,1-14.89061,8.22312C.2328,27.51788-2.31675,8.30153,10.50193,2.36753a.81154.81154,0,0,1,1.11554.92625A14.4777,14.4777,0,0,0,11.60582,9.147,14.38593,14.38593,0,0,0,28.5716,20.24767.8117.8117,0,0,1,29.4977,21.36351Zm-6.562-18.63044L21.63044,5.37771a.78777.78777,0,0,1-.59314.43095l-2.91854.42409a.78778.78778,0,0,0-.4366,1.34371L19.794,9.635a.78776.78776,0,0,1,.22657.69728l-.49855,2.90675a.78778.78778,0,0,0,1.143.83045l2.61042-1.37237a.78774.78774,0,0,1,.73317,0l2.61042,1.37237a.78777.78777,0,0,0,1.143-.83045l-.49854-2.90675a.78776.78776,0,0,1,.22656-.69728L29.602,7.57646a.78778.78778,0,0,0-.43659-1.34371l-2.91854-.42409a.78777.78777,0,0,1-.59315-.43095L24.34851,2.73307A.78778.78778,0,0,0,22.93565,2.73307Z"/>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="res-info">
+                            <div class="res-text-group">
+                                <div class="res-name">Fatigue / 疲劳值</div>
+                                <div class="res-val val-pink">45 %</div>
+                            </div>
+                            <div class="line-track">
+                                <div class="line-fill pink"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mama-card">
+                        <div class="card-top">
+                            <div class="info-group">
+                                <div class="en-subtitle">OVERPROTECT</div>
+                                <div class="title-row">
+                                    <svg class="heart-icon" viewBox="0 0 24 24">
+                                        <path d="M12 4.248c-3.148-5.402-12-3.825-12 2.944 0 4.661 5.571 9.427 12 15.808 6.43-6.381 12-11.147 12-15.808 0-6.792-8.875-8.306-12-2.944z"/>
+                                    </svg>
+                                    <div class="card-title">M.A.M.A. 值</div>
+                                </div>
+                            </div>
+
+                            <div class="card-val">82%</div>
+                        </div>
+
+                        <div class="progress-track">
+                            <div class="progress-fill"></div>
+                        </div>
+                    </div>
+
+                    <div class="sticky-note">
+                        <div class="pin"></div>
+                        <div class="mascot-sketch">
+                            <span class="anger-mark">💢</span>(≧△≦)
+                        </div>
+                    </div>
+                </div>
+
+            <!-- 行动队列预览槽位 -->
+            <div class="action-category preview-category" style="margin-top: -12px;">
+                <div class="cat-title">ACTIONS</div>
+                <div class="preview-box">
+                    <div class="slot-card">+</div>
+                    <div class="slot-card">+</div>
+                    <!-- 锁定槽位 -->
+                    <div class="slot-card locked">
+                        <svg class="icon-svg" style="width: 24px; height: 24px;" viewBox="0 0 24 24"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
+                        <span>LOCKED</span>
+                    </div>
+                    <div class="tape-deco"></div>
+                </div>
+            </div>
+
+        </div>
+
+        </div>
+
+        <div class="bottom-shared-row">
+            <div class="combat-section">
+                <div class="combat-header">
+                    <span class="header-title">COMBAT</span>
+                    <div class="header-line"></div>
+                </div>
+                <div class="combat-panel">
+                    <div class="combat-info">
+                        <div class="combat-title">[坠天] 放任溺爱，强制清屏</div>
+                        <div class="combat-desc">越过协议上限。直接触发黑化清场。</div>
+                    </div>
+                    <div class="fatal-btn">
+                        <svg class="alert-icon" viewBox="0 0 24 24">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        FATAL SYSTEM ERROR
+                    </div>
+                </div>
+            </div>
+
+            <div class="dialogue-wrapper bottom-dialogue">
+                <img class="sticker-img" src="https://litter.catbox.moe/p92767uh4byi357m.png" alt="Ena Sticker">
+                <div class="msg-bubble">
+                    <div class="name-label">绘奈</div>
+                    <div class="flat-pin"></div>
+                    <div class="vertical-line"></div>
+                    <div class="msg-text">
+                        “……不要乱动。<br>顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。”
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+</body>
+</html>
