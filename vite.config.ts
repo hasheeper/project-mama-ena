@@ -13,6 +13,7 @@ export default defineConfig({
         appContainer: resolve(__dirname, 'containers/app.html'),
         tavernContainer: resolve(__dirname, 'containers/tavern.html'),
         dashboard: resolve(__dirname, 'apps/dashboard/index.html'),
+        visualDashboard: resolve(__dirname, 'apps/visual-dashboard/index.html'),
         conceptPreview: resolve(__dirname, 'apps/concept-preview/index.html')
       }
     }

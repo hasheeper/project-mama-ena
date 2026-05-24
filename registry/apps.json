@@ -11,6 +11,15 @@
       "status": "active",
       "notes": "Typed Vite + Web Components dashboard surface."
     },
+    "visual-dashboard": {
+      "id": "visual-dashboard",
+      "name": "M.A.M.A. Visual Dashboard",
+      "type": "dashboard",
+      "container": "./index.html?app=visual-dashboard",
+      "entry": "./apps/visual-dashboard/index.html",
+      "status": "active",
+      "notes": "Split from doc/新界面.html into standalone HTML, CSS, and TypeScript."
+    },
     "concept-preview": {
       "id": "concept-preview",
       "name": "M.A.M.A. Concept Preview",

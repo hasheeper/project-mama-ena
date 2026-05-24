@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>M.A.M.A. Visual Dashboard</title>
+    <style>
+        /* ================= 全局变量 & 字体 ================= */
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&family=Noto+Sans+SC:wght@500;700;900&display=swap');
+
+        :root {
+            /* 主题色系 */
+            --bg-outer: #f0edf2;
+            --text-main: #332d36;
+            --text-sub: #8d8592;
+            --dark-panel: #29242d;
+            
+            /* UI视觉色 */
+            --frame-purple: #dfd1eb;
+            --label-red: #e47c9a;
+            --ena-pink: #401f2c;
+            --alert-yellow: #f5cc5a;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; }
+        
+        body {
+            background-color: var(--bg-outer);
+            background-image: repeating-linear-gradient(
+                -45deg,
+                transparent, transparent 15px,
+                rgba(0,0,0,0.015) 15px, rgba(0,0,0,0.015) 30px
+            );
+            font-family: "Nunito", "Noto Sans SC", sans-serif;
+            color: var(--text-main);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: auto;
+            padding: 40px 0;
+        }
+
+        /* ================= 竖屏侧边栏容器 ================= */
+        .visual-dashboard {
+            width: 470px;
+            /* 【核心修复】：去除了固定 min-height，让内容自适应撑开高度，消除大下巴 */
+            background-color: #fcfaf7;
+            background-image:
+                radial-gradient(rgba(196, 187, 176, 0.14) 1px, transparent 1px),
+                linear-gradient(180deg, rgba(255,255,253,0.98), rgba(252,250,247,0.98));
+            background-size: 18px 18px, auto;
+            background-position: 0 0, 0 0;
+            border-radius: 28px;
+            box-shadow:
+                0 20px 60px rgba(0,0,0,0.1),
+                0 5px 0 rgba(210, 201, 190, 0.74),
+                0 8px 0 rgba(236, 229, 220, 0.9),
+                inset 0 0 0 2px #ffffff;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            position: relative;
+        }
+
+        /* 系统顶部标识 */
+        .dash-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding-bottom: 8px;
+            border-bottom: 2px dashed rgba(217, 212, 223, 0.7);
+        }
+        .header-title {
+            font-size: 12px;
+            font-weight: 900;
+            color: var(--text-sub);
+            letter-spacing: 2px;
+        }
+        .status-dot {
+            width: 10px; height: 10px;
+            background-color: var(--label-red);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--label-red);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 1; box-shadow: 0 0 8px var(--label-red); }
+            50% { opacity: 0.5; box-shadow: 0 0 2px var(--label-red); }
+            100% { opacity: 1; box-shadow: 0 0 8px var(--label-red); }
+        }
+
+        /* ================= 模块一：主体图文相框 ================= */
+        .showcase-wrapper {
+            position: relative;
+            width: 100%;
+            height: 510px;
+            margin-top: 8px; 
+        }
+
+        .purple-backdrop {
+            position: absolute;
+            top: 15px; left: 15px; right: -2px; bottom: 0px; 
+            background: var(--frame-purple);
+            transform: rotate(3deg);
+            border-radius: 8px;
+            box-shadow: 2px 8px 20px rgba(0,0,0,0.06);
+            z-index: 1;
+        }
+
+        .white-frame {
+            position: absolute;
+            top: 0; left: 0; right: 10px; bottom: 12px;
+            background: #ffffff;
+            padding: 16px;
+            transform: rotate(-1.5deg);
+            border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(45, 35, 50, 0.08), inset 0 0 0 1px rgba(0,0,0,0.03);
+            z-index: 2;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .image-viewport {
+            flex: 1;
+            background: #f8f6fa;
+            border: 2px solid #edebf0;
+            border-radius: 6px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .character-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            object-position: center 20%;
+            transform: scale(1.05);
+            background-color: #f1ecf5; 
+        }
+
+        .status-dots {
+            position: absolute;
+            top: 16px; right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 3;
+        }
+        .dot {
+            width: 16px; height: 16px;
+            border-radius: 50%;
+            border: 3px solid #ffffff;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .dot-red { background: #ed738c; }
+        .dot-blue { background: #3d5fb6; opacity: 0.3; }
+        .dot-yellow { background: #fcce4c; opacity: 0.3; }
+
+        .top-torn-label {
+            position: absolute;
+            top: -16px; left: -8px; 
+            background: #fdfcff;
+            color: #55505e;
+            font-size: 16px;
+            font-weight: 900;
+            padding: 10px 22px;
+            transform: rotate(-4deg);
+            box-shadow: 2px 8px 15px rgba(0,0,0,0.06);
+            z-index: 5;
+            letter-spacing: 1px;
+            white-space: nowrap;
+            clip-path: polygon(1% 2%, 99% -1%, 98% 97%, 94% 100%, 88% 96%, 82% 102%, 76% 97%, 70% 103%, 64% 96%, 58% 101%, 52% 98%, 46% 102%, 40% 96%, 34% 100%, 28% 97%, 22% 103%, 16% 96%, 10% 101%, 4% 97%, -1% 94%);
+        }
+        .label-highlight { color: var(--label-red); }
+
+        .bottom-tag-note {
+            position: absolute;
+            bottom: 25px; left: -8px;
+            background: #f7f6f9;
+            padding: 20px 24px;
+            width: 260px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.08), 2px 2px 0 rgba(0,0,0,0.02);
+            transform: rotate(3deg);
+            z-index: 6;
+            border-bottom-right-radius: 16px;
+            border: 1px solid rgba(0,0,0,0.03);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .display-tape {
+            position: absolute;
+            width: 60px; height: 22px;
+            background: #afa2d6;
+            opacity: 0.85;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            clip-path: polygon(0% 0%, 100% 0%, 97% 10%, 100% 20%, 97% 30%, 100% 40%, 97% 50%, 100% 60%, 97% 70%, 100% 80%, 97% 90%, 100% 100%, 0% 100%, 3% 90%, 0% 80%, 3% 70%, 0% 60%, 3% 50%, 0% 40%, 3% 30%, 0% 20%, 3% 10%);
+        }
+        .tape-bottom { top: -10px; left: 24px; transform: rotate(-8deg); }
+
+        .note-title { font-size: 14px; font-weight: 900; color: #3d3b40; letter-spacing: 0.5px; }
+        .note-sub { font-size: 13px; font-weight: 700; color: #787382; }
+
+        .stamp-badge {
+            position: absolute;
+            bottom: 30px; right: 0px; 
+            width: 120px; height: 120px;
+            color: var(--label-red);
+            z-index: 10;
+            transform: rotate(-15deg);
+            opacity: 0.85;
+            mix-blend-mode: multiply;
+        }
+
+        /* ================= 模块二：事件/系统介入黑牌 ================= */
+        .current-event-pill {
+            display: flex;
+            background: var(--dark-panel);
+            border-radius: 14px;
+            padding: 10px 16px 10px 10px;
+            align-items: center;
+            gap: 14px;
+            box-shadow: 0 8px 24px rgba(45, 35, 50, 0.12), inset 0 1px 0 rgba(255,255,255,0.06);
+            z-index: 10;
+            /* 【核心修复】：大幅增加 margin-top，将牌子和下方的气泡整体往下推走 */
+            margin-top: 24px; 
+        }
+        .event-tag {
+            flex-shrink: 0;
+            background: var(--alert-yellow);
+            color: var(--dark-panel);
+            font-size: 11px;
+            font-weight: 900;
+            padding: 8px 12px;
+            border-radius: 9px;
+            letter-spacing: 0.5px;
+            box-shadow: 0 4px 10px rgba(245, 204, 90, 0.15);
+        }
+        .event-desc {
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+        }
+
+        /* ================= 模块三：元吐槽层叠区域 ================= */
+        .dialogue-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            /* 【核心修复】：增加对话栈顶部的间距，让它远离上方的黑牌 */
+            margin-top: 12px; 
+        }
+
+        .dialogue-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            width: 100%;
+        }
+
+        .q-head-img {
+            width: 80px;
+            height: auto;
+            flex-shrink: 0;
+            filter: drop-shadow(0 8px 16px rgba(45, 35, 50, 0.15));
+            animation: float-breath 3s ease-in-out infinite alternate;
+        }
+
+        .q-head-img.ena-head {
+            animation-delay: -1.5s;
+        }
+
+        @keyframes float-breath {
+            0% { transform: translateY(3px) scale(0.98); }
+            100% { transform: translateY(-3px) scale(1.02); }
+        }
+        
+        .msg-bubble {
+            position: relative;
+            width: 100%;
+            background: #ffffff;
+            border: 1.5px solid rgba(228, 124, 154, 0.3);
+            border-radius: 12px;
+            padding: 16px 20px 16px 16px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.04);
+            min-height: 72px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .name-label {
+            position: absolute;
+            top: -12px;
+            left: -8px;
+            color: #ffffff;
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            padding: 4px 14px;
+            border-radius: 6px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+        }
+
+        .label-mascot { background: var(--dark-panel); }
+        .label-ena { background: var(--ena-pink); }
+
+        .vertical-line {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 28px;
+            width: 1px;
+            border-right: 1.5px solid #efe8e9;
+        }
+
+        .flat-pin {
+            position: absolute;
+            top: -8px;
+            right: 42px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+        }
+        .pin-mascot {
+            background: var(--alert-yellow);
+            box-shadow: 0 2px 5px rgba(245, 204, 90, 0.5);
+        }
+        .pin-ena {
+            background: var(--label-red);
+            box-shadow: 0 2px 5px rgba(228, 124, 154, 0.5);
+        }
+        .flat-pin::after {
+            content: '';
+            position: absolute;
+            top: 4px;
+            left: 4px;
+            width: 4px;
+            height: 4px;
+            background: rgba(255,255,255,0.8);
+            border-radius: 50%;
+        }
+
+        .msg-text {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #585558;
+            line-height: 1.6;
+            letter-spacing: 0.5px;
+            margin: 4px 16px 0 0;
+        }
+
+    </style>
+</head>
+<body>
+
+<div class="visual-dashboard">
+    
+    <!-- 顶部状态指示器 -->
+    <div class="dash-header">
+        <div class="header-title">M.A.M.A. VISUAL LINK</div>
+        <div class="status-dot"></div>
+    </div>
+
+    <!-- 模块一：相框差分立绘 -->
+    <div class="showcase-wrapper">
+        <div class="purple-backdrop"></div>
+        <div class="white-frame">
+            <div class="image-viewport">
+                <!-- 立绘图像展示 -->
+                <img class="character-img" src="https://litter.catbox.moe/yhsxrjq78pursrtb.png" alt="Ena Difference">
+                
+                <div class="status-dots">
+                    <div class="dot dot-red"></div>
+                    <div class="dot dot-blue"></div>
+                    <div class="dot dot-yellow"></div>
+                </div>
+            </div>
+
+            <!-- 顶部撕纸监测标签 -->
+            <div class="top-torn-label">
+                { CONDITION <span class="label-highlight">OVERFLOW</span> }
+            </div>
+
+            <!-- 底部动作解析便签 -->
+            <div class="bottom-tag-note">
+                <div class="display-tape tape-bottom"></div>
+                <div class="note-title">TRIGGER_ACT: 男主撒娇</div>
+                <div class="note-sub">Ena状态：纵容 / 溺爱警告</div>
+            </div>
+
+            <!-- 右下角印章装饰 -->
+            <div class="stamp-badge">
+                <svg viewBox="-20 -20 140 140" fill="currentColor">
+                    <circle cx="50" cy="50" r="66" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <circle cx="50" cy="50" r="58" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"/>
+                    <path d="M 50, -5 A 55 55 0 0 1 50, 105 A 55 55 0 0 1 50, -5" fill="none" id="circlePath"/>
+                    <text font-size="8.5" font-weight="900" letter-spacing="2" fill="currentColor">
+                        <textPath href="#circlePath" startOffset="5%">★ M.A.M.A. OVERPROTECT WARNING ★</textPath>
+                    </text>
+                    <g transform="translate(10, 8) scale(0.8)">
+                        <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm0 84.375c-22.398 0-40.625-18.227-40.625-40.625s18.227-40.625 40.625-40.625 40.625 18.227 40.625 40.625-18.227 40.625-40.625 40.625z"/>
+                        <path d="m51.105 34.992c-0.60938 0.60937-1.5977 0.60937-2.2109 0-2.6875-2.6875-6.2148-4.0273-9.7422-4.0273-3.5234 0-7.0508 1.3438-9.7383 4.0273-5.3672 5.3672-5.3672 14.109 0 19.48l20.586 20.582 20.586-20.586c5.3672-5.3711 5.3672-14.109 0-19.48-5.375-5.3711-14.113-5.3633-19.48 0.003907z"/>
+                        <path d="m50 12.5c-20.68 0-37.5 16.82-37.5 37.5s16.82 37.5 37.5 37.5 37.5-16.82 37.5-37.5-16.82-37.5-37.5-37.5zm22.793 44.18-21.688 21.688c-0.30469 0.30859-0.70703 0.46094-1.1055 0.46094s-0.80078-0.15234-1.1055-0.45703l-21.688-21.688c-6.5898-6.5938-6.5898-17.312 0-23.898 6.2305-6.2383 16.164-6.5664 22.793-1.0156 6.6289-5.5508 16.566-5.2227 22.793 1.0117 6.5859 6.5898 6.5859 17.309 0 23.898z"/>
+                    </g>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- 模块二：使魔系统介入拦截牌 -->
+    <div class="current-event-pill">
+        <div class="event-tag">INTERCEPT</div>
+        <div class="event-desc">使魔与主体反应序列已介入...</div>
+    </div>
+
+    <!-- 模块三：堆叠对话框 (无外框、呼吸感大头贴) -->
+    <div class="dialogue-stack">
+        
+        <!-- 吉祥物 涅露露 吐槽 -->
+        <div class="dialogue-wrapper">
+            <img class="q-head-img" src="https://litter.catbox.moe/p92767uh4byi357m.png" alt="Mascot Reaction">
+            
+            <div class="msg-bubble">
+                <div class="name-label label-mascot">使魔 涅露露</div>
+                <div class="flat-pin pin-mascot"></div>
+                <div class="vertical-line"></div>
+                <div class="msg-text">
+                    不要以为我不知道你根本没生病！你这只满肚子坏水的大型犬！放开绘奈啊噜！
+                </div>
+            </div>
+        </div>
+
+        <!-- 魔法少女 Ena 回复 -->
+        <div class="dialogue-wrapper">
+            <!-- ena-head 类用于错开呼吸节奏 -->
+            <img class="q-head-img ena-head" src="https://litter.catbox.moe/p92767uh4byi357m.png" alt="Ena Reaction">
+            
+            <div class="msg-bubble">
+                <div class="name-label label-ena">绘奈</div>
+                <div class="flat-pin pin-ena"></div>
+                <div class="vertical-line"></div>
+                <div class="msg-text">
+                    ……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

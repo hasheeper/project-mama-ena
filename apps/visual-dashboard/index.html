@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>M.A.M.A. Visual Dashboard</title>
+    <link rel="stylesheet" href="/src/apps/visual-dashboard/styles.css" />
+  </head>
+  <body>
+    <main class="visual-dashboard" data-app-id="visual-dashboard">
+      <div class="dash-header">
+        <div class="header-title">M.A.M.A. VISUAL LINK</div>
+        <div class="status-dot" aria-hidden="true"></div>
+      </div>
+
+      <div class="showcase-wrapper">
+        <div class="purple-backdrop"></div>
+        <div class="white-frame">
+          <div class="image-viewport">
+            <img class="character-img" src="https://litter.catbox.moe/yhsxrjq78pursrtb.png" alt="Ena Difference" />
+
+            <div class="status-dots">
+              <div class="dot dot-red"></div>
+              <div class="dot dot-blue"></div>
+              <div class="dot dot-yellow"></div>
+            </div>
+          </div>
+
+          <div class="top-torn-label">{ CONDITION <span class="label-highlight">OVERFLOW</span> }</div>
+
+          <div class="bottom-tag-note">
+            <div class="display-tape tape-bottom"></div>
+            <div class="note-title">TRIGGER_ACT: 男主撒娇</div>
+            <div class="note-sub">Ena状态：纵容 / 溺爱警告</div>
+          </div>
+
+          <div class="stamp-badge">
+            <svg viewBox="-20 -20 140 140" fill="currentColor">
+              <circle cx="50" cy="50" r="66" fill="none" stroke="currentColor" stroke-width="2"></circle>
+              <circle cx="50" cy="50" r="58" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"></circle>
+              <path d="M 50, -5 A 55 55 0 0 1 50, 105 A 55 55 0 0 1 50, -5" fill="none" id="circlePath"></path>
+              <text font-size="8.5" font-weight="900" letter-spacing="2" fill="currentColor">
+                <textPath href="#circlePath" startOffset="5%">★ M.A.M.A. OVERPROTECT WARNING ★</textPath>
+              </text>
+              <g transform="translate(10, 8) scale(0.8)">
+                <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm0 84.375c-22.398 0-40.625-18.227-40.625-40.625s18.227-40.625 40.625-40.625 40.625 18.227 40.625 40.625-18.227 40.625-40.625 40.625z"></path>
+                <path d="m51.105 34.992c-0.60938 0.60937-1.5977 0.60937-2.2109 0-2.6875-2.6875-6.2148-4.0273-9.7422-4.0273-3.5234 0-7.0508 1.3438-9.7383 4.0273-5.3672 5.3672-5.3672 14.109 0 19.48l20.586 20.582 20.586-20.586c5.3672-5.3711 5.3672-14.109 0-19.48-5.375-5.3711-14.113-5.3633-19.48 0.003907z"></path>
+                <path d="m50 12.5c-20.68 0-37.5 16.82-37.5 37.5s16.82 37.5 37.5 37.5 37.5-16.82 37.5-37.5-16.82-37.5-37.5-37.5zm22.793 44.18-21.688 21.688c-0.30469 0.30859-0.70703 0.46094-1.1055 0.46094s-0.80078-0.15234-1.1055-0.45703l-21.688-21.688c-6.5898-6.5938-6.5898-17.312 0-23.898 6.2305-6.2383 16.164-6.5664 22.793-1.0156 6.6289-5.5508 16.566-5.2227 22.793 1.0117 6.5859 6.5898 6.5859 17.309 0 23.898z"></path>
+              </g>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <div class="current-event-pill">
+        <div class="event-tag">INTERCEPT</div>
+        <div class="event-desc">使魔与主体反应序列已介入...</div>
+      </div>
+
+      <div class="dialogue-stack">
+        <div class="dialogue-wrapper">
+          <img class="q-head-img" src="https://litter.catbox.moe/p92767uh4byi357m.png" alt="Mascot Reaction" />
+
+          <div class="msg-bubble">
+            <div class="name-label label-mascot">使魔 涅露露</div>
+            <div class="flat-pin pin-mascot"></div>
+            <div class="vertical-line"></div>
+            <div class="msg-text">不要以为我不知道你根本没生病！你这只满肚子坏水的大型犬！放开绘奈啊噜！</div>
+          </div>
+        </div>
+
+        <div class="dialogue-wrapper">
+          <img class="q-head-img ena-head" src="https://litter.catbox.moe/p92767uh4byi357m.png" alt="Ena Reaction" />
+
+          <div class="msg-bubble">
+            <div class="name-label label-ena">绘奈</div>
+            <div class="flat-pin pin-ena"></div>
+            <div class="vertical-line"></div>
+            <div class="msg-text">……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。</div>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <script type="module" src="/src/apps/visual-dashboard/main.ts"></script>
+  </body>
+</html>
