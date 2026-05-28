@@ -534,95 +534,7 @@
       return Boolean(value && typeof value.postMessage === 'function');
     }
 
-    function normalizeMessageId(value) {
-      const id = Number(value);
-      return Number.isFinite(id) && id >= 0 ? Math.round(id) : null;
-    }
-
-    function makeMessageFloorKey(messageId) {
-      const id = normalizeMessageId(messageId);
-      return id === null ? '' : `message:${id}`;
-    }
-
-    function parseMessageIdFromFloorKey(floorKey) {
-      const match = String(floorKey || '').trim().match(/^message:(\d+)$/i);
-      return match ? normalizeMessageId(match[1]) : null;
-    }
-
-    function findIframeForSource(source) {
-      if (!source || !DOC?.querySelectorAll) return null;
-      const frames = Array.from(DOC.querySelectorAll('iframe')) as HTMLIFrameElement[];
-      return frames.find((item) => {
-        try {
-          return item.contentWindow === source;
-        } catch (_) {
-          return false;
-        }
-      }) || null;
-    }
-
-    function readMessageIdFromElement(element) {
-      if (!element) return null;
-      const messageElement = typeof element.closest === 'function'
-        ? element.closest('[mesid], [data-message-id], [data-message_id], [message_id], .mes')
-        : null;
-      if (!messageElement) return null;
-
-      const attrNames = ['mesid', 'data-message-id', 'data-message_id', 'message_id', 'data-index'];
-      for (const attrName of attrNames) {
-        const id = normalizeMessageId(messageElement.getAttribute?.(attrName));
-        if (id !== null) return id;
-      }
-
-      const domId = typeof messageElement.id === 'string' ? messageElement.id : '';
-      const domMatch = domId.match(/(?:^|[^0-9])(\d+)$/);
-      if (domMatch) {
-        const id = normalizeMessageId(domMatch[1]);
-        if (id !== null) return id;
-      }
-
-      try {
-        const messages = Array.from(DOC.querySelectorAll('#chat .mes, .mes'));
-        const index = messages.indexOf(messageElement);
-        return index >= 0 ? index : null;
-      } catch (_) {
-        return null;
-      }
-    }
-
-    function resolveMessageIdFromSource(source) {
-      const iframe = findIframeForSource(source);
-      return readMessageIdFromElement(iframe);
-    }
-
-    function resolveReadOptions(source, data: any = {}) {
-      const explicitId = normalizeMessageId(data.messageId ?? data.message_id);
-      const explicitFloorId = parseMessageIdFromFloorKey(data.floorKey);
-      const domId = resolveMessageIdFromSource(source);
-      const messageId = explicitId ?? explicitFloorId ?? domId;
-      if (messageId === null) return { persist: false };
-      return {
-        persist: false,
-        messageId,
-        message_id: messageId,
-        floorKey: makeMessageFloorKey(messageId)
-      };
-    }
-
-    function resolveCurrentReadOptions() {
-      try {
-        if (typeof stateService.resolveReplayMessageId === 'function') {
-          const messageId = normalizeMessageId(stateService.resolveReplayMessageId({}));
-          if (messageId !== null) {
-            return {
-              persist: false,
-              messageId,
-              message_id: messageId,
-              floorKey: makeMessageFloorKey(messageId)
-            };
-          }
-        }
-      } catch (_) {}
+    function resolveReadOptions() {
       return { persist: false };
     }
 
@@ -667,7 +579,7 @@
         target.postMessage({
           type: 'MAMA_STATE_PUSH',
           reason: reason || 'refresh',
-          floorKey: readOptionsForTarget(target).floorKey || '',
+          floorKey: '',
           state: nextState
         }, '*');
         return true;
@@ -724,7 +636,7 @@
 
       if (frame?.contentWindow && ready) {
         try {
-          frameReadOptions = resolveCurrentReadOptions();
+          frameReadOptions = resolveReadOptions();
           const state = await stateService.loadState(frameReadOptions);
           lastState = state;
           lastReason = reason;
@@ -756,7 +668,7 @@
         return;
       }
 
-      const readOptions = resolveReadOptions(event.source, data);
+      const readOptions = resolveReadOptions();
       const target = registerInlineTarget(event.source, readOptions);
       if (!target) return;
 

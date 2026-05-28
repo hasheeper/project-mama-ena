@@ -202,14 +202,6 @@ import {
   }
 
   async function readStatData(options: any = {}) {
-    const hasExplicitFloor = options.messageId !== undefined
-      || options.message_id !== undefined
-      || (typeof options.floorKey === 'string' && options.floorKey.trim());
-    if (hasExplicitFloor) {
-      const messageId = resolveReplayMessageId(options);
-      const vars = await getMessageVariableBundle(messageId);
-      return isObject(vars?.[STAT_KEY]) ? vars[STAT_KEY] : {};
-    }
     const state = await ROOT.STBridge?.mvuz?.read?.('mama', { type: 'message' });
     return { [MAMA_KEY]: normalizeMamaState(state) };
   }
