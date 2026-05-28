@@ -11,6 +11,7 @@
         "MAMA_APP_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=visual-dashboard",
         "MAMA_STATUS_URL": "https://hasheeper.github.io/project-mama-ena/apps/visual-dashboard/index.html",
         "MAMA_EXP_URL": "https://hasheeper.github.io/project-mama-ena/apps/expression-portrait/index.html",
+        "MAMA_ASSET_BASE_URL": "https://hasheeper.github.io/project-mama-ena/mama-assets/standing",
         "MAMA_CONCEPT_PREVIEW_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=concept-preview"
       },
       "scripts": [
@@ -33,6 +34,11 @@
           "id": "mama-status-host",
           "type": "script",
           "url": "./packs/mama-main/status-host.js"
+        },
+        {
+          "id": "mama-asset-cache",
+          "type": "script",
+          "url": "./packs/mama-main/asset-cache.js"
         },
         {
           "id": "mama-main-pack",

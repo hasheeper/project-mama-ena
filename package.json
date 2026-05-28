@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build": "vite build && node scripts/copy-static.mjs",
+    "build:regex": "node scripts/build-mama-exp-regex.mjs",
+    "build": "npm run build:regex && vite build && node scripts/copy-static.mjs",
     "preview": "vite preview --host 127.0.0.1",
     "check": "tsc --noEmit"
   },
