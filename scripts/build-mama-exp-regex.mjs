@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const expressionDir = path.join(rootDir, 'src/assets/png/standing/expression');
+const baseDir = path.join(rootDir, 'src/assets/png/standing/base');
 const expDataPath = path.join(expressionDir, 'exp.json');
 const assetCachePath = path.join(rootDir, 'apps/st-bridge/packs/mama-main/asset-cache.js');
 
@@ -29,7 +30,10 @@ function unique(values) {
 
 function collectAssetRefs(data) {
   return {
-    base: ['school_uniform'],
+    base: fs.readdirSync(baseDir)
+      .filter((name) => name.endsWith('.png'))
+      .map((name) => name.replace(/\.png$/i, ''))
+      .sort(),
     face: unique(['face_default', ...data.expressions.map((item) => item.face)]),
     eye: unique(data.expressions.map((item) => item.eye)),
     mouth: unique(data.expressions.map((item) => item.mouth)),
@@ -161,6 +165,7 @@ function renderHtml({ title, assetBaseUrl }) {
       const app = document.getElementById('mama-exp-app');
       const hostFrame = window.frameElement;
       let currentExpression = resolveExpression(readExpression()).name;
+      let currentOutfit = resolveOutfit(readInitialOutfit());
       let warmAllScheduled = false;
 
       function readExpression() {
@@ -171,7 +176,7 @@ function renderHtml({ title, assetBaseUrl }) {
           const parsed = JSON.parse(raw);
           if (typeof parsed === 'string' || typeof parsed === 'number') return String(parsed).trim() || DEFAULT_EXPRESSION;
         } catch (_) {}
-        return raw.replace(/^<exp>|<\\/exp>$/gi, '').replace(/^[\"']|[\"']$/g, '').trim() || DEFAULT_EXPRESSION;
+        return raw.replace(/^<ena-exp>|<\\/ena-exp>$/gi, '').replace(/^<exp>|<\\/exp>$/gi, '').replace(/^[\"']|[\"']$/g, '').trim() || DEFAULT_EXPRESSION;
       }
 
       function resolveExpression(value) {
@@ -181,6 +186,20 @@ function renderHtml({ title, assetBaseUrl }) {
           ? EXP_DATA.expressions.find((item) => item.id === Math.round(byId))
           : EXP_DATA.expressions.find((item) => item.name === requested);
         return resolved || EXP_DATA.expressions.find((item) => item.name === DEFAULT_EXPRESSION) || EXP_DATA.expressions[0];
+      }
+
+      function readInitialOutfit() {
+        try {
+          const params = new URLSearchParams(location.search || '');
+          return params.get('outfit') || DEFAULT_OUTFIT;
+        } catch (_) {
+          return DEFAULT_OUTFIT;
+        }
+      }
+
+      function resolveOutfit(value) {
+        const requested = String(value || DEFAULT_OUTFIT).trim() || DEFAULT_OUTFIT;
+        return ASSET_REFS.base.includes(requested) ? requested : DEFAULT_OUTFIT;
       }
 
       function assetUrl(group, name) {
@@ -194,12 +213,12 @@ function renderHtml({ title, assetBaseUrl }) {
         return ASSET_BASE_URL.replace(/\\/+$/, '') + '/' + folders[group] + '/' + encodeURIComponent(name) + '.png';
       }
 
-      function getCriticalUrls(expression) {
+      function getCriticalUrls(expression, outfit) {
         const urls = [
           assetUrl('face', 'face_default'),
           expression.face !== 'face_default' ? assetUrl('face', expression.face) : '',
           assetUrl('mouth', expression.mouth || 'mouth_neutral'),
-          assetUrl('base', DEFAULT_OUTFIT),
+          assetUrl('base', outfit || DEFAULT_OUTFIT),
           assetUrl('eye', expression.eye || 'eye_normal'),
           assetUrl('brow', expression.brow || 'brow_normal')
         ];
@@ -279,37 +298,87 @@ function renderHtml({ title, assetBaseUrl }) {
         return image;
       }
 
-      function resolveLayers(expression) {
+      function resolveLayers(expression, outfit) {
         return [
           makeLayer('face_fx', assetUrl('face', 'face_default'), ''),
           expression.face !== 'face_default' ? makeLayer('face_fx', assetUrl('face', expression.face), '') : null,
           makeLayer('mouth', assetUrl('mouth', expression.mouth || 'mouth_neutral'), ''),
-          makeLayer('base', assetUrl('base', DEFAULT_OUTFIT), ''),
+          makeLayer('base', assetUrl('base', outfit || DEFAULT_OUTFIT), ''),
           makeLayer('eyes', assetUrl('eye', expression.eye || 'eye_normal'), ''),
           makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), '')
         ].filter(Boolean);
+      }
+
+      function applyState(state) {
+        if (!state || typeof state !== 'object') return false;
+        const nextOutfit = resolveOutfit(state.outfit);
+        if (nextOutfit === currentOutfit) return false;
+        currentOutfit = nextOutfit;
+        render();
+        return true;
+      }
+
+      function getHostTargets() {
+        const targets = [window];
+        try { targets.push(window.parent); } catch (_) {}
+        try { targets.push(window.top); } catch (_) {}
+        return targets.filter(Boolean);
+      }
+
+      async function requestDirectState() {
+        for (const target of getHostTargets()) {
+          try {
+            if (target.MAMAPlugin && typeof target.MAMAPlugin.loadState === 'function') {
+              const state = await target.MAMAPlugin.loadState({ persist: false });
+              if (applyState(state)) return true;
+            }
+          } catch (_) {}
+          try {
+            if (target.STBridge && target.STBridge.mvuz && typeof target.STBridge.mvuz.read === 'function') {
+              const state = await target.STBridge.mvuz.read('mama', { persist: false });
+              if (applyState(state)) return true;
+            }
+          } catch (_) {}
+        }
+        return false;
+      }
+
+      function requestHostState() {
+        getHostTargets().forEach(function (target) {
+          try {
+            if (target && typeof target.postMessage === 'function') {
+              target.postMessage({
+                type: 'MAMA_STATUS_REQUEST',
+                appId: 'visual-dashboard',
+                reason: 'expressionPortrait'
+              }, '*');
+            }
+          } catch (_) {}
+        });
+        requestDirectState();
       }
 
       function render() {
         if (!app) return;
         const expression = resolveExpression(currentExpression);
         app.dataset.expression = expression.name;
-        warmImageCache(getCriticalUrls(expression));
+        app.dataset.outfit = currentOutfit;
+        warmImageCache(getCriticalUrls(expression, currentOutfit));
         scheduleWarmAll();
 
         const frame = document.createElement('section');
         frame.className = 'portrait-frame';
-        frame.title = expression.name;
+        frame.title = expression.name + ' / ' + currentOutfit;
 
         const crop = document.createElement('div');
         crop.className = 'portrait-crop';
 
         const figure = document.createElement('figure');
         figure.className = 'mama-standing';
-        figure.dataset.outfit = DEFAULT_OUTFIT;
+        figure.dataset.outfit = currentOutfit;
         figure.dataset.expression = expression.name;
-        figure.setAttribute('aria-label', 'Ena ' + expression.name);
-        figure.append.apply(figure, resolveLayers(expression));
+        figure.setAttribute('aria-label', 'Ena ' + currentOutfit + ' ' + expression.name);
+        figure.append.apply(figure, resolveLayers(expression, currentOutfit));
 
         crop.append(figure);
         frame.append(crop);
@@ -318,11 +387,19 @@ function renderHtml({ title, assetBaseUrl }) {
 
       resizeHostFrame();
       render();
+      requestHostState();
+      setTimeout(requestHostState, 250);
       window.addEventListener('resize', resizeHostFrame);
       window.addEventListener('message', function (event) {
         const data = event && event.data;
-        if (!data || typeof data !== 'object' || data.type !== 'MAMA_EXP_DATA') return;
+        if (!data || typeof data !== 'object') return;
+        if (data.type === 'MAMA_STATE_PUSH') {
+          applyState(data.state);
+          return;
+        }
+        if (data.type !== 'MAMA_EXP_DATA') return;
         currentExpression = resolveExpression(data.expression).name;
+        if (data.outfit !== undefined) currentOutfit = resolveOutfit(data.outfit);
         render();
       });
     })();

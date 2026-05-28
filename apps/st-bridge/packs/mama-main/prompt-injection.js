@@ -44,7 +44,7 @@ When MAMA state changes, append an UpdateVariable block like:
 <UpdateVariable>
 <JSONPatch>[{"op":"replace","path":"/mama/expression","value":"exp_smile_soft"}]</JSONPatch>
 </UpdateVariable>
-Do not put <exp> portraits into MAMA state. <exp>...</exp> is only for the current message portrait iframe.
+Do not put ENA portrait tags into MAMA state. <ena-exp>...</ena-exp> only controls ENA's instant portrait expression; its outfit base follows /mama/outfit. Do not use it for other characters.
 </mama_status>`;
   }
 

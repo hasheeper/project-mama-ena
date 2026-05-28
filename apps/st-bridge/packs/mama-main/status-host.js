@@ -747,7 +747,7 @@
       const isRequest = data.type === 'MAMA_STATUS_REQUEST';
       if (!isReady && !isRequest) return;
       const appId = typeof data.appId === 'string' ? data.appId : data.app?.id;
-      if (appId && appId !== 'visual-dashboard') return;
+      if (appId && appId !== 'visual-dashboard' && appId !== 'expression-portrait') return;
 
       if (event.source === frame?.contentWindow) {
         ready = true;
