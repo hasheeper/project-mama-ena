@@ -2,7 +2,8 @@ import { cp, mkdir } from 'node:fs/promises';
 
 const pairs = [
   ['registry', 'dist/registry'],
-  ['apps/st-bridge', 'dist/apps/st-bridge']
+  ['apps/st-bridge', 'dist/apps/st-bridge'],
+  ['ST', 'dist/ST']
 ];
 
 await mkdir('dist', { recursive: true });

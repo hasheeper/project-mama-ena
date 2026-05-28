@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>MAMA Expression Portrait</title>
+  <style>
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: transparent;
+    }
+
+    #app-frame {
+      width: 100%;
+      height: 100%;
+      min-height: 180px;
+      border: 0;
+      display: block;
+      background: transparent;
+      border-radius: 18px;
+    }
+  </style>
+</head>
+<body>
+  <script id="mama-exp" type="application/json">$1</script>
+
+  <iframe
+    id="app-frame"
+    title="MAMA Expression Portrait"
+    src="https://hasheeper.github.io/project-mama-ena/apps/expression-portrait/index.html"
+    sandbox="allow-scripts allow-forms allow-modals allow-popups allow-same-origin"
+    referrerpolicy="no-referrer"
+  ></iframe>
+
+  <script>
+    (function () {
+      const frame = document.getElementById('app-frame');
+      const hostFrame = window.frameElement;
+
+      function readExpression() {
+        const dataNode = document.getElementById('mama-exp');
+        const raw = (dataNode && (dataNode.textContent || dataNode.innerText) || '').trim();
+        if (!raw) return 'exp_default';
+        try {
+          const parsed = JSON.parse(raw);
+          if (typeof parsed === 'string' || typeof parsed === 'number') return String(parsed).trim() || 'exp_default';
+        } catch (_) {}
+        return raw.replace(/^<exp>|<\/exp>$/gi, '').replace(/^["']|["']$/g, '').trim() || 'exp_default';
+      }
+
+      function resizeHostFrame() {
+        if (!hostFrame) return;
+        hostFrame.style.width = '220px';
+        hostFrame.style.maxWidth = '70vw';
+        hostFrame.style.height = hostFrame.style.width;
+        hostFrame.style.border = '0';
+        hostFrame.style.display = 'block';
+        hostFrame.style.margin = '8px 0';
+        hostFrame.style.background = 'transparent';
+      }
+
+      function postExpression() {
+        if (!frame || !frame.contentWindow) return;
+        frame.contentWindow.postMessage({
+          type: 'MAMA_EXP_DATA',
+          expression: readExpression()
+        }, '*');
+      }
+
+      resizeHostFrame();
+      window.addEventListener('resize', resizeHostFrame);
+      frame.addEventListener('load', postExpression);
+      window.addEventListener('message', function (event) {
+        const data = event && event.data;
+        if (!data || typeof data !== 'object') return;
+        if (data.type === 'MAMA_EXP_READY' || data.type === 'mama:app-ready') postExpression();
+      });
+      setTimeout(postExpression, 100);
+    })();
+  </script>
+</body>
+</html>

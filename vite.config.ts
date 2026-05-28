@@ -14,6 +14,7 @@ export default defineConfig({
         tavernContainer: resolve(__dirname, 'containers/tavern.html'),
         dashboard: resolve(__dirname, 'apps/dashboard/index.html'),
         visualDashboard: resolve(__dirname, 'apps/visual-dashboard/index.html'),
+        expressionPortrait: resolve(__dirname, 'apps/expression-portrait/index.html'),
         conceptPreview: resolve(__dirname, 'apps/concept-preview/index.html')
       }
     }

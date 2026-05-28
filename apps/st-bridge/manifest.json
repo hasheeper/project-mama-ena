@@ -7,10 +7,33 @@
       "label": "MAMA Main",
       "product": "mama-ena",
       "globals": {
-        "MAMA_APP_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=dashboard",
+        "MAMA_APP_BASE_URL": "https://hasheeper.github.io/project-mama-ena",
+        "MAMA_APP_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=visual-dashboard",
+        "MAMA_STATUS_URL": "https://hasheeper.github.io/project-mama-ena/apps/visual-dashboard/index.html",
+        "MAMA_EXP_URL": "https://hasheeper.github.io/project-mama-ena/apps/expression-portrait/index.html",
         "MAMA_CONCEPT_PREVIEW_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=concept-preview"
       },
       "scripts": [
+        {
+          "id": "mama-schema",
+          "type": "module",
+          "url": "./packs/mama-main/schema.js"
+        },
+        {
+          "id": "mama-state-replay",
+          "type": "script",
+          "url": "./packs/mama-main/state-replay.js"
+        },
+        {
+          "id": "mama-prompt-injection",
+          "type": "script",
+          "url": "./packs/mama-main/prompt-injection.js"
+        },
+        {
+          "id": "mama-status-host",
+          "type": "script",
+          "url": "./packs/mama-main/status-host.js"
+        },
         {
           "id": "mama-main-pack",
           "type": "script",

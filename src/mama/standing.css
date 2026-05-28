@@ -1,0 +1,38 @@
+.mama-standing {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  isolation: isolate;
+}
+
+.mama-standing__layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  pointer-events: none;
+  user-select: none;
+}
+
+.mama-standing__layer--face-fx {
+  z-index: 10;
+}
+
+.mama-standing__layer--mouth {
+  z-index: 20;
+}
+
+.mama-standing__layer--base {
+  z-index: 30;
+}
+
+.mama-standing__layer--eyes {
+  z-index: 40;
+}
+
+.mama-standing__layer--brow {
+  z-index: 50;
+}

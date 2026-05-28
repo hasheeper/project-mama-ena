@@ -27,34 +27,12 @@
   }
 
   function makeDefaultMamaState() {
-    const now = new Date().toISOString();
     return {
-      meta: {
-        schemaVersion: 1,
-        product: 'mama-ena',
-        contentVersion: '0.1.0',
-        createdAt: now,
-        updatedAt: now
-      },
-      player: {
-        name: '',
-        affection: 0,
-        energy: 100,
-        flags: {}
-      },
-      world: {
-        day: 1,
-        period: 'morning',
-        location: ''
-      },
-      dashboard: {
-        activePanel: 'overview',
-        payload: null
-      },
-      runtime: {
-        flags: {},
-        caches: {}
-      }
+      affection: 0,
+      outfit: 'school_uniform',
+      expression: 'exp_default',
+      mascotComment: '使魔与主体反应序列已介入...',
+      enaDialogue: '……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。'
     };
   }
 
@@ -67,47 +45,17 @@
   function normalizeMamaState(value) {
     const defaults = makeDefaultMamaState();
     const source = isObject(value) ? clone(value, {}) : {};
-    const meta = isObject(source.meta) ? source.meta : {};
-    const player = isObject(source.player) ? source.player : {};
-    const world = isObject(source.world) ? source.world : {};
-    const dashboard = isObject(source.dashboard) ? source.dashboard : {};
-    const runtime = isObject(source.runtime) ? source.runtime : {};
-
     return {
-      meta: {
-        ...defaults.meta,
-        ...meta,
-        schemaVersion: 1,
-        product: 'mama-ena',
-        updatedAt: new Date().toISOString()
-      },
-      player: {
-        ...defaults.player,
-        ...player,
-        name: typeof player.name === 'string' ? player.name : '',
-        affection: clampNumber(player.affection, 0, 255, defaults.player.affection),
-        energy: clampNumber(player.energy, 0, 100, defaults.player.energy),
-        flags: isObject(player.flags) ? clone(player.flags, {}) : {}
-      },
-      world: {
-        ...defaults.world,
-        ...world,
-        day: clampNumber(world.day, 1, 99999, defaults.world.day),
-        period: typeof world.period === 'string' && world.period ? world.period : defaults.world.period,
-        location: typeof world.location === 'string' ? world.location : ''
-      },
-      dashboard: {
-        ...defaults.dashboard,
-        ...dashboard,
-        activePanel: typeof dashboard.activePanel === 'string' && dashboard.activePanel ? dashboard.activePanel : defaults.dashboard.activePanel
-      },
-      runtime: {
-        ...defaults.runtime,
-        ...runtime,
-        flags: isObject(runtime.flags) ? clone(runtime.flags, {}) : {},
-        caches: isObject(runtime.caches) ? clone(runtime.caches, {}) : {}
-      }
+      affection: clampNumber(source.affection, 0, 255, defaults.affection),
+      outfit: normalizeString(source.outfit, defaults.outfit),
+      expression: normalizeString(source.expression, defaults.expression),
+      mascotComment: normalizeString(source.mascotComment, defaults.mascotComment),
+      enaDialogue: normalizeString(source.enaDialogue, defaults.enaDialogue)
     };
+  }
+
+  function normalizeString(value, fallback = '') {
+    return typeof value === 'string' && value.trim() ? value.trim() : fallback;
   }
 
   function isUsableBridgeUrl(value) {
@@ -193,11 +141,13 @@
 
   async function readVariables(options = {}) {
     const type = options.type || 'message';
+    const request = { ...options, type };
+    delete request.rootKey;
     if (typeof ROOT.getVariables !== 'function') {
       return isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? clone(ROOT.__MAMA_ST_BRIDGE_MEMORY__, {}) : {};
     }
     try {
-      const vars = await ROOT.getVariables({ type });
+      const vars = await ROOT.getVariables(request);
       return isObject(vars) ? vars : {};
     } catch (error) {
       console.warn(`${BRIDGE_NAME} readVariables failed:`, error);
@@ -207,12 +157,14 @@
 
   async function writeVariables(data, options = {}) {
     const type = options.type || 'message';
+    const request = { ...options, type };
+    delete request.rootKey;
     if (typeof ROOT.insertOrAssignVariables === 'function') {
-      await ROOT.insertOrAssignVariables(data, { type });
+      await ROOT.insertOrAssignVariables(data, request);
       return data;
     }
     if (typeof ROOT.updateVariablesWith === 'function') {
-      return ROOT.updateVariablesWith((vars) => ({ ...(isObject(vars) ? vars : {}), ...data }), { type });
+      return ROOT.updateVariablesWith((vars) => ({ ...(isObject(vars) ? vars : {}), ...data }), request);
     }
     ROOT.__MAMA_ST_BRIDGE_MEMORY__ = {
       ...(isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? ROOT.__MAMA_ST_BRIDGE_MEMORY__ : {}),
