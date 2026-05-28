@@ -325,7 +325,7 @@
     const manifest = await fetchJson(manifestUrl);
     const { id: packId, pack } = selectPack(manifest);
     const registry = getLoadedRegistry();
-    const registryKey = `${manifestUrl}::${packId}`;
+    const registryKey = `${manifestUrl}::${packId}::${cacheBust || 'default'}`;
 
     if (registry[registryKey] && !forceReload) {
       exposeApi(registry[registryKey]);

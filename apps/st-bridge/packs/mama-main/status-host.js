@@ -72,8 +72,8 @@
       #${HOST_ID} {
         position: fixed;
         right: 22px;
-        bottom: 22px;
-        z-index: 2147482500;
+        top: 80px;
+        z-index: 2147483645;
       }
 
       #${TRIGGER_ID} {
@@ -135,7 +135,7 @@
         background: rgba(37, 31, 42, 0.42);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        z-index: 2147482501;
+        z-index: 2147483646;
         overflow: hidden;
       }
 
@@ -228,6 +228,10 @@
 
       host = document.createElement('div');
       host.id = HOST_ID;
+      host.style.position = 'fixed';
+      host.style.top = '80px';
+      host.style.right = '22px';
+      host.style.zIndex = '2147483645';
 
       const trigger = document.createElement('button');
       trigger.id = TRIGGER_ID;
@@ -277,6 +281,7 @@
       wrapper.replaceChildren(frame, close);
       overlay.replaceChildren(wrapper);
       document.body.append(host, overlay);
+      console.info('[MAMA Status Host] floating trigger injected:', { url: frame.src });
       return host;
     }
 
