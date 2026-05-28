@@ -75,7 +75,7 @@ export function resolveStandingLayers(outfitInput: unknown, expressionInput: unk
   const expression = resolveExpression(expressionInput);
   const baseUrl = outfitAssets[outfit] || outfitAssets[DEFAULT_MAMA_STATE.outfit] || '';
   const layers = [
-    { kind: 'face_fx', url: expressionAssets.face[expression.face] || expressionAssets.face.face_default },
+    ...resolveFaceLayers(expression.face),
     { kind: 'mouth', url: expressionAssets.mouth[expression.mouth] || expressionAssets.mouth.mouth_neutral },
     { kind: 'base', url: baseUrl },
     { kind: 'eyes', url: expressionAssets.eye[expression.eye] || expressionAssets.eye.eye_normal },
@@ -87,6 +87,15 @@ export function resolveStandingLayers(outfitInput: unknown, expressionInput: unk
     expression,
     layers
   };
+}
+
+function resolveFaceLayers(faceName: string): StandingLayer[] {
+  const defaultFace = expressionAssets.face.face_default;
+  const specialFace = expressionAssets.face[faceName];
+  return [
+    { kind: 'face_fx', url: defaultFace },
+    faceName !== 'face_default' && specialFace ? { kind: 'face_fx', url: specialFace } : null
+  ].filter((layer): layer is StandingLayer => Boolean(layer?.url));
 }
 
 export function resolveOutfitName(value: unknown): string {

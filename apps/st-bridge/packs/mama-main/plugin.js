@@ -58,8 +58,10 @@
       };
     },
     async openDashboard() {
+      const opened = Boolean(statusHost?.openStatus?.());
       return {
         ok: true,
+        opened,
         url: ROOT.MAMA_STATUS_URL || ROOT.MAMA_APP_URL || ''
       };
     },
@@ -92,6 +94,12 @@
     saveState,
     patchState,
     refreshStatus,
+    openStatus() {
+      return statusHost?.openStatus?.();
+    },
+    closeStatus() {
+      return statusHost?.closeStatus?.();
+    },
     openDashboardUrl: ROOT.MAMA_STATUS_URL || ROOT.MAMA_APP_URL || ''
   };
 
