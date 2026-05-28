@@ -1,6 +1,6 @@
 import { cp, mkdir } from 'node:fs/promises';
 
-const pairs = [
+const pairs: Array<[string, string]> = [
   ['registry', 'dist/registry'],
   ['apps/st-bridge', 'dist/apps/st-bridge'],
   ['ST', 'dist/ST'],

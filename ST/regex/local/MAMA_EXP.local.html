@@ -128,7 +128,7 @@
           const parsed = JSON.parse(raw);
           if (typeof parsed === 'string' || typeof parsed === 'number') return String(parsed).trim() || DEFAULT_EXPRESSION;
         } catch (_) {}
-        return raw.replace(/^<ena-exp>|<\/ena-exp>$/gi, '').replace(/^<exp>|<\/exp>$/gi, '').replace(/^["']|["']$/g, '').trim() || DEFAULT_EXPRESSION;
+        return raw.replace(/^<ena-exp>|<\/ena-exp>$/gi, '').replace(/^["']|["']$/g, '').trim() || DEFAULT_EXPRESSION;
       }
 
       function resolveExpression(value) {

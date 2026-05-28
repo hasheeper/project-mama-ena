@@ -18,7 +18,8 @@ npm run preview
 - `registry/apps.json` is the source of truth for app routing.
 - `containers/app.html` and `containers/tavern.html` are thin iframe hosts.
 - `src/protocol/` defines typed `postMessage` contracts.
-- `apps/st-bridge/bridge.js` is the stable SillyTavern loader.
+- `src/st-bridge/` is the TypeScript source for the SillyTavern bridge.
+- `apps/st-bridge/bridge.js` is the generated stable SillyTavern loader.
 - `apps/st-bridge/manifest.json` selects bridge packs and load order.
 - `apps/concept-preview/index.html` preserves the original visual concept page.
 

@@ -10,9 +10,7 @@
         "MAMA_APP_BASE_URL": "https://hasheeper.github.io/project-mama-ena",
         "MAMA_APP_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=visual-dashboard",
         "MAMA_STATUS_URL": "https://hasheeper.github.io/project-mama-ena/apps/visual-dashboard/index.html",
-        "MAMA_EXP_URL": "https://hasheeper.github.io/project-mama-ena/apps/expression-portrait/index.html",
-        "MAMA_ASSET_BASE_URL": "https://hasheeper.github.io/project-mama-ena/mama-assets/standing",
-        "MAMA_CONCEPT_PREVIEW_URL": "https://hasheeper.github.io/project-mama-ena/index.html?app=concept-preview"
+        "MAMA_ASSET_BASE_URL": "https://hasheeper.github.io/project-mama-ena/mama-assets/standing"
       },
       "scripts": [
         {

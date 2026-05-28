@@ -27,7 +27,7 @@
       "container": "./index.html?app=expression-portrait",
       "entry": "./apps/expression-portrait/index.html",
       "status": "active",
-      "notes": "Static iframe target for per-message <exp> portrait rendering."
+      "notes": "Static iframe target for per-message <ena-exp> portrait rendering."
     },
     "concept-preview": {
       "id": "concept-preview",

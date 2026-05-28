@@ -1,108 +1,111 @@
-/**
- * MAMA SillyTavern status iframe host.
- */
-(function () {
-  'use strict';
-
-  const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
-
-  function resolveBridgeHost() {
-    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
-    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
-    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
-    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
-    return {};
-  }
-
-  function pushTarget(targets, target) {
-    try {
-      if (target && !targets.includes(target)) targets.push(target);
-    } catch (_) {}
-  }
-
-  const BRIDGE_HOST = resolveBridgeHost();
-  const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
-  const UI_ROOT = BRIDGE_HOST.root || BRIDGE_HOST.uiRoot || CURRENT_ROOT.MAMA_ST_UI_ROOT || ROOT;
-  const DOC = UI_ROOT.document || CURRENT_ROOT.document;
-  const TIMER_ROOT = UI_ROOT.setTimeout ? UI_ROOT : CURRENT_ROOT;
-  const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
-  ROOT.MAMAMainRuntime = RUNTIME;
-  CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
-
-  const HOST_ID = 'mama-status-host';
-  const TRIGGER_ID = 'mama-status-trigger';
-  const OVERLAY_ID = 'mama-status-overlay';
-  const WRAPPER_ID = 'mama-status-wrapper';
-  const IFRAME_ID = 'mama-status-iframe';
-  const CLOSE_ID = 'mama-status-close';
-  const STYLE_ID = 'mama-status-host-style';
-  const UNLOAD_KEY = '__MAMA_STATUS_HOST_UNLOAD__';
-  const TRIGGER_COLLAPSED_CLASS = 'mama-status-trigger-collapsed';
-  const TRIGGER_COLLAPSED_STORAGE_KEY = 'mama.status.triggerCollapsed.v2';
-  const DEFAULT_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
-  const DEFAULT_STATUS_PATH = 'apps/visual-dashboard/index.html';
-
-  function getBridgeTargets() {
-    const targets = [];
-    pushTarget(targets, CURRENT_ROOT);
-    pushTarget(targets, ROOT);
-    pushTarget(targets, UI_ROOT);
-    (Array.isArray(BRIDGE_HOST.candidates) ? BRIDGE_HOST.candidates : []).forEach((target) => pushTarget(targets, target));
-    targets.slice().forEach((target) => {
-      try { pushTarget(targets, target.parent); } catch (_) {}
-      try { pushTarget(targets, target.top); } catch (_) {}
-    });
-    return targets;
-  }
-
-  function isEnabled(value) {
-    return value === true || value === 'true' || value === '1' || value === 1;
-  }
-
-  function isDisabled(value) {
-    return value === false || value === 'false' || value === '0' || value === 0;
-  }
-
-  function trimTrailingSlash(value) {
-    return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
-  }
-
-  function readGlobalString(key) {
-    for (const target of getBridgeTargets()) {
+(function() {
+  "use strict";
+  (function() {
+    const CURRENT_ROOT = typeof window !== "undefined" ? window : globalThis;
+    function resolveBridgeHost() {
       try {
-        if (typeof target?.[key] === 'string' && target[key].trim()) return target[key].trim();
-      } catch (_) {}
+        if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST;
+      } catch (_) {
+      }
+      try {
+        if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST;
+      } catch (_) {
+      }
+      try {
+        if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST;
+      } catch (_) {
+      }
+      try {
+        if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST;
+      } catch (_) {
+      }
+      return {};
     }
-    return '';
-  }
-
-  function appendQueryParams(url, params = {}) {
-    const entries = Object.entries(params).filter(([, value]) => value !== undefined && value !== null && value !== '');
-    if (!entries.length || typeof url !== 'string' || !url.trim()) return url;
-    try {
-      const parsed = new URL(url, /^https?:\/\//i.test(url) ? undefined : 'https://mama.local');
-      entries.forEach(([key, value]) => parsed.searchParams.set(key, String(value)));
-      return /^https?:\/\//i.test(url) ? parsed.href : `${parsed.pathname}${parsed.search}${parsed.hash}`;
-    } catch (_) {
-      const separator = url.includes('?') ? '&' : '?';
-      return `${url}${separator}${entries
-        .map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`)
-        .join('&')}`;
+    function pushTarget(targets, target) {
+      try {
+        if (target && !targets.includes(target)) targets.push(target);
+      } catch (_) {
+      }
     }
-  }
-
-  function resolveStatusUrl(version) {
-    const explicit = readGlobalString('MAMA_STATUS_URL');
-    const base = trimTrailingSlash(readGlobalString('MAMA_APP_BASE_URL') || DEFAULT_APP_BASE_URL);
-    const url = explicit || `${base}/${DEFAULT_STATUS_PATH}`;
-    return appendQueryParams(url, { bridge: 'st', v: version || '0.1.0' });
-  }
-
-  function ensureStyle() {
-    if (!DOC?.head || DOC.getElementById(STYLE_ID)) return;
-    const style = DOC.createElement('style');
-    style.id = STYLE_ID;
-    style.textContent = `
+    const BRIDGE_HOST = resolveBridgeHost();
+    const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
+    const UI_ROOT = BRIDGE_HOST.root || BRIDGE_HOST.uiRoot || CURRENT_ROOT.MAMA_ST_UI_ROOT || ROOT;
+    const DOC = UI_ROOT.document || CURRENT_ROOT.document;
+    const TIMER_ROOT = UI_ROOT.setTimeout ? UI_ROOT : CURRENT_ROOT;
+    const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
+    ROOT.MAMAMainRuntime = RUNTIME;
+    CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
+    const HOST_ID = "mama-status-host";
+    const TRIGGER_ID = "mama-status-trigger";
+    const OVERLAY_ID = "mama-status-overlay";
+    const WRAPPER_ID = "mama-status-wrapper";
+    const IFRAME_ID = "mama-status-iframe";
+    const CLOSE_ID = "mama-status-close";
+    const STYLE_ID = "mama-status-host-style";
+    const UNLOAD_KEY = "__MAMA_STATUS_HOST_UNLOAD__";
+    const TRIGGER_COLLAPSED_CLASS = "mama-status-trigger-collapsed";
+    const TRIGGER_COLLAPSED_STORAGE_KEY = "mama.status.triggerCollapsed.v2";
+    const DEFAULT_APP_BASE_URL = "https://hasheeper.github.io/project-mama-ena";
+    const DEFAULT_STATUS_PATH = "apps/visual-dashboard/index.html";
+    function getBridgeTargets() {
+      const targets = [];
+      pushTarget(targets, CURRENT_ROOT);
+      pushTarget(targets, ROOT);
+      pushTarget(targets, UI_ROOT);
+      (Array.isArray(BRIDGE_HOST.candidates) ? BRIDGE_HOST.candidates : []).forEach((target) => pushTarget(targets, target));
+      targets.slice().forEach((target) => {
+        try {
+          pushTarget(targets, target.parent);
+        } catch (_) {
+        }
+        try {
+          pushTarget(targets, target.top);
+        } catch (_) {
+        }
+      });
+      return targets;
+    }
+    function isEnabled(value) {
+      return value === true || value === "true" || value === "1" || value === 1;
+    }
+    function isDisabled(value) {
+      return value === false || value === "false" || value === "0" || value === 0;
+    }
+    function trimTrailingSlash(value) {
+      return typeof value === "string" ? value.trim().replace(/\/+$/, "") : "";
+    }
+    function readGlobalString(key) {
+      for (const target of getBridgeTargets()) {
+        try {
+          if (typeof target?.[key] === "string" && target[key].trim()) return target[key].trim();
+        } catch (_) {
+        }
+      }
+      return "";
+    }
+    function appendQueryParams(url, params = {}) {
+      const entries = Object.entries(params).filter(([, value]) => value !== void 0 && value !== null && value !== "");
+      if (!entries.length || typeof url !== "string" || !url.trim()) return url;
+      try {
+        const parsed = new URL(url, /^https?:\/\//i.test(url) ? void 0 : "https://mama.local");
+        entries.forEach(([key, value]) => parsed.searchParams.set(key, String(value)));
+        return /^https?:\/\//i.test(url) ? parsed.href : `${parsed.pathname}${parsed.search}${parsed.hash}`;
+      } catch (_) {
+        const separator = url.includes("?") ? "&" : "?";
+        return `${url}${separator}${entries.map(([key, value]) => `${encodeURIComponent(key)}=${encodeURIComponent(String(value))}`).join("&")}`;
+      }
+    }
+    function resolveStatusUrl(version) {
+      const explicit = readGlobalString("MAMA_STATUS_URL");
+      const base = trimTrailingSlash(readGlobalString("MAMA_APP_BASE_URL") || DEFAULT_APP_BASE_URL);
+      const url = explicit || `${base}/${DEFAULT_STATUS_PATH}`;
+      return appendQueryParams(url, { bridge: "st", v: version });
+    }
+    function ensureStyle() {
+      if (!DOC?.head || DOC.getElementById(STYLE_ID)) return;
+      const style = DOC.createElement("style");
+      style.id = STYLE_ID;
+      style.textContent = `
       @keyframes mamaStatusFloat {
         0%, 100% { transform: translateY(0); }
         50% { transform: translateY(-5px); }
@@ -350,552 +353,507 @@
         background: rgba(228, 124, 154, 0.94);
       }
     `;
-    DOC.head.append(style);
-  }
-
-  function waitForBody(callback) {
-    if (DOC?.body) {
-      callback();
-      return;
+      DOC.head.append(style);
     }
-    TIMER_ROOT.setTimeout(() => waitForBody(callback), 100);
-  }
-
-  RUNTIME.createStatusHost = function createStatusHost(stateService, config = {}) {
-    let frame = null;
-    let host = null;
-    let overlay = null;
-    let wrapper = null;
-    let ready = false;
-    let iframeInitialized = false;
-    let disposed = false;
-    let trigger = null;
-    let triggerFoldButton = null;
-    let lastState = null;
-    let lastReason = '';
-    let frameReadOptions = { persist: false };
-    let eventsBound = false;
-    const inlineTargets = new Map();
-    const targetStates = new Map();
-    const messageTargets = [];
-    const cleanupCallbacks = [];
-
-    const version = config.version || '0.1.0';
-    const injectStatusHost = !isDisabled(config.injectFixedStatus)
-      && !isEnabled(config.disableStatusHost)
-      && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST)
-      && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
-
-    function removeExistingDom() {
-      try { DOC?.getElementById(HOST_ID)?.remove(); } catch (_) {}
-      try { DOC?.getElementById(OVERLAY_ID)?.remove(); } catch (_) {}
-      try { DOC?.getElementById(STYLE_ID)?.remove(); } catch (_) {}
-    }
-
-    function ensureHost() {
-      if (
-        !disposed
-        && host
-        && overlay
-        && frame
-        && DOC?.body?.contains(host)
-        && DOC?.body?.contains(overlay)
-      ) return host;
-
-      if (!DOC?.body) return null;
-      ensureStyle();
-      DOC.getElementById(HOST_ID)?.remove();
-      DOC.getElementById(OVERLAY_ID)?.remove();
-
-      host = DOC.createElement('div');
-      host.id = HOST_ID;
-
-      trigger = DOC.createElement('div');
-      trigger.id = TRIGGER_ID;
-      trigger.setAttribute('role', 'button');
-      trigger.tabIndex = 0;
-      trigger.title = 'Open MAMA Status';
-      trigger.setAttribute('aria-label', 'Open MAMA Status');
-      trigger.innerHTML = [
-        '<span class="mama-status-trigger-mark" aria-hidden="true">',
-        '<span class="mama-status-trigger-main">MAMA<span class="mama-status-trigger-sub">STATUS</span></span>',
-        '<span class="mama-status-trigger-mini">M</span>',
-        '</span>',
-        '<button class="mama-status-trigger-fold" type="button" title="收起悬浮球" aria-label="收起悬浮球">',
-        '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
-        '<path d="m15 18-6-6 6-6" />',
-        '</svg>',
-        '<svg class="mama-status-trigger-fold-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
-        '<path d="m9 18 6-6-6-6" />',
-        '</svg>',
-        '</button>'
-      ].join('');
-      trigger.addEventListener('click', openStatus);
-      trigger.addEventListener('keydown', (event) => {
-        if (event.key !== 'Enter' && event.key !== ' ') return;
-        event.preventDefault();
-        openStatus();
-      });
-      triggerFoldButton = trigger.querySelector('.mama-status-trigger-fold');
-      triggerFoldButton?.addEventListener('click', (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        setTriggerCollapsed(!trigger.classList.contains(TRIGGER_COLLAPSED_CLASS));
-      });
-
-      overlay = DOC.createElement('div');
-      overlay.id = OVERLAY_ID;
-      overlay.setAttribute('role', 'dialog');
-      overlay.setAttribute('aria-label', 'MAMA Status');
-      overlay.addEventListener('click', (event) => {
-        if (event.target === overlay) closeStatus();
-      });
-
-      wrapper = DOC.createElement('div');
-      wrapper.id = WRAPPER_ID;
-
-      frame = DOC.createElement('iframe');
-      frame.id = IFRAME_ID;
-      frame.title = 'MAMA Status';
-      frame.allow = 'fullscreen';
-      frame.referrerPolicy = 'no-referrer';
-      frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
-      frame.dataset.mamaSrc = resolveStatusUrl(version);
-      frame.addEventListener('load', () => {
-        ready = true;
-        postContainerReady();
-        TIMER_ROOT.setTimeout(() => refreshStatus(lastReason || 'iframeLoad'), 40);
-      });
-
-      const close = DOC.createElement('button');
-      close.id = CLOSE_ID;
-      close.type = 'button';
-      close.title = 'Close MAMA Status';
-      close.setAttribute('aria-label', 'Close MAMA Status');
-      close.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>';
-      close.addEventListener('click', closeStatus);
-
-      host.replaceChildren(trigger);
-      wrapper.replaceChildren(frame, close);
-      overlay.replaceChildren(wrapper);
-      DOC.body.append(host, overlay);
-      restoreTriggerCollapsed();
-      console.info('[MAMA Status Host] floating trigger injected into ST host:', {
-        url: frame.dataset.mamaSrc,
-        uiRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host'
-      });
-      return host;
-    }
-
-    function setTriggerCollapsed(collapsed) {
-      if (!trigger) return;
-      trigger.classList.toggle(TRIGGER_COLLAPSED_CLASS, Boolean(collapsed));
-      trigger.title = collapsed ? 'MAMA Status（点击打开，箭头展开）' : 'Open MAMA Status';
-      trigger.setAttribute('aria-label', collapsed ? 'Open MAMA Status, collapsed' : 'Open MAMA Status');
-      if (triggerFoldButton) {
-        triggerFoldButton.title = collapsed ? '展开悬浮球' : '收起悬浮球';
-        triggerFoldButton.setAttribute('aria-label', collapsed ? '展开悬浮球' : '收起悬浮球');
+    function waitForBody(callback) {
+      if (DOC?.body) {
+        callback();
+        return;
       }
-      try {
-        UI_ROOT.localStorage?.setItem(TRIGGER_COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
-      } catch (_) {}
+      TIMER_ROOT.setTimeout(() => waitForBody(callback), 100);
     }
-
-    function restoreTriggerCollapsed() {
-      let collapsed = false;
-      try {
-        collapsed = UI_ROOT.localStorage?.getItem(TRIGGER_COLLAPSED_STORAGE_KEY) === '1';
-      } catch (_) {}
-      setTriggerCollapsed(collapsed);
-    }
-
-    function initializeIframe() {
-      if (!frame) ensureHost();
-      if (!frame || iframeInitialized) return;
-      iframeInitialized = true;
-      frame.src = frame.dataset.mamaSrc || resolveStatusUrl(version);
-    }
-
-    function openStatus() {
-      ensureHost();
-      if (!overlay) return false;
-      overlay.style.display = 'flex';
-      initializeIframe();
-      TIMER_ROOT.setTimeout(() => refreshStatus('open'), 80);
-      return true;
-    }
-
-    function closeStatus() {
-      if (overlay) overlay.style.display = 'none';
-      return Boolean(overlay);
-    }
-
-    function isMessageTarget(value) {
-      return Boolean(value && typeof value.postMessage === 'function');
-    }
-
-    function normalizeMessageId(value) {
-      const id = Number(value);
-      return Number.isFinite(id) && id >= 0 ? Math.round(id) : null;
-    }
-
-    function makeMessageFloorKey(messageId) {
-      const id = normalizeMessageId(messageId);
-      return id === null ? '' : `message:${id}`;
-    }
-
-    function parseMessageIdFromFloorKey(floorKey) {
-      const match = String(floorKey || '').trim().match(/^message:(\d+)$/i);
-      return match ? normalizeMessageId(match[1]) : null;
-    }
-
-    function findIframeForSource(source) {
-      if (!source || !DOC?.querySelectorAll) return null;
-      const frames = Array.from(DOC.querySelectorAll('iframe'));
-      return frames.find((item) => {
+    RUNTIME.createStatusHost = function createStatusHost(stateService, config = {}) {
+      let frame = null;
+      let host = null;
+      let overlay = null;
+      let wrapper = null;
+      let ready = false;
+      let iframeInitialized = false;
+      let disposed = false;
+      let trigger = null;
+      let triggerFoldButton = null;
+      let lastState = null;
+      let lastReason = "";
+      let frameReadOptions = { persist: false };
+      let eventsBound = false;
+      const inlineTargets = /* @__PURE__ */ new Map();
+      const targetStates = /* @__PURE__ */ new Map();
+      const messageTargets = [];
+      const cleanupCallbacks = [];
+      const version = config.version || "0.1.0";
+      const injectStatusHost = !isDisabled(config.injectFixedStatus) && !isEnabled(config.disableStatusHost) && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST) && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
+      function removeExistingDom() {
         try {
-          return item.contentWindow === source;
+          DOC?.getElementById(HOST_ID)?.remove();
+        } catch (_) {
+        }
+        try {
+          DOC?.getElementById(OVERLAY_ID)?.remove();
+        } catch (_) {
+        }
+        try {
+          DOC?.getElementById(STYLE_ID)?.remove();
+        } catch (_) {
+        }
+      }
+      function ensureHost() {
+        if (!disposed && host && overlay && frame && DOC?.body?.contains(host) && DOC?.body?.contains(overlay)) return host;
+        if (!DOC?.body) return null;
+        ensureStyle();
+        DOC.getElementById(HOST_ID)?.remove();
+        DOC.getElementById(OVERLAY_ID)?.remove();
+        host = DOC.createElement("div");
+        host.id = HOST_ID;
+        trigger = DOC.createElement("div");
+        trigger.id = TRIGGER_ID;
+        trigger.setAttribute("role", "button");
+        trigger.tabIndex = 0;
+        trigger.title = "Open MAMA Status";
+        trigger.setAttribute("aria-label", "Open MAMA Status");
+        trigger.innerHTML = [
+          '<span class="mama-status-trigger-mark" aria-hidden="true">',
+          '<span class="mama-status-trigger-main">MAMA<span class="mama-status-trigger-sub">STATUS</span></span>',
+          '<span class="mama-status-trigger-mini">M</span>',
+          "</span>",
+          '<button class="mama-status-trigger-fold" type="button" title="收起悬浮球" aria-label="收起悬浮球">',
+          '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+          '<path d="m15 18-6-6 6-6" />',
+          "</svg>",
+          '<svg class="mama-status-trigger-fold-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+          '<path d="m9 18 6-6-6-6" />',
+          "</svg>",
+          "</button>"
+        ].join("");
+        trigger.addEventListener("click", openStatus);
+        trigger.addEventListener("keydown", (event) => {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          openStatus();
+        });
+        triggerFoldButton = trigger.querySelector(".mama-status-trigger-fold");
+        triggerFoldButton?.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          setTriggerCollapsed(!trigger.classList.contains(TRIGGER_COLLAPSED_CLASS));
+        });
+        overlay = DOC.createElement("div");
+        overlay.id = OVERLAY_ID;
+        overlay.setAttribute("role", "dialog");
+        overlay.setAttribute("aria-label", "MAMA Status");
+        overlay.addEventListener("click", (event) => {
+          if (event.target === overlay) closeStatus();
+        });
+        wrapper = DOC.createElement("div");
+        wrapper.id = WRAPPER_ID;
+        frame = DOC.createElement("iframe");
+        frame.id = IFRAME_ID;
+        frame.title = "MAMA Status";
+        frame.allow = "fullscreen";
+        frame.referrerPolicy = "no-referrer";
+        frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups allow-same-origin");
+        frame.dataset.mamaSrc = resolveStatusUrl(version);
+        frame.addEventListener("load", () => {
+          ready = true;
+          postContainerReady();
+          TIMER_ROOT.setTimeout(() => refreshStatus(lastReason || "iframeLoad"), 40);
+        });
+        const close = DOC.createElement("button");
+        close.id = CLOSE_ID;
+        close.type = "button";
+        close.title = "Close MAMA Status";
+        close.setAttribute("aria-label", "Close MAMA Status");
+        close.innerHTML = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>';
+        close.addEventListener("click", closeStatus);
+        host.replaceChildren(trigger);
+        wrapper.replaceChildren(frame, close);
+        overlay.replaceChildren(wrapper);
+        DOC.body.append(host, overlay);
+        restoreTriggerCollapsed();
+        console.info("[MAMA Status Host] floating trigger injected into ST host:", {
+          url: frame.dataset.mamaSrc,
+          uiRoot: UI_ROOT === CURRENT_ROOT ? "current" : "host"
+        });
+        return host;
+      }
+      function setTriggerCollapsed(collapsed) {
+        if (!trigger) return;
+        trigger.classList.toggle(TRIGGER_COLLAPSED_CLASS, Boolean(collapsed));
+        trigger.title = collapsed ? "MAMA Status（点击打开，箭头展开）" : "Open MAMA Status";
+        trigger.setAttribute("aria-label", collapsed ? "Open MAMA Status, collapsed" : "Open MAMA Status");
+        if (triggerFoldButton) {
+          triggerFoldButton.title = collapsed ? "展开悬浮球" : "收起悬浮球";
+          triggerFoldButton.setAttribute("aria-label", collapsed ? "展开悬浮球" : "收起悬浮球");
+        }
+        try {
+          UI_ROOT.localStorage?.setItem(TRIGGER_COLLAPSED_STORAGE_KEY, collapsed ? "1" : "0");
+        } catch (_) {
+        }
+      }
+      function restoreTriggerCollapsed() {
+        let collapsed = false;
+        try {
+          collapsed = UI_ROOT.localStorage?.getItem(TRIGGER_COLLAPSED_STORAGE_KEY) === "1";
+        } catch (_) {
+        }
+        setTriggerCollapsed(collapsed);
+      }
+      function initializeIframe() {
+        if (!frame) ensureHost();
+        if (!frame || iframeInitialized) return;
+        iframeInitialized = true;
+        frame.src = frame.dataset.mamaSrc || resolveStatusUrl(version);
+      }
+      function openStatus() {
+        ensureHost();
+        if (!overlay) return false;
+        overlay.style.display = "flex";
+        initializeIframe();
+        TIMER_ROOT.setTimeout(() => refreshStatus("open"), 80);
+        return true;
+      }
+      function closeStatus() {
+        if (overlay) overlay.style.display = "none";
+        return Boolean(overlay);
+      }
+      function isMessageTarget(value) {
+        return Boolean(value && typeof value.postMessage === "function");
+      }
+      function normalizeMessageId(value) {
+        const id = Number(value);
+        return Number.isFinite(id) && id >= 0 ? Math.round(id) : null;
+      }
+      function makeMessageFloorKey(messageId) {
+        const id = normalizeMessageId(messageId);
+        return id === null ? "" : `message:${id}`;
+      }
+      function parseMessageIdFromFloorKey(floorKey) {
+        const match = String(floorKey || "").trim().match(/^message:(\d+)$/i);
+        return match ? normalizeMessageId(match[1]) : null;
+      }
+      function findIframeForSource(source) {
+        if (!source || !DOC?.querySelectorAll) return null;
+        const frames = Array.from(DOC.querySelectorAll("iframe"));
+        return frames.find((item) => {
+          try {
+            return item.contentWindow === source;
+          } catch (_) {
+            return false;
+          }
+        }) || null;
+      }
+      function readMessageIdFromElement(element) {
+        if (!element) return null;
+        const messageElement = typeof element.closest === "function" ? element.closest("[mesid], [data-message-id], [data-message_id], [message_id], .mes") : null;
+        if (!messageElement) return null;
+        const attrNames = ["mesid", "data-message-id", "data-message_id", "message_id", "data-index"];
+        for (const attrName of attrNames) {
+          const id = normalizeMessageId(messageElement.getAttribute?.(attrName));
+          if (id !== null) return id;
+        }
+        const domId = typeof messageElement.id === "string" ? messageElement.id : "";
+        const domMatch = domId.match(/(?:^|[^0-9])(\d+)$/);
+        if (domMatch) {
+          const id = normalizeMessageId(domMatch[1]);
+          if (id !== null) return id;
+        }
+        try {
+          const messages = Array.from(DOC.querySelectorAll("#chat .mes, .mes"));
+          const index = messages.indexOf(messageElement);
+          return index >= 0 ? index : null;
+        } catch (_) {
+          return null;
+        }
+      }
+      function resolveMessageIdFromSource(source) {
+        const iframe = findIframeForSource(source);
+        return readMessageIdFromElement(iframe);
+      }
+      function resolveReadOptions(source, data = {}) {
+        const explicitId = normalizeMessageId(data.messageId ?? data.message_id);
+        const explicitFloorId = parseMessageIdFromFloorKey(data.floorKey);
+        const domId = resolveMessageIdFromSource(source);
+        const messageId = explicitId ?? explicitFloorId ?? domId;
+        if (messageId === null) return { persist: false };
+        return {
+          persist: false,
+          messageId,
+          message_id: messageId,
+          floorKey: makeMessageFloorKey(messageId)
+        };
+      }
+      function resolveCurrentReadOptions() {
+        try {
+          if (typeof stateService.resolveReplayMessageId === "function") {
+            const messageId = normalizeMessageId(stateService.resolveReplayMessageId({}));
+            if (messageId !== null) {
+              return {
+                persist: false,
+                messageId,
+                message_id: messageId,
+                floorKey: makeMessageFloorKey(messageId)
+              };
+            }
+          }
+        } catch (_) {
+        }
+        return { persist: false };
+      }
+      function registerInlineTarget(source, readOptions = {}) {
+        if (!isMessageTarget(source)) return null;
+        inlineTargets.set(source, readOptions);
+        return source;
+      }
+      function postContainerReadyTo(target) {
+        if (!isMessageTarget(target)) return false;
+        try {
+          target.postMessage({
+            type: "mama:container-ready",
+            appId: "visual-dashboard",
+            app: {
+              id: "visual-dashboard",
+              name: "SillyTavern MAMA Status",
+              type: "status",
+              status: "active"
+            }
+          }, "*");
+          return true;
         } catch (_) {
           return false;
         }
-      }) || null;
-    }
-
-    function readMessageIdFromElement(element) {
-      if (!element) return null;
-      const messageElement = typeof element.closest === 'function'
-        ? element.closest('[mesid], [data-message-id], [data-message_id], [message_id], .mes')
-        : null;
-      if (!messageElement) return null;
-
-      const attrNames = ['mesid', 'data-message-id', 'data-message_id', 'message_id', 'data-index'];
-      for (const attrName of attrNames) {
-        const id = normalizeMessageId(messageElement.getAttribute?.(attrName));
-        if (id !== null) return id;
       }
-
-      const domId = typeof messageElement.id === 'string' ? messageElement.id : '';
-      const domMatch = domId.match(/(?:^|[^0-9])(\d+)$/);
-      if (domMatch) {
-        const id = normalizeMessageId(domMatch[1]);
-        if (id !== null) return id;
+      function postContainerReady(target = frame?.contentWindow) {
+        return postContainerReadyTo(target);
       }
-
-      try {
-        const messages = Array.from(DOC.querySelectorAll('#chat .mes, .mes'));
-        const index = messages.indexOf(messageElement);
-        return index >= 0 ? index : null;
-      } catch (_) {
-        return null;
+      function readOptionsForTarget(target) {
+        if (target === frame?.contentWindow) return frameReadOptions;
+        return inlineTargets.get(target) || { persist: false };
       }
-    }
-
-    function resolveMessageIdFromSource(source) {
-      const iframe = findIframeForSource(source);
-      return readMessageIdFromElement(iframe);
-    }
-
-    function resolveReadOptions(source, data = {}) {
-      const explicitId = normalizeMessageId(data.messageId ?? data.message_id);
-      const explicitFloorId = parseMessageIdFromFloorKey(data.floorKey);
-      const domId = resolveMessageIdFromSource(source);
-      const messageId = explicitId ?? explicitFloorId ?? domId;
-      if (messageId === null) return { persist: false };
-      return {
-        persist: false,
-        messageId,
-        message_id: messageId,
-        floorKey: makeMessageFloorKey(messageId)
-      };
-    }
-
-    function resolveCurrentReadOptions() {
-      try {
-        if (typeof stateService.resolveReplayMessageId === 'function') {
-          const messageId = normalizeMessageId(stateService.resolveReplayMessageId({}));
-          if (messageId !== null) {
-            return {
-              persist: false,
-              messageId,
-              message_id: messageId,
-              floorKey: makeMessageFloorKey(messageId)
-            };
-          }
+      function postStateTo(target, reason, state) {
+        const nextState = state || lastState;
+        if (!isMessageTarget(target) || !nextState) return false;
+        try {
+          target.postMessage({
+            type: "MAMA_STATE_PUSH",
+            reason: reason || "refresh",
+            floorKey: readOptionsForTarget(target).floorKey || "",
+            state: nextState
+          }, "*");
+          return true;
+        } catch (_) {
+          inlineTargets.delete(target);
+          targetStates.delete(target);
+          return false;
         }
-      } catch (_) {}
-      return { persist: false };
-    }
-
-    function registerInlineTarget(source, readOptions = {}) {
-      if (!isMessageTarget(source)) return null;
-      inlineTargets.set(source, readOptions);
-      return source;
-    }
-
-    function postContainerReadyTo(target) {
-      if (!isMessageTarget(target)) return false;
-      try {
-        target.postMessage({
-          type: 'mama:container-ready',
-          appId: 'visual-dashboard',
-          app: {
-            id: 'visual-dashboard',
-            name: 'SillyTavern MAMA Status',
-            type: 'status',
-            status: 'active'
-          }
-        }, '*');
-        return true;
-      } catch (_) {
-        return false;
       }
-    }
-
-    function postContainerReady(target = frame?.contentWindow) {
-      return postContainerReadyTo(target);
-    }
-
-    function readOptionsForTarget(target) {
-      if (target === frame?.contentWindow) return frameReadOptions;
-      return inlineTargets.get(target) || { persist: false };
-    }
-
-    function postStateTo(target, reason, state) {
-      const nextState = state || lastState;
-      if (!isMessageTarget(target) || !nextState) return false;
-      try {
-        target.postMessage({
-          type: 'MAMA_STATE_PUSH',
-          reason: reason || 'refresh',
-          floorKey: readOptionsForTarget(target).floorKey || '',
-          state: nextState
-        }, '*');
-        return true;
-      } catch (_) {
-        inlineTargets.delete(target);
-        targetStates.delete(target);
-        return false;
+      function postState(reason, state) {
+        const nextState = state || lastState;
+        if (!nextState) return false;
+        let sent = false;
+        if (frame?.contentWindow && ready) {
+          postContainerReady(frame.contentWindow);
+          sent = postStateTo(frame.contentWindow, reason, nextState) || sent;
+        }
+        inlineTargets.forEach((_, target) => {
+          postContainerReadyTo(target);
+          const cachedState = targetStates.get(target);
+          if (cachedState) sent = postStateTo(target, reason, cachedState) || sent;
+        });
+        return sent;
       }
-    }
-
-    function postState(reason, state) {
-      const nextState = state || lastState;
-      if (!nextState) return false;
-      let sent = false;
-
-      if (frame?.contentWindow && ready) {
-        postContainerReady(frame.contentWindow);
-        sent = postStateTo(frame.contentWindow, reason, nextState) || sent;
-      }
-
-      inlineTargets.forEach((_, target) => {
+      function postDirectState(target, reason, state) {
         postContainerReadyTo(target);
-        const cachedState = targetStates.get(target);
-        if (cachedState) sent = postStateTo(target, reason, cachedState) || sent;
-      });
-
-      return sent;
-    }
-
-    function postDirectState(target, reason, state) {
-      postContainerReadyTo(target);
-      return postStateTo(target, reason, state);
-    }
-
-    async function refreshTarget(target, reason = 'statusRequest', readOptions = readOptionsForTarget(target)) {
-      if (!isMessageTarget(target)) return false;
-      let state;
-      try {
-        state = await stateService.loadState(readOptions || { persist: false });
-      } catch (error) {
-        console.warn('[MAMA Status Host] loadState failed:', error);
-        return false;
+        return postStateTo(target, reason, state);
       }
-      lastState = state;
-      lastReason = reason;
-      targetStates.set(target, state);
-      return postDirectState(target, reason, state);
-    }
-
-    async function refreshStatus(reason = 'refresh') {
-      if (disposed) return false;
-      if (injectStatusHost) waitForBody(() => ensureHost());
-      let sent = false;
-
-      if (frame?.contentWindow && ready) {
+      async function refreshTarget(target, reason = "statusRequest", readOptions = readOptionsForTarget(target)) {
+        if (!isMessageTarget(target)) return false;
+        let state;
         try {
-          frameReadOptions = resolveCurrentReadOptions();
-          const state = await stateService.loadState(frameReadOptions);
-          lastState = state;
-          lastReason = reason;
-          sent = postState(reason, state) || sent;
+          state = await stateService.loadState(readOptions || { persist: false });
         } catch (error) {
-          console.warn('[MAMA Status Host] loadState failed:', error);
+          console.warn("[MAMA Status Host] loadState failed:", error);
+          return false;
         }
+        lastState = state;
+        lastReason = reason;
+        targetStates.set(target, state);
+        return postDirectState(target, reason, state);
       }
-
-      const results = await Promise.all(Array.from(inlineTargets.entries()).map(([target, readOptions]) => {
-        return refreshTarget(target, reason, readOptions);
-      }));
-      return results.some(Boolean) || sent;
-    }
-
-    function handleMessage(event) {
-      const data = event?.data;
-      if (!data || typeof data !== 'object') return;
-      const isReady = data.type === 'MAMA_STATUS_READY' || data.type === 'mama:app-ready';
-      const isRequest = data.type === 'MAMA_STATUS_REQUEST';
-      if (!isReady && !isRequest) return;
-      const appId = typeof data.appId === 'string' ? data.appId : data.app?.id;
-      if (appId && appId !== 'visual-dashboard' && appId !== 'expression-portrait') return;
-
-      if (event.source === frame?.contentWindow) {
-        ready = true;
-        postContainerReady();
-        void refreshStatus(data.reason || (isRequest ? 'statusRequest' : 'appReady'));
-        return;
-      }
-
-      const readOptions = resolveReadOptions(event.source, data);
-      const target = registerInlineTarget(event.source, readOptions);
-      if (!target) return;
-
-      if (targetStates.has(target)) postDirectState(target, isRequest ? 'statusRequest' : 'appReady', targetStates.get(target));
-      void refreshTarget(target, data.reason || (isRequest ? 'statusRequest' : 'appReady'), readOptions);
-    }
-
-    function bindWindowMessageTargets() {
-      getBridgeTargets().forEach((target) => {
-        if (!target || messageTargets.includes(target)) return;
-        try {
-          target.removeEventListener?.('message', handleMessage);
-          target.addEventListener?.('message', handleMessage);
-          messageTargets.push(target);
-        } catch (_) {}
-      });
-    }
-
-    function bindMamaEvent(target, eventName, handler) {
-      try {
-        target?.removeEventListener?.(eventName, handler);
-        target?.addEventListener?.(eventName, handler);
-        cleanupCallbacks.push(() => target.removeEventListener?.(eventName, handler));
-      } catch (_) {}
-    }
-
-    function bindSillyTavernEvent(target, eventName, reason, delayMs = 0) {
-      if (typeof target?.eventOn !== 'function') return;
-      try {
-        const stop = target.eventOn(eventName, () => {
-          if (delayMs > 0) {
-            TIMER_ROOT.setTimeout(() => refreshStatus(reason), delayMs);
-            return;
+      async function refreshStatus(reason = "refresh") {
+        if (disposed) return false;
+        if (injectStatusHost) waitForBody(() => ensureHost());
+        let sent = false;
+        if (frame?.contentWindow && ready) {
+          try {
+            frameReadOptions = resolveCurrentReadOptions();
+            const state = await stateService.loadState(frameReadOptions);
+            lastState = state;
+            lastReason = reason;
+            sent = postState(reason, state) || sent;
+          } catch (error) {
+            console.warn("[MAMA Status Host] loadState failed:", error);
           }
-          void refreshStatus(reason);
-        });
-        if (typeof stop === 'function') cleanupCallbacks.push(stop);
-      } catch (_) {}
-    }
-
-    function bindEvents() {
-      if (eventsBound) return;
-      eventsBound = true;
-      bindWindowMessageTargets();
-
-      const keydownHandler = (event) => {
-        if (event?.key === 'Escape' && overlay?.style?.display !== 'none') closeStatus();
-      };
-      try {
-        DOC?.removeEventListener?.('keydown', keydownHandler);
-        DOC?.addEventListener?.('keydown', keydownHandler);
-        cleanupCallbacks.push(() => DOC?.removeEventListener?.('keydown', keydownHandler));
-      } catch (_) {}
-
-      const stateChangedHandler = () => refreshStatus('stateChanged');
-      const mvuzWrittenHandler = () => refreshStatus('mvuzWritten');
-      getBridgeTargets().forEach((target) => {
-        bindMamaEvent(target, 'mama:stateChanged', stateChangedHandler);
-        bindMamaEvent(target, 'mama:mvuz-written', mvuzWrittenHandler);
-      });
-
-      getBridgeTargets().forEach((target) => {
-        bindSillyTavernEvent(target, 'message_received', 'messageReceived', 1200);
-        bindSillyTavernEvent(target, 'character_message_rendered', 'messageRendered', 250);
-        bindSillyTavernEvent(target, 'message_updated', 'messageUpdated', 400);
-        bindSillyTavernEvent(target, 'generation_ended', 'generationEnded', 300);
-        bindSillyTavernEvent(target, 'CHAT_CHANGED', 'chatChanged', 250);
-        bindSillyTavernEvent(target, 'chat_changed', 'chatChanged', 250);
-      });
-    }
-
-    function unload() {
-      disposed = true;
-      ready = false;
-      iframeInitialized = false;
-      cleanupCallbacks.splice(0).forEach((cleanup) => {
-        try { cleanup(); } catch (_) {}
-      });
-      messageTargets.splice(0).forEach((target) => {
-        try { target.removeEventListener?.('message', handleMessage); } catch (_) {}
-      });
-      inlineTargets.clear();
-      targetStates.clear();
-      removeExistingDom();
-      host = null;
-      overlay = null;
-      wrapper = null;
-      frame = null;
-      trigger = null;
-      triggerFoldButton = null;
-      try {
-        if (UI_ROOT[UNLOAD_KEY] === unload) delete UI_ROOT[UNLOAD_KEY];
-      } catch (_) {}
-    }
-
-    function start() {
-      try {
-        if (typeof UI_ROOT[UNLOAD_KEY] === 'function' && UI_ROOT[UNLOAD_KEY] !== unload) {
-          UI_ROOT[UNLOAD_KEY]();
         }
-      } catch (_) {}
-      disposed = false;
-      UI_ROOT[UNLOAD_KEY] = unload;
-      bindEvents();
-      if (injectStatusHost) {
-        waitForBody(() => {
-          ensureHost();
-          void refreshStatus('start');
+        const results = await Promise.all(Array.from(inlineTargets.entries()).map(([target, readOptions]) => {
+          return refreshTarget(target, reason, readOptions);
+        }));
+        return results.some(Boolean) || sent;
+      }
+      function handleMessage(event) {
+        const data = event?.data;
+        if (!data || typeof data !== "object") return;
+        const isReady = data.type === "MAMA_STATUS_READY" || data.type === "mama:app-ready";
+        const isRequest = data.type === "MAMA_STATUS_REQUEST";
+        if (!isReady && !isRequest) return;
+        const appId = typeof data.appId === "string" ? data.appId : data.app?.id;
+        if (appId && appId !== "visual-dashboard" && appId !== "expression-portrait") return;
+        if (event.source === frame?.contentWindow) {
+          ready = true;
+          postContainerReady();
+          void refreshStatus(data.reason || (isRequest ? "statusRequest" : "appReady"));
+          return;
+        }
+        const readOptions = resolveReadOptions(event.source, data);
+        const target = registerInlineTarget(event.source, readOptions);
+        if (!target) return;
+        if (targetStates.has(target)) postDirectState(target, isRequest ? "statusRequest" : "appReady", targetStates.get(target));
+        void refreshTarget(target, data.reason || (isRequest ? "statusRequest" : "appReady"), readOptions);
+      }
+      function bindWindowMessageTargets() {
+        getBridgeTargets().forEach((target) => {
+          if (!target || messageTargets.includes(target)) return;
+          try {
+            target.removeEventListener?.("message", handleMessage);
+            target.addEventListener?.("message", handleMessage);
+            messageTargets.push(target);
+          } catch (_) {
+          }
         });
       }
-      try {
-        UI_ROOT.removeEventListener?.('pagehide', unload);
-        UI_ROOT.addEventListener?.('pagehide', unload);
-        cleanupCallbacks.push(() => UI_ROOT.removeEventListener?.('pagehide', unload));
-      } catch (_) {}
-    }
-
-    function debug() {
+      function bindMamaEvent(target, eventName, handler) {
+        try {
+          target?.removeEventListener?.(eventName, handler);
+          target?.addEventListener?.(eventName, handler);
+          cleanupCallbacks.push(() => target.removeEventListener?.(eventName, handler));
+        } catch (_) {
+        }
+      }
+      function bindSillyTavernEvent(target, eventName, reason, delayMs = 0) {
+        if (typeof target?.eventOn !== "function") return;
+        try {
+          const stop = target.eventOn(eventName, () => {
+            if (delayMs > 0) {
+              TIMER_ROOT.setTimeout(() => refreshStatus(reason), delayMs);
+              return;
+            }
+            void refreshStatus(reason);
+          });
+          if (typeof stop === "function") cleanupCallbacks.push(stop);
+        } catch (_) {
+        }
+      }
+      function bindEvents() {
+        if (eventsBound) return;
+        eventsBound = true;
+        bindWindowMessageTargets();
+        const keydownHandler = (event) => {
+          if (event?.key === "Escape" && overlay?.style?.display !== "none") closeStatus();
+        };
+        try {
+          DOC?.removeEventListener?.("keydown", keydownHandler);
+          DOC?.addEventListener?.("keydown", keydownHandler);
+          cleanupCallbacks.push(() => DOC?.removeEventListener?.("keydown", keydownHandler));
+        } catch (_) {
+        }
+        const stateChangedHandler = () => refreshStatus("stateChanged");
+        const mvuzWrittenHandler = () => refreshStatus("mvuzWritten");
+        getBridgeTargets().forEach((target) => {
+          bindMamaEvent(target, "mama:stateChanged", stateChangedHandler);
+          bindMamaEvent(target, "mama:mvuz-written", mvuzWrittenHandler);
+        });
+        getBridgeTargets().forEach((target) => {
+          bindSillyTavernEvent(target, "message_received", "messageReceived", 1200);
+          bindSillyTavernEvent(target, "character_message_rendered", "messageRendered", 250);
+          bindSillyTavernEvent(target, "message_updated", "messageUpdated", 400);
+          bindSillyTavernEvent(target, "generation_ended", "generationEnded", 300);
+          bindSillyTavernEvent(target, "CHAT_CHANGED", "chatChanged", 250);
+          bindSillyTavernEvent(target, "chat_changed", "chatChanged", 250);
+        });
+      }
+      function unload() {
+        disposed = true;
+        ready = false;
+        iframeInitialized = false;
+        cleanupCallbacks.splice(0).forEach((cleanup) => {
+          try {
+            cleanup();
+          } catch (_) {
+          }
+        });
+        messageTargets.splice(0).forEach((target) => {
+          try {
+            target.removeEventListener?.("message", handleMessage);
+          } catch (_) {
+          }
+        });
+        inlineTargets.clear();
+        targetStates.clear();
+        removeExistingDom();
+        host = null;
+        overlay = null;
+        wrapper = null;
+        frame = null;
+        trigger = null;
+        triggerFoldButton = null;
+        try {
+          if (UI_ROOT[UNLOAD_KEY] === unload) delete UI_ROOT[UNLOAD_KEY];
+        } catch (_) {
+        }
+      }
+      function start() {
+        try {
+          if (typeof UI_ROOT[UNLOAD_KEY] === "function" && UI_ROOT[UNLOAD_KEY] !== unload) {
+            UI_ROOT[UNLOAD_KEY]();
+          }
+        } catch (_) {
+        }
+        disposed = false;
+        UI_ROOT[UNLOAD_KEY] = unload;
+        bindEvents();
+        if (injectStatusHost) {
+          waitForBody(() => {
+            ensureHost();
+            void refreshStatus("start");
+          });
+        }
+        try {
+          UI_ROOT.removeEventListener?.("pagehide", unload);
+          UI_ROOT.addEventListener?.("pagehide", unload);
+          cleanupCallbacks.push(() => UI_ROOT.removeEventListener?.("pagehide", unload));
+        } catch (_) {
+        }
+      }
+      function debug() {
+        return {
+          disposed,
+          ready,
+          iframeInitialized,
+          injected: Boolean(DOC?.getElementById(TRIGGER_ID)),
+          open: overlay?.style?.display || "",
+          statusUrl: frame?.dataset?.mamaSrc || "",
+          collapsed: Boolean(trigger?.classList?.contains(TRIGGER_COLLAPSED_CLASS)),
+          hostRoot: UI_ROOT === CURRENT_ROOT ? "current" : "host",
+          apiRoot: ROOT === CURRENT_ROOT ? "current" : "host"
+        };
+      }
       return {
-        disposed,
-        ready,
-        iframeInitialized,
-        injected: Boolean(DOC?.getElementById(TRIGGER_ID)),
-        open: overlay?.style?.display || '',
-        statusUrl: frame?.dataset?.mamaSrc || '',
-        collapsed: Boolean(trigger?.classList?.contains(TRIGGER_COLLAPSED_CLASS)),
-        hostRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host',
-        apiRoot: ROOT === CURRENT_ROOT ? 'current' : 'host'
+        start,
+        unload,
+        refreshStatus,
+        ensureHost,
+        openStatus,
+        closeStatus,
+        debug
       };
-    }
-
-    return {
-      start,
-      unload,
-      refreshStatus,
-      ensureHost,
-      openStatus,
-      closeStatus,
-      debug
     };
-  };
+  })();
 })();

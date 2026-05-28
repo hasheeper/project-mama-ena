@@ -5,10 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1",
-    "build:regex": "node scripts/build-mama-exp-regex.mjs",
-    "build": "npm run build:regex && vite build && node scripts/copy-static.mjs",
+    "build:tools": "rm -rf .generated/tools && tsc -p tsconfig.tools.json",
+    "build:st-bridge": "npm run build:tools && node .generated/tools/scripts/build-st-bridge.js",
+    "build:regex": "npm run build:tools && node .generated/tools/scripts/build-mama-exp-regex.js",
+    "copy-static": "npm run build:tools && node .generated/tools/scripts/copy-static.js",
+    "build": "npm run build:tools && node .generated/tools/scripts/build-st-bridge.js && node .generated/tools/scripts/build-mama-exp-regex.js && vite build && node .generated/tools/scripts/copy-static.js",
     "preview": "vite preview --host 127.0.0.1",
-    "check": "tsc --noEmit"
+    "check": "tsc --noEmit && tsc -p tsconfig.st-bridge.json && tsc -p tsconfig.tools.json --noEmit"
   },
   "devDependencies": {
     "@types/node": "^20.12.12",
