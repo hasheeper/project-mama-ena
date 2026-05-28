@@ -30,24 +30,21 @@ body {
   color: var(--text-main);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: stretch;
   min-height: 100vh;
-  overflow: auto;
-  padding: 32px 0;
+  overflow: hidden;
 }
 
 .visual-dashboard {
-  width: 470px;
+  width: 100%;
+  min-height: 100vh;
   background-color: #fcfaf7;
   background-image:
     radial-gradient(rgba(196, 187, 176, 0.14) 1px, transparent 1px),
     linear-gradient(180deg, rgba(255, 255, 253, 0.98), rgba(252, 250, 247, 0.98));
   background-size: 18px 18px, auto;
-  border-radius: 28px;
+  border-radius: 0;
   box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.1),
-    0 5px 0 rgba(210, 201, 190, 0.74),
-    0 8px 0 rgba(236, 229, 220, 0.9),
     inset 0 0 0 2px #ffffff;
   padding: 30px;
   display: flex;
@@ -346,29 +343,4 @@ body {
   line-height: 1.6;
   letter-spacing: 0.5px;
   margin: 4px 16px 0 0;
-}
-
-@media (max-width: 640px) {
-  body {
-    padding: 20px 12px;
-  }
-
-  .visual-dashboard {
-    width: min(470px, 100%);
-    padding: 22px 18px;
-    border-radius: 22px;
-  }
-
-  .status-showcase {
-    height: 440px;
-  }
-
-  .bottom-tag-note {
-    width: min(220px, calc(100% - 24px));
-    padding: 16px 18px;
-  }
-
-  .state-strip {
-    grid-template-columns: 1fr;
-  }
 }

@@ -69,15 +69,6 @@
         pointer-events: auto;
         border-radius: 28px;
       }
-      @media (max-width: 720px) {
-        #${HOST_ID} {
-          right: 10px;
-          left: 10px;
-          bottom: 10px;
-          width: auto;
-          height: min(860px, calc(100vh - 20px));
-        }
-      }
     `;
     document.head?.append(style);
   }

@@ -14,7 +14,6 @@
       height: 100%;
       overflow: hidden;
       background: transparent;
-      border-radius: 16px;
     }
 
     #app-frame {
@@ -24,7 +23,6 @@
       border: 0;
       display: block;
       background: transparent;
-      border-radius: 16px;
     }
   </style>
 </head>
@@ -49,14 +47,14 @@
       function resizeAndStyleHostFrame() {
         if (!hostFrame) return;
         hostFrame.style.width = '100%';
-        hostFrame.style.maxWidth = '500px';
+        hostFrame.style.maxWidth = 'none';
         hostFrame.style.height = '920px';
         hostFrame.style.minHeight = '920px';
-        hostFrame.style.border = '1px solid rgba(128, 128, 128, 0.2)';
-        hostFrame.style.borderRadius = '16px';
+        hostFrame.style.border = '0';
+        hostFrame.style.borderRadius = '0';
         hostFrame.style.overflow = 'hidden';
-        hostFrame.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.15)';
-        hostFrame.style.margin = '10px auto';
+        hostFrame.style.boxShadow = 'none';
+        hostFrame.style.margin = '0';
         hostFrame.style.display = 'block';
         hostFrame.style.background = 'transparent';
       }
