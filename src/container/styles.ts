@@ -3,7 +3,7 @@ export const hostStyles = `
     color-scheme: dark;
     display: block;
     min-height: 100vh;
-    background: #101014;
+    background: transparent;
     color: #f4efe9;
     font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   }

@@ -1,5 +1,5 @@
 /**
- * MAMA fixed SillyTavern status iframe host.
+ * MAMA SillyTavern status iframe host.
  */
 (function () {
   'use strict';
@@ -13,6 +13,10 @@
   const STYLE_ID = 'mama-status-host-style';
   const DEFAULT_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
   const DEFAULT_STATUS_PATH = 'apps/visual-dashboard/index.html';
+
+  function isEnabled(value) {
+    return value === true || value === 'true' || value === '1' || value === 1;
+  }
 
   function trimTrailingSlash(value) {
     return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
@@ -92,8 +96,13 @@
     let ready = false;
     let lastState = null;
     let lastReason = '';
+    let eventsBound = false;
+    const inlineTargets = new Set();
 
     const version = config.version || '0.1.0';
+    const injectFixedStatus = isEnabled(config.injectFixedStatus)
+      || isEnabled(ROOT.MAMA_ENABLE_FIXED_STATUS)
+      || isEnabled(ROOT.MAMA_INJECT_FIXED_STATUS);
 
     function ensureHost() {
       if (host && frame && document.body?.contains(host)) return host;
@@ -120,34 +129,94 @@
       return host;
     }
 
-    function postContainerReady() {
-      if (!frame?.contentWindow) return;
-      frame.contentWindow.postMessage({
-        type: 'mama:container-ready',
-        appId: 'visual-dashboard',
-        app: {
-          id: 'visual-dashboard',
-          name: 'SillyTavern MAMA Status',
-          type: 'status',
-          status: 'active'
-        }
-      }, '*');
+    function isMessageTarget(value) {
+      return Boolean(value && typeof value.postMessage === 'function');
+    }
+
+    function registerInlineTarget(source) {
+      if (!isMessageTarget(source)) return null;
+      inlineTargets.add(source);
+      return source;
+    }
+
+    function postContainerReadyTo(target) {
+      if (!isMessageTarget(target)) return false;
+      try {
+        target.postMessage({
+          type: 'mama:container-ready',
+          appId: 'visual-dashboard',
+          app: {
+            id: 'visual-dashboard',
+            name: 'SillyTavern MAMA Status',
+            type: 'status',
+            status: 'active'
+          }
+        }, '*');
+        return true;
+      } catch (_) {
+        return false;
+      }
+    }
+
+    function postContainerReady(target = frame?.contentWindow) {
+      return postContainerReadyTo(target);
+    }
+
+    function postStateTo(target, reason, state) {
+      const nextState = state || lastState;
+      if (!isMessageTarget(target) || !nextState) return false;
+      try {
+        target.postMessage({
+          type: 'MAMA_STATE_PUSH',
+          reason: reason || 'refresh',
+          state: nextState
+        }, '*');
+        return true;
+      } catch (_) {
+        inlineTargets.delete(target);
+        return false;
+      }
     }
 
     function postState(reason, state) {
-      if (!frame?.contentWindow || !ready) return false;
       const nextState = state || lastState;
       if (!nextState) return false;
-      frame.contentWindow.postMessage({
-        type: 'MAMA_STATE_PUSH',
-        reason: reason || 'refresh',
-        state: nextState
-      }, '*');
-      return true;
+      let sent = false;
+
+      if (frame?.contentWindow && ready) {
+        postContainerReady(frame.contentWindow);
+        sent = postStateTo(frame.contentWindow, reason, nextState) || sent;
+      }
+
+      inlineTargets.forEach((target) => {
+        postContainerReadyTo(target);
+        sent = postStateTo(target, reason, nextState) || sent;
+      });
+
+      return sent;
+    }
+
+    function postDirectState(target, reason, state) {
+      postContainerReadyTo(target);
+      return postStateTo(target, reason, state);
+    }
+
+    async function refreshTarget(target, reason = 'statusRequest') {
+      if (!isMessageTarget(target)) return false;
+      let state;
+      try {
+        state = await stateService.loadState({ persist: false });
+      } catch (error) {
+        console.warn('[MAMA Status Host] loadState failed:', error);
+        return false;
+      }
+      lastState = state;
+      lastReason = reason;
+      return postDirectState(target, reason, state);
     }
 
     async function refreshStatus(reason = 'refresh') {
-      waitForBody(() => ensureHost());
+      if (injectFixedStatus) waitForBody(() => ensureHost());
       let state;
       try {
         state = await stateService.loadState({ persist: false });
@@ -163,13 +232,23 @@
     function handleMessage(event) {
       const data = event?.data;
       if (!data || typeof data !== 'object') return;
-      if (data.type !== 'MAMA_STATUS_READY' && data.type !== 'mama:app-ready') return;
-      ready = true;
-      postContainerReady();
-      postState('appReady', lastState);
+      const isReady = data.type === 'MAMA_STATUS_READY' || data.type === 'mama:app-ready';
+      const isRequest = data.type === 'MAMA_STATUS_REQUEST';
+      if (!isReady && !isRequest) return;
+      const appId = typeof data.appId === 'string' ? data.appId : data.app?.id;
+      if (appId && appId !== 'visual-dashboard') return;
+
+      if (event.source === frame?.contentWindow) ready = true;
+      const target = registerInlineTarget(event.source);
+      if (!target) return;
+
+      if (lastState) postDirectState(target, isRequest ? 'statusRequest' : 'appReady', lastState);
+      void refreshTarget(target, data.reason || (isRequest ? 'statusRequest' : 'appReady'));
     }
 
     function bindEvents() {
+      if (eventsBound) return;
+      eventsBound = true;
       ROOT.addEventListener?.('message', handleMessage);
       ROOT.addEventListener?.('mama:stateChanged', () => refreshStatus('stateChanged'));
       ROOT.addEventListener?.('mama:mvuz-written', () => refreshStatus('mvuzWritten'));
@@ -192,11 +271,13 @@
     }
 
     function start() {
-      waitForBody(() => {
-        ensureHost();
-        refreshStatus('start');
-      });
       bindEvents();
+      if (injectFixedStatus) {
+        waitForBody(() => {
+          ensureHost();
+          refreshStatus('start');
+        });
+      }
     }
 
     return {

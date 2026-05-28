@@ -19,10 +19,13 @@
   user-select: none;
 }
 
+html,
 body {
-  background-color: var(--bg-outer);
-  background-image:
-    repeating-linear-gradient(-45deg, transparent, transparent 15px, rgba(0, 0, 0, 0.015) 15px, rgba(0, 0, 0, 0.015) 30px);
+  background: transparent;
+}
+
+body {
+  background: transparent;
   font-family: "Nunito", "Noto Sans SC", sans-serif;
   color: var(--text-main);
   display: flex;

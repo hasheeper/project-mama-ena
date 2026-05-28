@@ -1,0 +1,6 @@
+mama:
+  affection: 0
+  outfit: school_uniform
+  expression: exp_default
+  mascotComment: ""
+  enaDialogue: ""
