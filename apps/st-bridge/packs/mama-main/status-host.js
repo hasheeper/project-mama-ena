@@ -37,6 +37,8 @@
   const CLOSE_ID = 'mama-status-close';
   const STYLE_ID = 'mama-status-host-style';
   const UNLOAD_KEY = '__MAMA_STATUS_HOST_UNLOAD__';
+  const TRIGGER_COLLAPSED_CLASS = 'mama-status-trigger-collapsed';
+  const TRIGGER_COLLAPSED_STORAGE_KEY = 'mama.status.triggerCollapsed';
   const DEFAULT_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
   const DEFAULT_STATUS_PATH = 'apps/visual-dashboard/index.html';
 
@@ -112,58 +114,172 @@
       }
 
       #${HOST_ID} {
-        position: fixed !important;
-        top: 80px !important;
-        right: 22px !important;
+        position: static !important;
         z-index: 2147483645 !important;
-        pointer-events: auto !important;
+        pointer-events: none !important;
       }
 
       #${TRIGGER_ID} {
-        width: 68px;
-        height: 68px;
-        border: 1px solid rgba(228, 124, 154, 0.34);
-        border-radius: 22px;
+        position: fixed !important;
+        top: 80px !important;
+        right: 20px !important;
+        width: 54px;
+        height: 54px;
+        border: 1px solid rgba(255, 255, 255, 0.34);
+        border-radius: 999px;
         background:
-          radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.9), transparent 34%),
-          linear-gradient(160deg, rgba(252, 250, 247, 0.98), rgba(223, 209, 235, 0.98));
-        color: #401f2c;
+          radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.86), transparent 34%),
+          linear-gradient(145deg, rgba(255, 244, 247, 0.88), rgba(207, 181, 221, 0.72));
+        color: #fff5f8;
         cursor: pointer;
         display: flex;
         align-items: center;
         justify-content: center;
         padding: 0;
-        position: relative;
         overflow: hidden;
-        box-shadow: 0 16px 38px rgba(45, 35, 50, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.68);
-        animation: mamaStatusFloat 3.2s ease-in-out infinite, mamaStatusPulse 3.4s ease-in-out infinite;
-        transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
-        font: 900 13px/1.05 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        letter-spacing: 1px;
+        z-index: 2147483645 !important;
+        pointer-events: auto !important;
+        box-shadow:
+          0 10px 24px rgba(45, 35, 50, 0.32),
+          0 0 18px rgba(228, 124, 154, 0.2),
+          inset 0 0 12px rgba(255, 255, 255, 0.44);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+        animation: mamaStatusFloat 3.2s ease-in-out infinite;
+        transition: width 0.28s ease, height 0.28s ease, right 0.28s ease, border-radius 0.28s ease, transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+      }
+
+      #${TRIGGER_ID}::before {
+        content: '';
+        position: absolute;
+        inset: -2px;
+        border-radius: inherit;
+        border: 1px solid transparent;
+        background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(228, 124, 154, 0.58)) border-box;
+        -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
+        -webkit-mask-composite: destination-out;
+        mask-composite: exclude;
+        opacity: 0.7;
+        pointer-events: none;
       }
 
       #${TRIGGER_ID}:hover {
-        transform: scale(1.07);
-        border-color: rgba(228, 124, 154, 0.62);
-        box-shadow: 0 18px 46px rgba(45, 35, 50, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        transform: scale(1.08);
+        opacity: 0.98;
+        border-color: rgba(255, 255, 255, 0.64);
+        background:
+          radial-gradient(circle at 32% 24%, rgba(255, 255, 255, 0.92), transparent 34%),
+          linear-gradient(145deg, rgba(255, 244, 247, 0.96), rgba(220, 188, 232, 0.88));
+        box-shadow:
+          0 12px 30px rgba(45, 35, 50, 0.38),
+          0 0 26px rgba(228, 124, 154, 0.34),
+          inset 0 0 14px rgba(255, 255, 255, 0.58);
       }
 
-      #${TRIGGER_ID} .mama-status-trigger-mark {
+      #${TRIGGER_ID} .mama-status-trigger-icon {
+        position: relative;
+        z-index: 1;
         display: grid;
         place-items: center;
-        width: 52px;
-        height: 52px;
-        border-radius: 17px;
-        background: rgba(255, 255, 255, 0.44);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.56);
+        width: 28px;
+        height: 28px;
+        color: #512234;
+        filter: drop-shadow(0 2px 4px rgba(255, 255, 255, 0.56));
+        transition: transform 0.25s ease, opacity 0.2s ease;
       }
 
-      #${TRIGGER_ID} .mama-status-trigger-sub {
+      #${TRIGGER_ID}:hover .mama-status-trigger-icon {
+        transform: scale(1.08);
+      }
+
+      .mama-status-trigger-fold {
+        position: absolute;
+        right: -2px;
+        bottom: -2px;
+        appearance: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.38);
+        border-radius: 999px;
+        background: rgba(54, 38, 50, 0.84);
+        color: rgba(255, 255, 255, 0.92);
+        cursor: pointer;
+        padding: 0;
+        z-index: 2;
+        box-shadow: 0 4px 10px rgba(45, 35, 50, 0.26);
+        transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      }
+
+      .mama-status-trigger-fold:hover {
+        transform: translateY(-1px);
+        background: rgba(81, 34, 52, 0.94);
+        border-color: rgba(255, 255, 255, 0.58);
+      }
+
+      .mama-status-trigger-fold svg {
+        width: 12px;
+        height: 12px;
+      }
+
+      .mama-status-trigger-fold-open {
+        display: none;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} {
+        right: 0 !important;
+        width: 30px;
+        height: 62px;
+        border-radius: 18px 0 0 18px;
+        opacity: 0.78;
+        animation: none;
+        background: rgba(54, 38, 50, 0.78);
+        border-color: rgba(255, 255, 255, 0.2);
+        box-shadow:
+          0 6px 16px rgba(45, 35, 50, 0.28),
+          inset 0 0 10px rgba(255, 255, 255, 0.16);
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}::before {
+        display: none;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}:hover {
+        transform: none;
+        opacity: 0.96;
+        background: rgba(64, 45, 60, 0.92);
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-icon {
+        width: 20px;
+        height: 20px;
+        transform: translateY(-10px);
+        opacity: 0.88;
+        color: rgba(255, 245, 248, 0.92);
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}:hover .mama-status-trigger-icon {
+        transform: translateY(-10px);
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold {
+        right: 3px;
+        bottom: 5px;
+        width: 24px;
+        height: 24px;
+        border-color: transparent;
+        background: transparent;
+        box-shadow: none;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold-close {
+        display: none;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold-open {
         display: block;
-        margin-top: 3px;
-        font-size: 8px;
-        color: rgba(64, 31, 44, 0.62);
-        letter-spacing: 1.6px;
       }
 
       #${OVERLAY_ID} {
@@ -247,6 +363,8 @@
     let ready = false;
     let iframeInitialized = false;
     let disposed = false;
+    let trigger = null;
+    let triggerFoldButton = null;
     let lastState = null;
     let lastReason = '';
     let frameReadOptions = { persist: false };
@@ -286,17 +404,40 @@
       host = DOC.createElement('div');
       host.id = HOST_ID;
 
-      const trigger = DOC.createElement('button');
+      trigger = DOC.createElement('div');
       trigger.id = TRIGGER_ID;
-      trigger.type = 'button';
+      trigger.setAttribute('role', 'button');
+      trigger.tabIndex = 0;
       trigger.title = 'Open MAMA Status';
       trigger.setAttribute('aria-label', 'Open MAMA Status');
       trigger.innerHTML = [
-        '<span class="mama-status-trigger-mark">',
-        '<span>MAMA<span class="mama-status-trigger-sub">STATUS</span></span>',
-        '</span>'
+        '<span class="mama-status-trigger-icon" aria-hidden="true">',
+        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">',
+        '<path d="M12 21s-7-4.35-7-10.1A4.4 4.4 0 0 1 12 7a4.4 4.4 0 0 1 7 3.9C19 16.65 12 21 12 21Z" />',
+        '<path d="M9.5 10.7c.7-.85 1.6-.85 2.5 0 .9-.85 1.8-.85 2.5 0" />',
+        '</svg>',
+        '</span>',
+        '<button class="mama-status-trigger-fold" type="button" title="收起悬浮球" aria-label="收起悬浮球">',
+        '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+        '<path d="m15 18-6-6 6-6" />',
+        '</svg>',
+        '<svg class="mama-status-trigger-fold-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+        '<path d="m9 18 6-6-6-6" />',
+        '</svg>',
+        '</button>'
       ].join('');
       trigger.addEventListener('click', openStatus);
+      trigger.addEventListener('keydown', (event) => {
+        if (event.key !== 'Enter' && event.key !== ' ') return;
+        event.preventDefault();
+        openStatus();
+      });
+      triggerFoldButton = trigger.querySelector('.mama-status-trigger-fold');
+      triggerFoldButton?.addEventListener('click', (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setTriggerCollapsed(!trigger.classList.contains(TRIGGER_COLLAPSED_CLASS));
+      });
 
       overlay = DOC.createElement('div');
       overlay.id = OVERLAY_ID;
@@ -334,11 +475,34 @@
       wrapper.replaceChildren(frame, close);
       overlay.replaceChildren(wrapper);
       DOC.body.append(host, overlay);
+      restoreTriggerCollapsed();
       console.info('[MAMA Status Host] floating trigger injected into ST host:', {
         url: frame.dataset.mamaSrc,
         uiRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host'
       });
       return host;
+    }
+
+    function setTriggerCollapsed(collapsed) {
+      if (!trigger) return;
+      trigger.classList.toggle(TRIGGER_COLLAPSED_CLASS, Boolean(collapsed));
+      trigger.title = collapsed ? 'MAMA Status（点击打开，箭头展开）' : 'Open MAMA Status';
+      trigger.setAttribute('aria-label', collapsed ? 'Open MAMA Status, collapsed' : 'Open MAMA Status');
+      if (triggerFoldButton) {
+        triggerFoldButton.title = collapsed ? '展开悬浮球' : '收起悬浮球';
+        triggerFoldButton.setAttribute('aria-label', collapsed ? '展开悬浮球' : '收起悬浮球');
+      }
+      try {
+        UI_ROOT.localStorage?.setItem(TRIGGER_COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
+      } catch (_) {}
+    }
+
+    function restoreTriggerCollapsed() {
+      let collapsed = true;
+      try {
+        collapsed = UI_ROOT.localStorage?.getItem(TRIGGER_COLLAPSED_STORAGE_KEY) !== '0';
+      } catch (_) {}
+      setTriggerCollapsed(collapsed);
     }
 
     function initializeIframe() {
@@ -677,6 +841,8 @@
       overlay = null;
       wrapper = null;
       frame = null;
+      trigger = null;
+      triggerFoldButton = null;
       try {
         if (UI_ROOT[UNLOAD_KEY] === unload) delete UI_ROOT[UNLOAD_KEY];
       } catch (_) {}
@@ -712,6 +878,7 @@
         injected: Boolean(DOC?.getElementById(TRIGGER_ID)),
         open: overlay?.style?.display || '',
         statusUrl: frame?.dataset?.mamaSrc || '',
+        collapsed: Boolean(trigger?.classList?.contains(TRIGGER_COLLAPSED_CLASS)),
         hostRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host',
         apiRoot: ROOT === CURRENT_ROOT ? 'current' : 'host'
       };
