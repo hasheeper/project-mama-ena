@@ -1,11 +1,43 @@
 (function () {
   'use strict';
 
-  const ROOT = typeof window !== 'undefined' ? window : globalThis;
-  const bridge = ROOT.STBridge;
+  const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
+
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
+  function exposePlugin(api, host) {
+    const targets = [];
+    const pushTarget = (target) => {
+      try {
+        if (target && !targets.includes(target)) targets.push(target);
+      } catch (_) {}
+    };
+    pushTarget(CURRENT_ROOT);
+    pushTarget(host.root);
+    pushTarget(host.uiRoot);
+    pushTarget(host.apiRoot);
+    try { pushTarget(CURRENT_ROOT.parent); } catch (_) {}
+    try { pushTarget(CURRENT_ROOT.top); } catch (_) {}
+    targets.forEach((target) => {
+      try { target.MAMAPlugin = api; } catch (_) {}
+    });
+  }
+
+  const BRIDGE_HOST = resolveBridgeHost();
+  const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
+  const UI_ROOT = BRIDGE_HOST.root || BRIDGE_HOST.uiRoot || CURRENT_ROOT.MAMA_ST_UI_ROOT || ROOT;
+  const bridge = ROOT.STBridge || CURRENT_ROOT.STBridge || UI_ROOT.STBridge;
   if (!bridge) return;
 
-  const RUNTIME = ROOT.MAMAMainRuntime || {};
+  const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
+  ROOT.MAMAMainRuntime = RUNTIME;
+  CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
   const stateService = typeof RUNTIME.createStateReplay === 'function'
     ? RUNTIME.createStateReplay()
     : null;
@@ -87,7 +119,7 @@
     }
   });
 
-  ROOT.MAMAPlugin = {
+  const pluginApi = {
     version: '0.1.0',
     bridge,
     loadState,
@@ -100,8 +132,9 @@
     closeStatus() {
       return statusHost?.closeStatus?.();
     },
-    openDashboardUrl: ROOT.MAMA_STATUS_URL || ROOT.MAMA_APP_URL || ''
+    openDashboardUrl: ROOT.MAMA_STATUS_URL || UI_ROOT.MAMA_STATUS_URL || ROOT.MAMA_APP_URL || UI_ROOT.MAMA_APP_URL || ''
   };
+  exposePlugin(pluginApi, BRIDGE_HOST);
 
   bindPromptInjection();
   statusHost?.start?.();

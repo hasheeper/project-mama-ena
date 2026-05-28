@@ -3,8 +3,19 @@ import { registerMvuSchema } from 'https://testingcf.jsdelivr.net/gh/StageDog/ta
 (function () {
   'use strict';
 
-  const ROOT = typeof window !== 'undefined' ? window : globalThis;
+  const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
   const PLUGIN_NAME = '[MAMA Schema]';
+
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
+  const BRIDGE_HOST = resolveBridgeHost();
+  const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
 
   const DEFAULT_MAMA_STATE = {
     affection: 0,

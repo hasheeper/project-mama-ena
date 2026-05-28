@@ -4,9 +4,30 @@
 (function () {
   'use strict';
 
-  const ROOT = typeof window !== 'undefined' ? window : globalThis;
-  const RUNTIME = ROOT.MAMAMainRuntime || {};
+  const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
+
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
+  function pushTarget(targets, target) {
+    try {
+      if (target && !targets.includes(target)) targets.push(target);
+    } catch (_) {}
+  }
+
+  const BRIDGE_HOST = resolveBridgeHost();
+  const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
+  const UI_ROOT = BRIDGE_HOST.root || BRIDGE_HOST.uiRoot || CURRENT_ROOT.MAMA_ST_UI_ROOT || ROOT;
+  const DOC = UI_ROOT.document || CURRENT_ROOT.document;
+  const TIMER_ROOT = UI_ROOT.setTimeout ? UI_ROOT : CURRENT_ROOT;
+  const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
   ROOT.MAMAMainRuntime = RUNTIME;
+  CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
 
   const HOST_ID = 'mama-status-host';
   const TRIGGER_ID = 'mama-status-trigger';
@@ -15,8 +36,22 @@
   const IFRAME_ID = 'mama-status-iframe';
   const CLOSE_ID = 'mama-status-close';
   const STYLE_ID = 'mama-status-host-style';
+  const UNLOAD_KEY = '__MAMA_STATUS_HOST_UNLOAD__';
   const DEFAULT_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
   const DEFAULT_STATUS_PATH = 'apps/visual-dashboard/index.html';
+
+  function getBridgeTargets() {
+    const targets = [];
+    pushTarget(targets, CURRENT_ROOT);
+    pushTarget(targets, ROOT);
+    pushTarget(targets, UI_ROOT);
+    (Array.isArray(BRIDGE_HOST.candidates) ? BRIDGE_HOST.candidates : []).forEach((target) => pushTarget(targets, target));
+    targets.slice().forEach((target) => {
+      try { pushTarget(targets, target.parent); } catch (_) {}
+      try { pushTarget(targets, target.top); } catch (_) {}
+    });
+    return targets;
+  }
 
   function isEnabled(value) {
     return value === true || value === 'true' || value === '1' || value === 1;
@@ -28,6 +63,15 @@
 
   function trimTrailingSlash(value) {
     return typeof value === 'string' ? value.trim().replace(/\/+$/, '') : '';
+  }
+
+  function readGlobalString(key) {
+    for (const target of getBridgeTargets()) {
+      try {
+        if (typeof target?.[key] === 'string' && target[key].trim()) return target[key].trim();
+      } catch (_) {}
+    }
+    return '';
   }
 
   function appendQueryParams(url, params = {}) {
@@ -46,17 +90,15 @@
   }
 
   function resolveStatusUrl(version) {
-    const explicit = typeof ROOT.MAMA_STATUS_URL === 'string' && ROOT.MAMA_STATUS_URL.trim()
-      ? ROOT.MAMA_STATUS_URL.trim()
-      : '';
-    const base = trimTrailingSlash(ROOT.MAMA_APP_BASE_URL || DEFAULT_APP_BASE_URL);
+    const explicit = readGlobalString('MAMA_STATUS_URL');
+    const base = trimTrailingSlash(readGlobalString('MAMA_APP_BASE_URL') || DEFAULT_APP_BASE_URL);
     const url = explicit || `${base}/${DEFAULT_STATUS_PATH}`;
     return appendQueryParams(url, { bridge: 'st', v: version || '0.1.0' });
   }
 
   function ensureStyle() {
-    if (document.getElementById(STYLE_ID)) return;
-    const style = document.createElement('style');
+    if (!DOC?.head || DOC.getElementById(STYLE_ID)) return;
+    const style = DOC.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
       @keyframes mamaStatusFloat {
@@ -70,10 +112,11 @@
       }
 
       #${HOST_ID} {
-        position: fixed;
-        right: 22px;
-        top: 80px;
-        z-index: 2147483645;
+        position: fixed !important;
+        top: 80px !important;
+        right: 22px !important;
+        z-index: 2147483645 !important;
+        pointer-events: auto !important;
       }
 
       #${TRIGGER_ID} {
@@ -124,10 +167,10 @@
       }
 
       #${OVERLAY_ID} {
-        position: fixed;
-        inset: 0;
-        width: 100vw;
-        height: 100vh;
+        position: fixed !important;
+        inset: 0 !important;
+        width: 100vw !important;
+        height: 100vh !important;
         display: none;
         align-items: center;
         justify-content: center;
@@ -135,8 +178,9 @@
         background: rgba(37, 31, 42, 0.42);
         backdrop-filter: blur(8px);
         -webkit-backdrop-filter: blur(8px);
-        z-index: 2147483646;
+        z-index: 2147483646 !important;
         overflow: hidden;
+        pointer-events: auto !important;
       }
 
       #${WRAPPER_ID} {
@@ -184,15 +228,15 @@
         background: rgba(228, 124, 154, 0.94);
       }
     `;
-    document.head?.append(style);
+    DOC.head.append(style);
   }
 
   function waitForBody(callback) {
-    if (document.body) {
+    if (DOC?.body) {
       callback();
       return;
     }
-    ROOT.setTimeout(() => waitForBody(callback), 100);
+    TIMER_ROOT.setTimeout(() => waitForBody(callback), 100);
   }
 
   RUNTIME.createStatusHost = function createStatusHost(stateService, config = {}) {
@@ -201,39 +245,48 @@
     let overlay = null;
     let wrapper = null;
     let ready = false;
+    let iframeInitialized = false;
+    let disposed = false;
     let lastState = null;
     let lastReason = '';
     let frameReadOptions = { persist: false };
     let eventsBound = false;
     const inlineTargets = new Map();
     const targetStates = new Map();
+    const messageTargets = [];
+    const cleanupCallbacks = [];
 
     const version = config.version || '0.1.0';
     const injectStatusHost = !isDisabled(config.injectFixedStatus)
       && !isEnabled(config.disableStatusHost)
-      && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST);
+      && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST)
+      && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
+
+    function removeExistingDom() {
+      try { DOC?.getElementById(HOST_ID)?.remove(); } catch (_) {}
+      try { DOC?.getElementById(OVERLAY_ID)?.remove(); } catch (_) {}
+      try { DOC?.getElementById(STYLE_ID)?.remove(); } catch (_) {}
+    }
 
     function ensureHost() {
       if (
-        host
+        !disposed
+        && host
         && overlay
         && frame
-        && document.body?.contains(host)
-        && document.body?.contains(overlay)
+        && DOC?.body?.contains(host)
+        && DOC?.body?.contains(overlay)
       ) return host;
+
+      if (!DOC?.body) return null;
       ensureStyle();
+      DOC.getElementById(HOST_ID)?.remove();
+      DOC.getElementById(OVERLAY_ID)?.remove();
 
-      document.getElementById(HOST_ID)?.remove();
-      document.getElementById(OVERLAY_ID)?.remove();
-
-      host = document.createElement('div');
+      host = DOC.createElement('div');
       host.id = HOST_ID;
-      host.style.position = 'fixed';
-      host.style.top = '80px';
-      host.style.right = '22px';
-      host.style.zIndex = '2147483645';
 
-      const trigger = document.createElement('button');
+      const trigger = DOC.createElement('button');
       trigger.id = TRIGGER_ID;
       trigger.type = 'button';
       trigger.title = 'Open MAMA Status';
@@ -245,7 +298,7 @@
       ].join('');
       trigger.addEventListener('click', openStatus);
 
-      overlay = document.createElement('div');
+      overlay = DOC.createElement('div');
       overlay.id = OVERLAY_ID;
       overlay.setAttribute('role', 'dialog');
       overlay.setAttribute('aria-label', 'MAMA Status');
@@ -253,23 +306,23 @@
         if (event.target === overlay) closeStatus();
       });
 
-      wrapper = document.createElement('div');
+      wrapper = DOC.createElement('div');
       wrapper.id = WRAPPER_ID;
 
-      frame = document.createElement('iframe');
+      frame = DOC.createElement('iframe');
       frame.id = IFRAME_ID;
       frame.title = 'MAMA Status';
       frame.allow = 'fullscreen';
       frame.referrerPolicy = 'no-referrer';
       frame.setAttribute('sandbox', 'allow-scripts allow-forms allow-modals allow-popups allow-same-origin');
-      frame.src = resolveStatusUrl(version);
+      frame.dataset.mamaSrc = resolveStatusUrl(version);
       frame.addEventListener('load', () => {
         ready = true;
         postContainerReady();
-        void refreshStatus(lastReason || 'iframeLoad');
+        TIMER_ROOT.setTimeout(() => refreshStatus(lastReason || 'iframeLoad'), 40);
       });
 
-      const close = document.createElement('button');
+      const close = DOC.createElement('button');
       close.id = CLOSE_ID;
       close.type = 'button';
       close.title = 'Close MAMA Status';
@@ -280,16 +333,28 @@
       host.replaceChildren(trigger);
       wrapper.replaceChildren(frame, close);
       overlay.replaceChildren(wrapper);
-      document.body.append(host, overlay);
-      console.info('[MAMA Status Host] floating trigger injected:', { url: frame.src });
+      DOC.body.append(host, overlay);
+      console.info('[MAMA Status Host] floating trigger injected into ST host:', {
+        url: frame.dataset.mamaSrc,
+        uiRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host'
+      });
       return host;
+    }
+
+    function initializeIframe() {
+      if (!frame) ensureHost();
+      if (!frame || iframeInitialized) return;
+      iframeInitialized = true;
+      frame.src = frame.dataset.mamaSrc || resolveStatusUrl(version);
     }
 
     function openStatus() {
       ensureHost();
-      if (overlay) overlay.style.display = 'flex';
-      void refreshStatus('open');
-      return Boolean(overlay);
+      if (!overlay) return false;
+      overlay.style.display = 'flex';
+      initializeIframe();
+      TIMER_ROOT.setTimeout(() => refreshStatus('open'), 80);
+      return true;
     }
 
     function closeStatus() {
@@ -317,8 +382,8 @@
     }
 
     function findIframeForSource(source) {
-      if (!source || !ROOT.document?.querySelectorAll) return null;
-      const frames = Array.from(ROOT.document.querySelectorAll('iframe'));
+      if (!source || !DOC?.querySelectorAll) return null;
+      const frames = Array.from(DOC.querySelectorAll('iframe'));
       return frames.find((item) => {
         try {
           return item.contentWindow === source;
@@ -349,7 +414,7 @@
       }
 
       try {
-        const messages = Array.from(ROOT.document.querySelectorAll('#chat .mes, .mes'));
+        const messages = Array.from(DOC.querySelectorAll('#chat .mes, .mes'));
         const index = messages.indexOf(messageElement);
         return index >= 0 ? index : null;
       } catch (_) {
@@ -422,6 +487,11 @@
       return postContainerReadyTo(target);
     }
 
+    function readOptionsForTarget(target) {
+      if (target === frame?.contentWindow) return frameReadOptions;
+      return inlineTargets.get(target) || { persist: false };
+    }
+
     function postStateTo(target, reason, state) {
       const nextState = state || lastState;
       if (!isMessageTarget(target) || !nextState) return false;
@@ -438,11 +508,6 @@
         targetStates.delete(target);
         return false;
       }
-    }
-
-    function readOptionsForTarget(target) {
-      if (target === frame?.contentWindow) return frameReadOptions;
-      return inlineTargets.get(target) || { persist: false };
     }
 
     function postState(reason, state) {
@@ -485,6 +550,7 @@
     }
 
     async function refreshStatus(reason = 'refresh') {
+      if (disposed) return false;
       if (injectStatusHost) waitForBody(() => ensureHost());
       let sent = false;
 
@@ -530,55 +596,135 @@
       void refreshTarget(target, data.reason || (isRequest ? 'statusRequest' : 'appReady'), readOptions);
     }
 
-    function bindEvents() {
-      if (eventsBound) return;
-      eventsBound = true;
-      ROOT.addEventListener?.('message', handleMessage);
-      ROOT.addEventListener?.('keydown', (event) => {
-        if (event?.key === 'Escape' && overlay?.style?.display !== 'none') closeStatus();
-      });
-      ROOT.addEventListener?.('mama:stateChanged', () => refreshStatus('stateChanged'));
-      ROOT.addEventListener?.('mama:mvuz-written', () => refreshStatus('mvuzWritten'));
-      if (typeof ROOT.eventOn !== 'function') return;
-      const bindRefresh = (eventName, reason, delayMs = 0) => {
-        ROOT.eventOn(eventName, () => {
-          if (delayMs > 0) {
-            ROOT.setTimeout(() => refreshStatus(reason), delayMs);
-            return;
-          }
-          refreshStatus(reason);
-        });
-      };
-      bindRefresh('message_received', 'messageReceived', 1200);
-      bindRefresh('character_message_rendered', 'messageRendered', 250);
-      bindRefresh('message_updated', 'messageUpdated', 400);
-      bindRefresh('generation_ended', 'generationEnded', 300);
-      ROOT.eventOn('CHAT_CHANGED', () => {
-        ready = Boolean(frame?.contentWindow);
-        refreshStatus('chatChanged');
-      });
-      ROOT.eventOn('chat_changed', () => {
-        ready = Boolean(frame?.contentWindow);
-        refreshStatus('chatChanged');
+    function bindWindowMessageTargets() {
+      getBridgeTargets().forEach((target) => {
+        if (!target || messageTargets.includes(target)) return;
+        try {
+          target.removeEventListener?.('message', handleMessage);
+          target.addEventListener?.('message', handleMessage);
+          messageTargets.push(target);
+        } catch (_) {}
       });
     }
 
+    function bindMamaEvent(target, eventName, handler) {
+      try {
+        target?.removeEventListener?.(eventName, handler);
+        target?.addEventListener?.(eventName, handler);
+        cleanupCallbacks.push(() => target.removeEventListener?.(eventName, handler));
+      } catch (_) {}
+    }
+
+    function bindSillyTavernEvent(target, eventName, reason, delayMs = 0) {
+      if (typeof target?.eventOn !== 'function') return;
+      try {
+        const stop = target.eventOn(eventName, () => {
+          if (delayMs > 0) {
+            TIMER_ROOT.setTimeout(() => refreshStatus(reason), delayMs);
+            return;
+          }
+          void refreshStatus(reason);
+        });
+        if (typeof stop === 'function') cleanupCallbacks.push(stop);
+      } catch (_) {}
+    }
+
+    function bindEvents() {
+      if (eventsBound) return;
+      eventsBound = true;
+      bindWindowMessageTargets();
+
+      const keydownHandler = (event) => {
+        if (event?.key === 'Escape' && overlay?.style?.display !== 'none') closeStatus();
+      };
+      try {
+        DOC?.removeEventListener?.('keydown', keydownHandler);
+        DOC?.addEventListener?.('keydown', keydownHandler);
+        cleanupCallbacks.push(() => DOC?.removeEventListener?.('keydown', keydownHandler));
+      } catch (_) {}
+
+      const stateChangedHandler = () => refreshStatus('stateChanged');
+      const mvuzWrittenHandler = () => refreshStatus('mvuzWritten');
+      getBridgeTargets().forEach((target) => {
+        bindMamaEvent(target, 'mama:stateChanged', stateChangedHandler);
+        bindMamaEvent(target, 'mama:mvuz-written', mvuzWrittenHandler);
+      });
+
+      getBridgeTargets().forEach((target) => {
+        bindSillyTavernEvent(target, 'message_received', 'messageReceived', 1200);
+        bindSillyTavernEvent(target, 'character_message_rendered', 'messageRendered', 250);
+        bindSillyTavernEvent(target, 'message_updated', 'messageUpdated', 400);
+        bindSillyTavernEvent(target, 'generation_ended', 'generationEnded', 300);
+        bindSillyTavernEvent(target, 'CHAT_CHANGED', 'chatChanged', 250);
+        bindSillyTavernEvent(target, 'chat_changed', 'chatChanged', 250);
+      });
+    }
+
+    function unload() {
+      disposed = true;
+      ready = false;
+      iframeInitialized = false;
+      cleanupCallbacks.splice(0).forEach((cleanup) => {
+        try { cleanup(); } catch (_) {}
+      });
+      messageTargets.splice(0).forEach((target) => {
+        try { target.removeEventListener?.('message', handleMessage); } catch (_) {}
+      });
+      inlineTargets.clear();
+      targetStates.clear();
+      removeExistingDom();
+      host = null;
+      overlay = null;
+      wrapper = null;
+      frame = null;
+      try {
+        if (UI_ROOT[UNLOAD_KEY] === unload) delete UI_ROOT[UNLOAD_KEY];
+      } catch (_) {}
+    }
+
     function start() {
+      try {
+        if (typeof UI_ROOT[UNLOAD_KEY] === 'function' && UI_ROOT[UNLOAD_KEY] !== unload) {
+          UI_ROOT[UNLOAD_KEY]();
+        }
+      } catch (_) {}
+      disposed = false;
+      UI_ROOT[UNLOAD_KEY] = unload;
       bindEvents();
       if (injectStatusHost) {
         waitForBody(() => {
           ensureHost();
-          refreshStatus('start');
+          void refreshStatus('start');
         });
       }
+      try {
+        UI_ROOT.removeEventListener?.('pagehide', unload);
+        UI_ROOT.addEventListener?.('pagehide', unload);
+        cleanupCallbacks.push(() => UI_ROOT.removeEventListener?.('pagehide', unload));
+      } catch (_) {}
+    }
+
+    function debug() {
+      return {
+        disposed,
+        ready,
+        iframeInitialized,
+        injected: Boolean(DOC?.getElementById(TRIGGER_ID)),
+        open: overlay?.style?.display || '',
+        statusUrl: frame?.dataset?.mamaSrc || '',
+        hostRoot: UI_ROOT === CURRENT_ROOT ? 'current' : 'host',
+        apiRoot: ROOT === CURRENT_ROOT ? 'current' : 'host'
+      };
     }
 
     return {
       start,
+      unload,
       refreshStatus,
       ensureHost,
       openStatus,
-      closeStatus
+      closeStatus,
+      debug
     };
   };
 })();

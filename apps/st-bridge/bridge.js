@@ -13,6 +13,149 @@
   const DEFAULT_MANIFEST = './manifest.json';
   const FALLBACK_BRIDGE_URL = 'https://hasheeper.github.io/project-mama-ena/apps/st-bridge/bridge.js';
 
+  function pushWindowCandidate(candidates, value) {
+    try {
+      if (!value || candidates.includes(value)) return;
+      candidates.push(value);
+    } catch (_) {}
+  }
+
+  function getWindowCandidates() {
+    const candidates = [];
+    pushWindowCandidate(candidates, ROOT);
+    pushWindowCandidate(candidates, globalThis);
+    try { pushWindowCandidate(candidates, typeof window !== 'undefined' ? window : null); } catch (_) {}
+    try { pushWindowCandidate(candidates, typeof unsafeWindow === 'object' ? unsafeWindow : null); } catch (_) {}
+    Array.from(candidates).forEach((candidate) => {
+      try { pushWindowCandidate(candidates, candidate.parent); } catch (_) {}
+      try { pushWindowCandidate(candidates, candidate.parent?.parent); } catch (_) {}
+      try { pushWindowCandidate(candidates, candidate.top); } catch (_) {}
+    });
+    return candidates;
+  }
+
+  function getCandidateDocument(candidate) {
+    try {
+      return candidate?.document || null;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  function hasCandidateFunction(candidate, key) {
+    try {
+      return typeof candidate?.[key] === 'function';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function hasCandidateValue(candidate, key) {
+    try {
+      return Boolean(candidate?.[key]);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function queryCandidateDocument(candidate, selector) {
+    const doc = getCandidateDocument(candidate);
+    try {
+      return Boolean(doc?.querySelector?.(selector));
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function scoreUiRoot(candidate) {
+    const doc = getCandidateDocument(candidate);
+    if (!doc) return -1;
+    let score = 0;
+    try { if (doc.body) score += 20; } catch (_) {}
+    if (queryCandidateDocument(candidate, '#chat')) score += 160;
+    if (queryCandidateDocument(candidate, '#chat .mes, .mes')) score += 90;
+    if (queryCandidateDocument(candidate, '#send_form, #send_textarea, textarea')) score += 60;
+    if (hasCandidateValue(candidate, 'SillyTavern')) score += 60;
+    if (hasCandidateFunction(candidate, 'getVariables')) score += 45;
+    if (hasCandidateFunction(candidate, 'eventOn')) score += 30;
+    if (hasCandidateFunction(candidate, 'jQuery') || hasCandidateFunction(candidate, '$')) score += 25;
+    if (candidate === ROOT) score += 1;
+    return score;
+  }
+
+  function scoreApiRoot(candidate) {
+    let score = 0;
+    if (hasCandidateFunction(candidate, 'getVariables')) score += 140;
+    if (hasCandidateFunction(candidate, 'insertOrAssignVariables')) score += 120;
+    if (hasCandidateFunction(candidate, 'updateVariablesWith')) score += 80;
+    if (hasCandidateFunction(candidate, 'getChatMessages')) score += 70;
+    if (hasCandidateFunction(candidate, 'setChatMessages')) score += 70;
+    if (hasCandidateFunction(candidate, 'eventOn')) score += 50;
+    if (hasCandidateFunction(candidate, 'handleVariablesInMessage')) score += 45;
+    if (hasCandidateValue(candidate, 'Mvu')) score += 35;
+    if (hasCandidateValue(candidate, 'SillyTavern')) score += 20;
+    if (candidate === ROOT) score += 1;
+    return score;
+  }
+
+  function pickBestWindow(candidates, scorer, fallback = ROOT) {
+    let best = fallback;
+    let bestScore = -1;
+    candidates.forEach((candidate) => {
+      const score = scorer(candidate);
+      if (score > bestScore) {
+        best = candidate;
+        bestScore = score;
+      }
+    });
+    return best || fallback;
+  }
+
+  const WINDOW_CANDIDATES = getWindowCandidates();
+  const HOST_ROOT = pickBestWindow(WINDOW_CANDIDATES, scoreUiRoot, ROOT);
+  const API_ROOT = pickBestWindow(WINDOW_CANDIDATES, scoreApiRoot, HOST_ROOT);
+
+  function getBridgeTargets() {
+    const targets = [];
+    [ROOT, HOST_ROOT, API_ROOT, ...WINDOW_CANDIDATES].forEach((candidate) => pushWindowCandidate(targets, candidate));
+    return targets;
+  }
+
+  function getGlobalValue(key) {
+    for (const candidate of getBridgeTargets()) {
+      try {
+        if (candidate?.[key] !== undefined && candidate?.[key] !== null && candidate?.[key] !== '') {
+          return candidate[key];
+        }
+      } catch (_) {}
+    }
+    return undefined;
+  }
+
+  function publishHostInfo(extra = {}) {
+    const info = {
+      product: 'mama-ena',
+      version: VERSION,
+      ownerRoot: ROOT,
+      root: HOST_ROOT,
+      uiRoot: HOST_ROOT,
+      apiRoot: API_ROOT,
+      candidates: WINDOW_CANDIDATES,
+      ...extra
+    };
+    getBridgeTargets().forEach((target) => {
+      try {
+        target.MAMA_ST_HOST = info;
+        target.MAMA_ST_HOST_ROOT = HOST_ROOT;
+        target.MAMA_ST_UI_ROOT = HOST_ROOT;
+        target.MAMA_ST_API_ROOT = API_ROOT;
+      } catch (_) {}
+    });
+    return info;
+  }
+
+  publishHostInfo();
+
   function isObject(value) {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
@@ -80,7 +223,8 @@
       if (matched && isUsableBridgeUrl(matched.src)) return matched.src;
     } catch (_) {}
     try {
-      if (isUsableBridgeUrl(ROOT.ST_BRIDGE_URL)) return ROOT.ST_BRIDGE_URL;
+      const configuredUrl = getGlobalValue('ST_BRIDGE_URL');
+      if (isUsableBridgeUrl(configuredUrl)) return configuredUrl;
     } catch (_) {}
     return FALLBACK_BRIDGE_URL;
   }
@@ -90,6 +234,12 @@
   const params = bridgeUrl.searchParams;
   const cacheBust = params.get('v') || params.get('cache') || '';
   const forceReload = params.get('force') === '1';
+  publishHostInfo({
+    bridgeUrl: bridgeUrl.href,
+    bridgeRoot: bridgeRoot.href,
+    cacheBust,
+    forceReload
+  });
 
   function withCache(url) {
     if (!cacheBust) return url;
@@ -115,12 +265,12 @@
   }
 
   function getManifestUrl() {
-    const explicit = params.get('manifest') || ROOT.ST_BRIDGE_MANIFEST_URL;
+    const explicit = params.get('manifest') || getGlobalValue('ST_BRIDGE_MANIFEST_URL');
     return explicit ? resolveUrl(explicit, bridgeRoot.href) : resolveUrl(DEFAULT_MANIFEST, bridgeRoot.href);
   }
 
   function selectPack(manifest) {
-    const requested = params.get('pack') || ROOT.ST_BRIDGE_PACK || manifest.activePack || manifest.defaultPack;
+    const requested = params.get('pack') || getGlobalValue('ST_BRIDGE_PACK') || manifest.activePack || manifest.defaultPack;
     const pack = manifest.packs && manifest.packs[requested];
     if (!pack) {
       const available = Object.keys(manifest.packs || {}).join(', ') || '(none)';
@@ -130,24 +280,28 @@
   }
 
   function applyGlobals(pack, packId) {
-    ROOT.ST_BRIDGE_PACK = packId;
-    ROOT.ST_BRIDGE_PRODUCT = pack.product || packId;
-    if (isObject(pack.globals)) {
-      Object.entries(pack.globals).forEach(([key, value]) => {
-        ROOT[key] = value;
-      });
-    }
+    getBridgeTargets().forEach((target) => {
+      try {
+        target.ST_BRIDGE_PACK = packId;
+        target.ST_BRIDGE_PRODUCT = pack.product || packId;
+        if (isObject(pack.globals)) {
+          Object.entries(pack.globals).forEach(([key, value]) => {
+            target[key] = value;
+          });
+        }
+      } catch (_) {}
+    });
   }
 
   async function readVariables(options = {}) {
     const type = options.type || 'message';
     const request = { ...options, type };
     delete request.rootKey;
-    if (typeof ROOT.getVariables !== 'function') {
-      return isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? clone(ROOT.__MAMA_ST_BRIDGE_MEMORY__, {}) : {};
+    if (typeof API_ROOT.getVariables !== 'function') {
+      return isObject(API_ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? clone(API_ROOT.__MAMA_ST_BRIDGE_MEMORY__, {}) : {};
     }
     try {
-      const vars = await ROOT.getVariables(request);
+      const vars = await API_ROOT.getVariables(request);
       return isObject(vars) ? vars : {};
     } catch (error) {
       console.warn(`${BRIDGE_NAME} readVariables failed:`, error);
@@ -159,15 +313,15 @@
     const type = options.type || 'message';
     const request = { ...options, type };
     delete request.rootKey;
-    if (typeof ROOT.insertOrAssignVariables === 'function') {
-      await ROOT.insertOrAssignVariables(data, request);
+    if (typeof API_ROOT.insertOrAssignVariables === 'function') {
+      await API_ROOT.insertOrAssignVariables(data, request);
       return data;
     }
-    if (typeof ROOT.updateVariablesWith === 'function') {
-      return ROOT.updateVariablesWith((vars) => ({ ...(isObject(vars) ? vars : {}), ...data }), request);
+    if (typeof API_ROOT.updateVariablesWith === 'function') {
+      return API_ROOT.updateVariablesWith((vars) => ({ ...(isObject(vars) ? vars : {}), ...data }), request);
     }
-    ROOT.__MAMA_ST_BRIDGE_MEMORY__ = {
-      ...(isObject(ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? ROOT.__MAMA_ST_BRIDGE_MEMORY__ : {}),
+    API_ROOT.__MAMA_ST_BRIDGE_MEMORY__ = {
+      ...(isObject(API_ROOT.__MAMA_ST_BRIDGE_MEMORY__) ? API_ROOT.__MAMA_ST_BRIDGE_MEMORY__ : {}),
       ...data
     };
     return data;
@@ -198,8 +352,10 @@
     return writeState(rootKey, stateKey, result || draft, options);
   }
 
-  const schemaRegistry = isObject(ROOT.__MAMA_MVUZ_SCHEMAS__) ? ROOT.__MAMA_MVUZ_SCHEMAS__ : {};
-  ROOT.__MAMA_MVUZ_SCHEMAS__ = schemaRegistry;
+  const schemaRegistry = isObject(API_ROOT.__MAMA_MVUZ_SCHEMAS__) ? API_ROOT.__MAMA_MVUZ_SCHEMAS__ : {};
+  getBridgeTargets().forEach((target) => {
+    try { target.__MAMA_MVUZ_SCHEMAS__ = schemaRegistry; } catch (_) {}
+  });
 
   function registerSchema(namespace, schema) {
     if (!namespace || !isObject(schema)) return null;
@@ -236,11 +392,13 @@
     const rootKey = options.rootKey || schema?.rootKey || 'stat_data';
     const normalized = normalizeNamespaceState(namespace, state);
     await writeState(rootKey, namespace, normalized, options);
-    try {
-      ROOT.dispatchEvent && ROOT.dispatchEvent(new CustomEvent('mama:mvuz-written', {
-        detail: { namespace, rootKey, state: normalized }
-      }));
-    } catch (_) {}
+    getBridgeTargets().forEach((target) => {
+      try {
+        target.dispatchEvent?.(new target.CustomEvent('mama:mvuz-written', {
+          detail: { namespace, rootKey, state: normalized }
+        }));
+      } catch (_) {}
+    });
     return normalized;
   }
 
@@ -260,12 +418,18 @@
   }
 
   function exposeApi(state) {
-    const existing = isObject(ROOT.STBridge) ? ROOT.STBridge : {};
+    const existing = isObject(API_ROOT.STBridge) ? API_ROOT.STBridge : {};
     const actionHandlers = existing.actionHandlers || {};
-    ROOT.STBridge = {
+    const api = {
       ...existing,
       version: VERSION,
       state,
+      host: publishHostInfo({
+        bridgeUrl: bridgeUrl.href,
+        bridgeRoot: bridgeRoot.href,
+        cacheBust,
+        forceReload
+      }),
       actionHandlers,
       mvu: { readVariables, writeVariables, readState, writeState, patchState },
       mvuz: {
@@ -295,6 +459,9 @@
         return import(next.href);
       }
     };
+    getBridgeTargets().forEach((target) => {
+      try { target.STBridge = api; } catch (_) {}
+    });
   }
 
   async function runClassicScript(url, scriptId) {
@@ -316,8 +483,11 @@
   }
 
   function getLoadedRegistry() {
-    if (!isObject(ROOT.__MAMA_ST_BRIDGE_LOADED__)) ROOT.__MAMA_ST_BRIDGE_LOADED__ = {};
-    return ROOT.__MAMA_ST_BRIDGE_LOADED__;
+    if (!isObject(API_ROOT.__MAMA_ST_BRIDGE_LOADED__)) API_ROOT.__MAMA_ST_BRIDGE_LOADED__ = {};
+    getBridgeTargets().forEach((target) => {
+      try { target.__MAMA_ST_BRIDGE_LOADED__ = API_ROOT.__MAMA_ST_BRIDGE_LOADED__; } catch (_) {}
+    });
+    return API_ROOT.__MAMA_ST_BRIDGE_LOADED__;
   }
 
   async function main() {
@@ -362,9 +532,11 @@
       }
     }
 
-    try {
-      ROOT.dispatchEvent && ROOT.dispatchEvent(new CustomEvent('mama:bridge-loaded', { detail: state }));
-    } catch (_) {}
+    getBridgeTargets().forEach((target) => {
+      try {
+        target.dispatchEvent?.(new target.CustomEvent('mama:bridge-loaded', { detail: state }));
+      } catch (_) {}
+    });
     console.log(`${BRIDGE_NAME} loaded ${packId}`, state);
     return state;
   }

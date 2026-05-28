@@ -4,9 +4,21 @@
 (function () {
   'use strict';
 
-  const ROOT = typeof window !== 'undefined' ? window : globalThis;
-  const RUNTIME = ROOT.MAMAMainRuntime || {};
+  const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
+
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
+  const BRIDGE_HOST = resolveBridgeHost();
+  const ROOT = BRIDGE_HOST.apiRoot || CURRENT_ROOT.MAMA_ST_API_ROOT || CURRENT_ROOT.MAMA_ST_HOST_ROOT || CURRENT_ROOT;
+  const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
   ROOT.MAMAMainRuntime = RUNTIME;
+  CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
 
   const STAT_KEY = 'stat_data';
   const MAMA_KEY = 'mama';
