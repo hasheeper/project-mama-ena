@@ -1,5 +1,10 @@
 mama:
   affection: 0
+  week: 1
+  day: 1
+  timePhase: morning
+  location: unknown
   outfit: streetwear_full
+  mascotEmotion: neutral
   mascotComment: ""
   enaDialogue: ""

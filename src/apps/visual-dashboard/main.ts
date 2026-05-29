@@ -45,7 +45,12 @@ function getInitialState(): unknown {
   return {
     ...DEFAULT_MAMA_STATE,
     affection: params.get('affection') ?? DEFAULT_MAMA_STATE.affection,
-    outfit: params.get('outfit') || DEFAULT_MAMA_STATE.outfit
+    week: params.get('week') ?? DEFAULT_MAMA_STATE.week,
+    day: params.get('day') ?? DEFAULT_MAMA_STATE.day,
+    timePhase: params.get('timePhase') || DEFAULT_MAMA_STATE.timePhase,
+    location: params.get('location') || DEFAULT_MAMA_STATE.location,
+    outfit: params.get('outfit') || DEFAULT_MAMA_STATE.outfit,
+    mascotEmotion: params.get('mascotEmotion') || DEFAULT_MAMA_STATE.mascotEmotion
   };
 }
 

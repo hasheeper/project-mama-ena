@@ -1,8 +1,19 @@
 (function() {
   "use strict";
+  const MAMA_TIME_PHASE_LABELS = {
+    morning: "晨",
+    noon: "午",
+    dusk: "暮",
+    night: "夜"
+  };
   const MAMA_ALLOWED_FIELD_PATHS = [
     "/mama/affection",
+    "/mama/week",
+    "/mama/day",
+    "/mama/timePhase",
+    "/mama/location",
     "/mama/outfit",
+    "/mama/mascotEmotion",
     "/mama/mascotComment",
     "/mama/enaDialogue"
   ];
@@ -34,10 +45,26 @@
     CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
     const INJECT_ID = "mama_status_context";
     const ALLOWED_PATHS = [...MAMA_ALLOWED_FIELD_PATHS];
+    function formatCounter(value) {
+      const number = Number(value);
+      const safeValue = Number.isFinite(number) ? Math.max(1, Math.round(number)) : 1;
+      return String(safeValue).padStart(2, "0");
+    }
+    function getTimePhaseLabel(timePhase) {
+      return MAMA_TIME_PHASE_LABELS[timePhase] || MAMA_TIME_PHASE_LABELS.morning;
+    }
+    function formatTimePhaseGuide() {
+      return Object.entries(MAMA_TIME_PHASE_LABELS).map(([key, label]) => `${key}=${label}`).join(", ");
+    }
     function buildMamaPrompt(state) {
+      const timePhaseLabel = getTimePhaseLabel(state.timePhase);
       return `<mama_status>
 affection: ${state.affection}/255
+time: WEEK ${formatCounter(state.week)} / DAY ${formatCounter(state.day)} / ${state.timePhase}(${timePhaseLabel})
+timePhaseGuide: ${formatTimePhaseGuide()}
+location: ${state.location}
 outfit: ${state.outfit}
+mascotEmotion: ${state.mascotEmotion}
 mascotComment: ${state.mascotComment}
 enaDialogue: ${state.enaDialogue}
 
@@ -46,8 +73,12 @@ ${ALLOWED_PATHS.map((path) => `- ${path}`).join("\n")}
 
 When MAMA state changes, append an UpdateVariable block like:
 <UpdateVariable>
-<JSONPatch>[{"op":"replace","path":"/mama/outfit","value":"streetwear_inner"}]</JSONPatch>
+<JSONPatch>[{"op":"replace","path":"/mama/timePhase","value":"noon"},{"op":"replace","path":"/mama/location","value":"school_rooftop"}]</JSONPatch>
 </UpdateVariable>
+Update /mama/week, /mama/day, and /mama/timePhase only when story time advances. Valid timePhase values are morning, noon, dusk, night.
+Update /mama/location only when the scene location changes.
+Update /mama/outfit only when ENA's persistent form or clothing base changes.
+Update /mama/mascotEmotion when the familiar's emotion/diff state changes.
 Do not put ENA portrait tags into MAMA state. <ena-exp>...</ena-exp> only controls ENA's instant portrait expression; its outfit base follows /mama/outfit. Do not use it for other characters.
 </mama_status>`;
     }

@@ -1,4 +1,4 @@
-import type { MamaState } from '../../mama/state';
+import { MAMA_TIME_PHASE_LABELS, MAMA_TIME_PHASES, type MamaState } from '../../mama/state';
 import type { VisualDashboardViewModel } from './types';
 import { createStatusStandingFigure } from './status-standing';
 import enaBgmUrl from '../../assets/mp3/bgm/ena_bgm.mp3?url';
@@ -116,7 +116,7 @@ function renderStatusShowcase(state: MamaState): HTMLElement {
   frame.append(
     stage,
     renderStatusWidgets(state),
-    renderNameTag(),
+    renderNameTag(state),
     renderPinnedNameTag(),
     renderOutfitManifest(state),
     renderStampBadge()
@@ -179,22 +179,22 @@ function renderRingChart(className: string, percent: number, color: string, size
   });
 }
 
-function renderNameTag(): HTMLElement {
+function renderNameTag(state: MamaState): HTMLElement {
   const tag = createElement('div', { className: 'ena-name-tag' });
   const paper = createElement('div', { className: 'paper' });
   const header = createElement('div', { className: 'date-header' });
   const timeline = createElement('div', { className: 'timeline' });
 
   header.append(
-    createElement('div', { className: 'week-txt', text: 'WEEK 02' }),
-    createElement('div', { className: 'day-txt', text: 'DAY 14' })
+    createElement('div', { className: 'week-txt', text: `WEEK ${formatCounter(state.week)}` }),
+    createElement('div', { className: 'day-txt', text: `DAY ${formatCounter(state.day)}` })
   );
-  timeline.append(
-    createElement('div', { className: 'tl-node', text: '晨' }),
-    createElement('div', { className: 'tl-node', text: '午' }),
-    createElement('div', { className: 'tl-node active', text: '暮' }),
-    createElement('div', { className: 'tl-node', text: '夜' })
-  );
+  MAMA_TIME_PHASES.forEach((phase) => {
+    timeline.append(createElement('div', {
+      className: `tl-node${state.timePhase === phase ? ' active' : ''}`,
+      text: MAMA_TIME_PHASE_LABELS[phase]
+    }));
+  });
   paper.append(header, timeline);
   tag.append(paper);
   return tag;
@@ -322,6 +322,11 @@ function formatOutfitCode(outfit: string): string {
     nephilim: 'NEPHILIM'
   };
   return codes[outfit] || outfit.toUpperCase();
+}
+
+function formatCounter(value: number): string {
+  const safeValue = Number.isFinite(value) ? Math.max(1, Math.round(value)) : 1;
+  return String(safeValue).padStart(2, '0');
 }
 
 function createElement<K extends keyof HTMLElementTagNameMap>(

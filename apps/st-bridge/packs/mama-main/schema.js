@@ -1,7 +1,13 @@
 import { registerMvuSchema } from "https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js";
+const MAMA_TIME_PHASES = ["morning", "noon", "dusk", "night"];
 const DEFAULT_MAMA_STATE = {
   affection: 0,
+  week: 1,
+  day: 1,
+  timePhase: "morning",
+  location: "unknown",
   outfit: "streetwear_full",
+  mascotEmotion: "neutral",
   mascotComment: "唔噜噜，绘奈今天还撑得住噜。别太欺负她，涅露露可是在看着的噜。",
   enaDialogue: "……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。"
 };
@@ -9,7 +15,12 @@ function normalizeMamaState(value) {
   const source = isRecord(value) ? value : {};
   return {
     affection: clampNumber(source.affection, 0, 255, DEFAULT_MAMA_STATE.affection),
+    week: clampNumber(source.week, 1, 9999, DEFAULT_MAMA_STATE.week),
+    day: clampNumber(source.day, 1, 9999, DEFAULT_MAMA_STATE.day),
+    timePhase: normalizeTimePhase(source.timePhase, DEFAULT_MAMA_STATE.timePhase),
+    location: normalizeString(source.location, DEFAULT_MAMA_STATE.location),
     outfit: normalizeString(source.outfit, DEFAULT_MAMA_STATE.outfit),
+    mascotEmotion: normalizeString(source.mascotEmotion, DEFAULT_MAMA_STATE.mascotEmotion),
     mascotComment: normalizeString(source.mascotComment, DEFAULT_MAMA_STATE.mascotComment),
     enaDialogue: normalizeString(source.enaDialogue, DEFAULT_MAMA_STATE.enaDialogue)
   };
@@ -24,6 +35,9 @@ function clampNumber(value, min, max, fallback) {
 }
 function normalizeString(value, fallback = "") {
   return typeof value === "string" && value.trim() ? value.trim() : fallback;
+}
+function normalizeTimePhase(value, fallback = DEFAULT_MAMA_STATE.timePhase) {
+  return typeof value === "string" && MAMA_TIME_PHASES.includes(value) ? value : fallback;
 }
 function cloneJson(value, fallback) {
   if (value === void 0 || value === null) return fallback;
