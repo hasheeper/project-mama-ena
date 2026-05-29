@@ -2,6 +2,7 @@ import { MAMA_TIME_PHASE_LABELS, MAMA_TIME_PHASES, type MamaState } from '../../
 import type { VisualDashboardViewModel } from './types';
 import { createStatusStandingFigure } from './status-standing';
 import enaBgmUrl from '../../assets/mp3/bgm/ena_bgm.mp3?url';
+import neruruDefaultUrl from '../../assets/png/q/mascot/neruru_default.png?url';
 
 interface ElementOptions {
   className?: string;
@@ -13,13 +14,13 @@ export function renderVisualDashboard(root: HTMLElement, model: VisualDashboardV
   root.classList.add('visual-dashboard');
   root.dataset.appId = model.appId;
   root.replaceChildren(
-    renderHeader(model.title, model.connectedHostName),
+    renderHeader(model.title, model.state, model.connectedHostName),
     renderStatusShowcase(model.state),
     renderDialogueStack(model.state)
   );
 }
 
-function renderHeader(titleText: string, connectedHostName = ''): HTMLElement {
+function renderHeader(titleText: string, state: MamaState, connectedHostName = ''): HTMLElement {
   const header = createElement('header', { className: 'dash-header' });
   const statusGroup = createElement('div', { className: 'header-status-group' });
   const title = createElement('div', { className: 'header-title', text: titleText });
@@ -33,8 +34,24 @@ function renderHeader(titleText: string, connectedHostName = ''): HTMLElement {
   }
 
   statusGroup.append(title, statusDot);
-  header.append(statusGroup, renderBgmPlayer());
+  header.append(statusGroup, renderLocationBadge(state.location), renderBgmPlayer());
   return header;
+}
+
+function renderLocationBadge(location: string): HTMLElement {
+  const badge = createElement('div', {
+    className: 'header-location-badge',
+    attributes: { title: `Location: ${location}` }
+  });
+  const label = createElement('span', { className: 'header-location-text', text: formatLocationLabel(location) });
+
+  badge.innerHTML = `
+    <svg class="header-location-icon" viewBox="0 0 24 24" aria-hidden="true">
+      <path fill-rule="evenodd" clip-rule="evenodd" d="M12 21s6.5-5.6 6.5-11A6.5 6.5 0 0 0 5.5 10C5.5 15.4 12 21 12 21zM12 12.4a2.4 2.4 0 1 0 0-4.8 2.4 2.4 0 0 0 0 4.8z"/>
+    </svg>
+  `;
+  badge.append(label);
+  return badge;
 }
 
 function renderBgmPlayer(): HTMLElement {
@@ -281,16 +298,25 @@ function renderDialogueStack(state: MamaState): HTMLElement {
 }
 
 function renderDialogueLine(speaker: string, text: string): HTMLElement {
-  const wrapper = createElement('div', { className: 'dialogue-wrapper' });
-  const bubble = createElement('div', { className: 'msg-bubble' });
+  const wrapper = createElement('div', { className: 'mascot-dialogue-section' });
+  const bubble = createElement('div', { className: 'mascot-bubble' });
+  const avatar = createElement('div', { className: 'mascot-raw-avatar' });
+  const image = createElement('img', {
+    className: 'mascot-avatar-img',
+    attributes: {
+      src: neruruDefaultUrl,
+      alt: speaker
+    }
+  });
 
   bubble.append(
-    createElement('div', { className: 'name-label label-mascot', text: speaker }),
-    createElement('div', { className: 'flat-pin pin-mascot' }),
+    createElement('div', { className: 'name-label', text: speaker }),
+    createElement('div', { className: 'flat-pin' }),
     createElement('div', { className: 'vertical-line' }),
     createElement('div', { className: 'msg-text', text })
   );
-  wrapper.append(bubble);
+  avatar.append(image);
+  wrapper.append(bubble, avatar);
   return wrapper;
 }
 
@@ -327,6 +353,12 @@ function formatOutfitCode(outfit: string): string {
 function formatCounter(value: number): string {
   const safeValue = Number.isFinite(value) ? Math.max(1, Math.round(value)) : 1;
   return String(safeValue).padStart(2, '0');
+}
+
+function formatLocationLabel(location: string): string {
+  const value = location.trim();
+  if (!value || value === 'unknown') return 'UNKNOWN';
+  return value.replace(/[_-]+/g, ' ').toUpperCase();
 }
 
 function createElement<K extends keyof HTMLElementTagNameMap>(
