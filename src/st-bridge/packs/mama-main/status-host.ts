@@ -293,6 +293,7 @@
         inset: 0 !important;
         width: 100vw !important;
         height: 100vh !important;
+        box-sizing: border-box;
         display: none;
         align-items: center;
         justify-content: center;
@@ -307,12 +308,14 @@
 
       #${WRAPPER_ID} {
         position: relative;
-        width: min(94vw, 540px);
-        height: min(94vh, 940px);
-        min-height: 680px;
+        box-sizing: border-box;
+        width: min(480px, calc(100vw - 36px));
+        height: min(940px, calc(100vh - 36px));
+        min-height: min(680px, calc(100vh - 36px));
       }
 
       #${IFRAME_ID} {
+        box-sizing: border-box;
         width: 100%;
         height: 100%;
         border: 1px solid rgba(255, 255, 255, 0.62);
