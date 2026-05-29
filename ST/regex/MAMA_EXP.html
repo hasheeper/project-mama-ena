@@ -89,6 +89,10 @@
       z-index: 20;
     }
 
+    .mama-standing__layer--expression-other {
+      z-index: 25;
+    }
+
     .mama-standing__layer--base {
       z-index: 30;
     }
@@ -97,8 +101,20 @@
       z-index: 40;
     }
 
+    .mama-standing__layer--mood-under {
+      z-index: 45;
+    }
+
     .mama-standing__layer--brow {
       z-index: 50;
+    }
+
+    .mama-standing__layer--mood-top {
+      z-index: 60;
+    }
+
+    .mama-standing__layer--emotion {
+      z-index: 70;
     }
   </style>
 </head>
@@ -108,8 +124,8 @@
 
   <script>
     (function () {
-      const EXP_DATA = {"count":84,"expressions":[{"id":1,"name":"exp_default","face":"face_default","mouth":"mouth_neutral","eye":"eye_normal","brow":"brow_normal"},{"id":2,"name":"exp_smile_soft","face":"face_default","mouth":"mouth_smile","eye":"eye_normal","brow":"brow_normal"},{"id":3,"name":"exp_glum","face":"face_default","mouth":"mouth_down","eye":"eye_normal","brow":"brow_down"},{"id":4,"name":"exp_serious","face":"face_default","mouth":"mouth_down","eye":"eye_normal","brow":"brow_up_max"},{"id":5,"name":"exp_cheerful","face":"face_default","mouth":"mouth_smile","eye":"eye_normal","brow":"brow_up"},{"id":6,"name":"exp_huh","face":"face_default","mouth":"mouth_huh","eye":"eye_avert","brow":"brow_question"},{"id":7,"name":"exp_deflated","face":"face_default","mouth":"mouth_tremble_1","eye":"eye_half_1","brow":"brow_down"},{"id":8,"name":"exp_cat","face":"face_default","mouth":"mouth_cat","eye":"eye_normal","brow":"brow_up"},{"id":9,"name":"exp_cat_smug","face":"face_default","mouth":"mouth_cat","eye":"eye_half_1","brow":"brow_up"},{"id":10,"name":"exp_cat_playful","face":"face_default","mouth":"mouth_cat","eye":"eye_closed_2","brow":"brow_up"},{"id":11,"name":"exp_cat_star","face":"face_default","mouth":"mouth_cat","eye":"eye_star","brow":"brow_up_max"},{"id":12,"name":"exp_cat_chill","face":"face_default","mouth":"mouth_cat","eye":"eye_line","brow":"brow_up"},{"id":13,"name":"exp_cat_xd","face":"face_default","mouth":"mouth_cat","eye":"eye_xd","brow":"brow_up"},{"id":14,"name":"exp_cat_shock","face":"face_default","mouth":"mouth_cat","eye":"eye_wide","brow":"brow_up"},{"id":15,"name":"exp_pout","face":"face_default","mouth":"mouth_pout_2","eye":"eye_avert","brow":"brow_up_max"},{"id":16,"name":"exp_smirk","face":"face_default","mouth":"mouth_smirk_1","eye":"eye_half_2","brow":"brow_up"},{"id":17,"name":"exp_smile_wry","face":"face_default","mouth":"mouth_smile","eye":"eye_smile","brow":"brow_down"},{"id":18,"name":"exp_concerned","face":"face_default","mouth":"mouth_neutral","eye":"eye_normal","brow":"brow_down"},{"id":19,"name":"exp_pleading","face":"face_default","mouth":"mouth_awawa","eye":"eye_puppy","brow":"brow_down"},{"id":20,"name":"exp_closed","face":"face_default","mouth":"mouth_neutral","eye":"eye_closed_1","brow":"brow_normal"},{"id":21,"name":"exp_playful","face":"face_default","mouth":"mouth_tongue_2","eye":"eye_wink_2","brow":"brow_up"},{"id":22,"name":"exp_sparkle","face":"face_default","mouth":"mouth_blank_1","eye":"eye_star","brow":"brow_up_max"},{"id":23,"name":"exp_surprised","face":"face_default","mouth":"mouth_blank_1","eye":"eye_wide","brow":"brow_normal"},{"id":24,"name":"exp_shocked_sad","face":"face_default","mouth":"mouth_blank_1","eye":"eye_wide","brow":"brow_down"},{"id":25,"name":"exp_shock_comic","face":"face_default","mouth":"mouth_shock","eye":"eye_shock","brow":"brow_up"},{"id":26,"name":"exp_panic","face":"face_default","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_down"},{"id":27,"name":"exp_scream_comic","face":"face_default","mouth":"mouth_panic_open","eye":"eye_shock","brow":"brow_down"},{"id":28,"name":"exp_drowsy","face":"face_default","mouth":"mouth_huh","eye":"eye_slit","brow":"brow_normal"},{"id":29,"name":"exp_smile_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_smile","brow":"brow_normal"},{"id":30,"name":"exp_smile_twitch","face":"face_default","mouth":"mouth_smirk_2","eye":"eye_smile","brow":"brow_question"},{"id":31,"name":"exp_smile_hollow","face":"face_shadow","mouth":"mouth_smile","eye":"eye_dark","brow":"brow_normal"},{"id":32,"name":"exp_repulsed","face":"face_shadow","mouth":"mouth_awawa","eye":"eye_disgust","brow":"brow_normal"},{"id":33,"name":"exp_craving","face":"face_default","mouth":"mouth_drool","eye":"eye_line","brow":"brow_normal"},{"id":34,"name":"exp_laugh_awkward","face":"face_default","mouth":"mouth_laugh","eye":"eye_smile","brow":"brow_down"},{"id":35,"name":"exp_laugh_joyful","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_smile","brow":"brow_up"},{"id":36,"name":"exp_wink","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_wink_2","brow":"brow_up"},{"id":37,"name":"exp_fufufu","face":"face_default","mouth":"mouth_smirk_2","eye":"eye_closed_2","brow":"brow_up"},{"id":38,"name":"exp_relieved","face":"face_default","mouth":"mouth_smile","eye":"eye_puppy","brow":"brow_down"},{"id":39,"name":"exp_sob","face":"face_default","mouth":"mouth_awawa","eye":"eye_cry_2","brow":"brow_down"},{"id":40,"name":"exp_bawl","face":"face_blush_light","mouth":"mouth_panic_open","eye":"eye_cry_1","brow":"brow_down"},{"id":41,"name":"exp_cry_frustrated","face":"face_blush_light","mouth":"mouth_bite_lip","eye":"eye_cry_1","brow":"brow_up_max"},{"id":42,"name":"exp_tears_of_joy","face":"face_blush_light","mouth":"mouth_laugh","eye":"eye_cry_3","brow":"brow_normal"},{"id":43,"name":"exp_xd_hyper","face":"face_default","mouth":"mouth_fang_open","eye":"eye_xd","brow":"brow_up_max"},{"id":44,"name":"exp_xd_ouch","face":"face_default","mouth":"mouth_panic_open","eye":"eye_xd","brow":"brow_down"},{"id":45,"name":"exp_xd_taunt","face":"face_default","mouth":"mouth_tongue_2","eye":"eye_xd","brow":"brow_up"},{"id":46,"name":"exp_xd_pout","face":"face_default","mouth":"mouth_pout_2","eye":"eye_xd","brow":"brow_up_max"},{"id":47,"name":"exp_dizzy","face":"face_default","mouth":"mouth_panic_open","eye":"eye_dizzy_2","brow":"brow_down"},{"id":48,"name":"exp_lovestruck","face":"face_blush_light","mouth":"mouth_smile","eye":"eye_heart","brow":"brow_down"},{"id":49,"name":"exp_obsessed","face":"face_blush_heavy","mouth":"mouth_laugh","eye":"eye_heart","brow":"brow_up"},{"id":50,"name":"exp_affectionate","face":"face_blush_light","mouth":"mouth_cat","eye":"eye_heart","brow":"brow_down"},{"id":51,"name":"exp_starstruck","face":"face_default","mouth":"mouth_shock","eye":"eye_star","brow":"brow_up"},{"id":52,"name":"exp_jitome_deadpan","face":"face_default","mouth":"mouth_neutral","eye":"eye_jitome","brow":"brow_normal"},{"id":53,"name":"exp_jitome_amused","face":"face_default","mouth":"mouth_smile","eye":"eye_jitome","brow":"brow_up"},{"id":54,"name":"exp_jitome_glare","face":"face_default","mouth":"mouth_pout_2","eye":"eye_jitome","brow":"brow_up_max"},{"id":55,"name":"exp_jitome_meh","face":"face_default","mouth":"mouth_huh","eye":"eye_jitome","brow":"brow_normal"},{"id":56,"name":"exp_jitome_cringe","face":"face_default","mouth":"mouth_awawa","eye":"eye_jitome","brow":"brow_question"},{"id":57,"name":"exp_jitome_cheeky","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_jitome","brow":"brow_up"},{"id":58,"name":"exp_jitome_hopeless","face":"face_default","mouth":"mouth_down","eye":"eye_jitome","brow":"brow_down"},{"id":59,"name":"exp_line_speechless","face":"face_default","mouth":"mouth_tremble_1","eye":"eye_line","brow":"brow_normal"},{"id":60,"name":"exp_line_purr","face":"face_default","mouth":"mouth_cat","eye":"eye_line","brow":"brow_normal"},{"id":61,"name":"exp_line_drool","face":"face_default","mouth":"mouth_drool","eye":"eye_line","brow":"brow_normal"},{"id":62,"name":"exp_peaceful_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_closed_1","brow":"brow_normal"},{"id":63,"name":"exp_pain_closed","face":"face_default","mouth":"mouth_bite_lip","eye":"eye_closed_1","brow":"brow_down"},{"id":64,"name":"exp_confident_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_closed_2","brow":"brow_up"},{"id":65,"name":"exp_got_it_closed","face":"face_default","mouth":"mouth_shock","eye":"eye_closed_2","brow":"brow_up"},{"id":66,"name":"exp_thinking_closed","face":"face_default","mouth":"mouth_neutral","eye":"eye_closed_2","brow":"brow_question"},{"id":67,"name":"exp_proud_closed","face":"face_default","mouth":"mouth_laugh","eye":"eye_closed_2","brow":"brow_up"},{"id":68,"name":"exp_phew_closed","face":"face_default","mouth":"mouth_blank_2","eye":"eye_closed_2","brow":"brow_down"},{"id":69,"name":"exp_pout_closed","face":"face_default","mouth":"mouth_pout_2","eye":"eye_closed_2","brow":"brow_up"},{"id":70,"name":"exp_blush_huh","face":"face_blush_light","mouth":"mouth_huh","eye":"eye_normal","brow":"brow_normal"},{"id":71,"name":"exp_blush_panic","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_normal"},{"id":72,"name":"exp_blush_overload","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_dizzy_1","brow":"brow_normal"},{"id":73,"name":"exp_blush_puppy","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_puppy","brow":"brow_normal"},{"id":74,"name":"exp_blush_ouch","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_xd","brow":"brow_up"},{"id":75,"name":"exp_blush_disgust","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_jitome","brow":"brow_question"},{"id":76,"name":"exp_blush_sob","face":"face_blush_heavy","mouth":"mouth_panic_open","eye":"eye_cry_1","brow":"brow_down"},{"id":77,"name":"exp_blush_embarrassed","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_closed_2","brow":"brow_down"},{"id":78,"name":"exp_blush_awkward","face":"face_blush_heavy","mouth":"mouth_laugh","eye":"eye_smile","brow":"brow_down"},{"id":79,"name":"exp_fever_closed","face":"face_blush_heavy","mouth":"mouth_down","eye":"eye_closed_2","brow":"brow_down"},{"id":80,"name":"exp_derp","face":"face_default","mouth":"mouth_drool","eye":"eye_avert","brow":"brow_normal"},{"id":81,"name":"exp_terrified","face":"face_shadow","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_normal"},{"id":82,"name":"exp_furious","face":"face_blush_light","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_up_max"},{"id":83,"name":"exp_sadistic","face":"face_shadow","mouth":"mouth_smirk_2","eye":"eye_disgust","brow":"brow_normal"},{"id":84,"name":"exp_tehepero","face":"face_blush_light","mouth":"mouth_tongue_2","eye":"eye_half_2","brow":"brow_normal"}]};
-      const ASSET_REFS = {"base":["nephilim","nightwear","nude","outfit_winter","school_uniform","seraphim","streetwear_full","streetwear_inner","underwear"],"face":["face_blush_heavy","face_blush_light","face_default","face_shadow"],"eye":["eye_avert","eye_closed_1","eye_closed_2","eye_cry_1","eye_cry_2","eye_cry_3","eye_dark","eye_disgust","eye_dizzy_1","eye_dizzy_2","eye_half_1","eye_half_2","eye_heart","eye_jitome","eye_line","eye_normal","eye_puppy","eye_shock","eye_slit","eye_smile","eye_star","eye_wide","eye_wink_2","eye_xd"],"mouth":["mouth_awawa","mouth_bite_lip","mouth_blank_1","mouth_blank_2","mouth_cat","mouth_down","mouth_drool","mouth_fang_open","mouth_huh","mouth_laugh","mouth_laugh_happy","mouth_neutral","mouth_panic_open","mouth_pout_2","mouth_shock","mouth_smile","mouth_smirk_1","mouth_smirk_2","mouth_tongue_2","mouth_tremble_1"],"brow":["brow_down","brow_normal","brow_question","brow_up","brow_up_max"]};
+      const EXP_DATA = {"count":91,"expressions":[{"id":1,"name":"exp_default","face":"face_default","mouth":"mouth_neutral","eye":"eye_normal","brow":"brow_normal"},{"id":2,"name":"exp_smile_soft","face":"face_default","mouth":"mouth_smile","eye":"eye_normal","brow":"brow_normal"},{"id":3,"name":"exp_glum","face":"face_default","mouth":"mouth_down","eye":"eye_normal","brow":"brow_down"},{"id":4,"name":"exp_serious","face":"face_default","mouth":"mouth_down","eye":"eye_normal","brow":"brow_up_max"},{"id":5,"name":"exp_cheerful","face":"face_default","mouth":"mouth_smile","eye":"eye_normal","brow":"brow_up"},{"id":6,"name":"exp_huh","face":"face_default","mouth":"mouth_huh","eye":"eye_avert","brow":"brow_question","emotion":"Emotion_Curiosity"},{"id":7,"name":"exp_deflated","face":"face_default","mouth":"mouth_tremble_1","eye":"eye_half_1","brow":"brow_down","emotion":"Emotion_Fearful"},{"id":8,"name":"exp_cat","face":"face_default","mouth":"mouth_cat","eye":"eye_normal","brow":"brow_up"},{"id":9,"name":"exp_cat_smug","face":"face_default","mouth":"mouth_cat","eye":"eye_half_1","brow":"brow_up","emotion":"Emotion_Sparkle"},{"id":10,"name":"exp_cat_playful","face":"face_default","mouth":"mouth_cat","eye":"eye_closed_2","brow":"brow_up","emotion":"Emotion_Excited"},{"id":11,"name":"exp_cat_star","face":"face_default","mouth":"mouth_cat","eye":"eye_star","brow":"brow_up_max","emotion":"Emotion_Star"},{"id":12,"name":"exp_cat_chill","face":"face_default","mouth":"mouth_cat","eye":"eye_line","brow":"brow_up","emotion":"Emotion_Glee"},{"id":13,"name":"exp_cat_xd","face":"face_default","mouth":"mouth_cat","eye":"eye_xd","brow":"brow_up","emotion":"Emotion_Amazed"},{"id":14,"name":"exp_cat_shock","face":"face_default","mouth":"mouth_cat","eye":"eye_wide","brow":"brow_up","other":"sweat","emotion":"Emotion_Surprise"},{"id":15,"name":"exp_pout","face":"face_default","mouth":"mouth_pout_2","eye":"eye_avert","brow":"brow_up_max","emotion":"Emotion_Angry"},{"id":16,"name":"exp_smirk","face":"face_default","mouth":"mouth_smirk_1","eye":"eye_half_2","brow":"brow_up","emotion":"Emotion_Sparkle"},{"id":17,"name":"exp_smile_wry","face":"face_default","mouth":"mouth_smile","eye":"eye_smile","brow":"brow_down","emotion":"Emotion_Sweat"},{"id":18,"name":"exp_concerned","face":"face_default","mouth":"mouth_neutral","eye":"eye_normal","brow":"brow_down"},{"id":19,"name":"exp_pleading","face":"face_default","mouth":"mouth_awawa","eye":"eye_puppy","brow":"brow_down"},{"id":20,"name":"exp_closed","face":"face_default","mouth":"mouth_neutral","eye":"eye_closed_1","brow":"brow_normal"},{"id":21,"name":"exp_playful","face":"face_default","mouth":"mouth_tongue_2","eye":"eye_wink_2","brow":"brow_up","emotion":"Emotion_Excited"},{"id":22,"name":"exp_sparkle","face":"face_default","mouth":"mouth_blank_1","eye":"eye_star","brow":"brow_up_max","emotion":"Emotion_Excited"},{"id":23,"name":"exp_surprised","face":"face_default","mouth":"mouth_blank_1","eye":"eye_wide","brow":"brow_normal","other":"sweat","emotion":"Emotion_Surprise"},{"id":24,"name":"exp_shocked_sad","face":"face_default","mouth":"mouth_blank_1","eye":"eye_wide","brow":"brow_down","other":"sweat","emotion":"Emotion_Surprise"},{"id":25,"name":"exp_shock_comic","face":"face_default","mouth":"mouth_shock","eye":"eye_shock","brow":"brow_up","other":"sweat","emotion":"Emotion_Surprise2"},{"id":26,"name":"exp_panic","face":"face_default","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_down","other":"sweat","emotion":"Emotion_Fearful"},{"id":27,"name":"exp_scream_comic","face":"face_default","mouth":"mouth_panic_open","eye":"eye_shock","brow":"brow_down","other":"sweat","emotion":"Emotion_Fearful"},{"id":28,"name":"exp_drowsy","face":"face_default","mouth":"mouth_huh","eye":"eye_slit","brow":"brow_normal","emotion":"Emotion_Sleepy"},{"id":29,"name":"exp_smile_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_smile","brow":"brow_normal"},{"id":30,"name":"exp_smile_twitch","face":"face_default","mouth":"mouth_smirk_2","eye":"eye_smile","brow":"brow_question","emotion":"Emotion_Angry"},{"id":31,"name":"exp_smile_hollow","face":"face_shadow","mouth":"mouth_smile","eye":"eye_dark","brow":"brow_normal"},{"id":32,"name":"exp_repulsed","face":"face_shadow","mouth":"mouth_awawa","eye":"eye_disgust","brow":"brow_normal"},{"id":33,"name":"exp_craving","face":"face_default","mouth":"mouth_drool","eye":"eye_line","brow":"brow_normal"},{"id":34,"name":"exp_laugh_awkward","face":"face_default","mouth":"mouth_laugh","eye":"eye_smile","brow":"brow_down","emotion":"Emotion_Distress"},{"id":35,"name":"exp_laugh_joyful","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_smile","brow":"brow_up","emotion":"Emotion_Glee"},{"id":36,"name":"exp_wink","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_wink_2","brow":"brow_up","emotion":"Emotion_Sparkle"},{"id":37,"name":"exp_fufufu","face":"face_default","mouth":"mouth_smirk_2","eye":"eye_closed_2","brow":"brow_up"},{"id":38,"name":"exp_relieved","face":"face_default","mouth":"mouth_smile","eye":"eye_puppy","brow":"brow_down"},{"id":39,"name":"exp_sob","face":"face_default","mouth":"mouth_awawa","eye":"eye_cry_2","brow":"brow_down"},{"id":40,"name":"exp_bawl","face":"face_blush_light","mouth":"mouth_panic_open","eye":"eye_cry_1","brow":"brow_down"},{"id":41,"name":"exp_cry_frustrated","face":"face_blush_light","mouth":"mouth_bite_lip","eye":"eye_cry_1","brow":"brow_up_max"},{"id":42,"name":"exp_tears_of_joy","face":"face_blush_light","mouth":"mouth_laugh","eye":"eye_cry_3","brow":"brow_normal","emotion":"Emotion_Heart"},{"id":43,"name":"exp_xd_hyper","face":"face_default","mouth":"mouth_fang_open","eye":"eye_xd","brow":"brow_up_max","emotion":"Emotion_Laughter"},{"id":44,"name":"exp_xd_ouch","face":"face_default","mouth":"mouth_panic_open","eye":"eye_xd","brow":"brow_down","emotion":"Emotion_Confusion"},{"id":45,"name":"exp_xd_taunt","face":"face_default","mouth":"mouth_tongue_2","eye":"eye_xd","brow":"brow_up","emotion":"Emotion_Glee"},{"id":46,"name":"exp_xd_pout","face":"face_default","mouth":"mouth_pout_2","eye":"eye_xd","brow":"brow_up_max","emotion":"Emotion_Steam"},{"id":47,"name":"exp_dizzy","face":"face_default","mouth":"mouth_panic_open","eye":"eye_dizzy_2","brow":"brow_down","other":"sweat","emotion":"Emotion_Confusion"},{"id":48,"name":"exp_lovestruck","face":"face_blush_light","mouth":"mouth_smile","eye":"eye_heart","brow":"brow_down","emotion":"Emotion_Heart"},{"id":49,"name":"exp_obsessed","face":"face_blush_heavy","mouth":"mouth_laugh","eye":"eye_heart","brow":"brow_up"},{"id":50,"name":"exp_affectionate","face":"face_blush_light","mouth":"mouth_cat","eye":"eye_heart","brow":"brow_down","emotion":"Emotion_Heart"},{"id":51,"name":"exp_starstruck","face":"face_default","mouth":"mouth_shock","eye":"eye_star","brow":"brow_up","emotion":"Emotion_Sparkle"},{"id":52,"name":"exp_jitome_deadpan","face":"face_default","mouth":"mouth_neutral","eye":"eye_jitome","brow":"brow_normal"},{"id":53,"name":"exp_jitome_amused","face":"face_default","mouth":"mouth_smile","eye":"eye_jitome","brow":"brow_up"},{"id":54,"name":"exp_jitome_glare","face":"face_default","mouth":"mouth_pout_2","eye":"eye_jitome","brow":"brow_up_max","emotion":"Emotion_Angry"},{"id":55,"name":"exp_jitome_meh","face":"face_default","mouth":"mouth_huh","eye":"eye_jitome","brow":"brow_normal"},{"id":56,"name":"exp_jitome_cringe","face":"face_default","mouth":"mouth_awawa","eye":"eye_jitome","brow":"brow_question","emotion":"Emotion_Line"},{"id":57,"name":"exp_jitome_cheeky","face":"face_default","mouth":"mouth_laugh_happy","eye":"eye_jitome","brow":"brow_up"},{"id":58,"name":"exp_jitome_hopeless","face":"face_default","mouth":"mouth_down","eye":"eye_jitome","brow":"brow_down","emotion":"Emotion_Fearful"},{"id":59,"name":"exp_line_speechless","face":"face_default","mouth":"mouth_tremble_1","eye":"eye_line","brow":"brow_normal","emotion":"Emotion_Line"},{"id":60,"name":"exp_line_purr","face":"face_default","mouth":"mouth_cat","eye":"eye_line","brow":"brow_normal","emotion":"Emotion_Sleepy"},{"id":61,"name":"exp_line_drool","face":"face_default","mouth":"mouth_drool","eye":"eye_line","brow":"brow_normal"},{"id":62,"name":"exp_peaceful_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_closed_1","brow":"brow_normal"},{"id":63,"name":"exp_pain_closed","face":"face_default","mouth":"mouth_bite_lip","eye":"eye_closed_1","brow":"brow_down","emotion":"Emotion_Confusion"},{"id":64,"name":"exp_confident_closed","face":"face_default","mouth":"mouth_smile","eye":"eye_closed_2","brow":"brow_up","emotion":"Emotion_Sparkle"},{"id":65,"name":"exp_got_it_closed","face":"face_default","mouth":"mouth_shock","eye":"eye_closed_2","brow":"brow_up","emotion":"Emotion_Amazed"},{"id":66,"name":"exp_thinking_closed","face":"face_default","mouth":"mouth_neutral","eye":"eye_closed_2","brow":"brow_question","emotion":"Emotion_Curiosity"},{"id":67,"name":"exp_proud_closed","face":"face_default","mouth":"mouth_laugh","eye":"eye_closed_2","brow":"brow_up","emotion":"Emotion_Excited"},{"id":68,"name":"exp_sigh_closed","face":"face_default","mouth":"mouth_blank_2","eye":"eye_closed_2","brow":"brow_down","emotion":"Emotion_Sigh"},{"id":69,"name":"exp_pout_closed","face":"face_default","mouth":"mouth_pout_2","eye":"eye_closed_2","brow":"brow_up","emotion":"Emotion_Angry"},{"id":70,"name":"exp_blush_huh","face":"face_blush_light","mouth":"mouth_huh","eye":"eye_normal","brow":"brow_normal","emotion":"Emotion_Curiosity"},{"id":71,"name":"exp_blush_panic","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_normal","other":"sweat","emotion":"Emotion_Sweat"},{"id":72,"name":"exp_blush_overload","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_dizzy_1","brow":"brow_normal","other":"sweat","emotion":"Emotion_Confusion"},{"id":73,"name":"exp_blush_puppy","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_puppy","brow":"brow_normal"},{"id":74,"name":"exp_blush_ouch","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_xd","brow":"brow_up","other":"sweat","emotion":"Emotion_Shocked"},{"id":75,"name":"exp_blush_disgust","face":"face_blush_heavy","mouth":"mouth_tremble_1","eye":"eye_jitome","brow":"brow_question","emotion":"Emotion_Fearful"},{"id":76,"name":"exp_blush_sob","face":"face_blush_heavy","mouth":"mouth_panic_open","eye":"eye_cry_1","brow":"brow_down"},{"id":77,"name":"exp_blush_embarrassed","face":"face_blush_heavy","mouth":"mouth_awawa","eye":"eye_closed_2","brow":"brow_down","emotion":"Emotion_Confusion"},{"id":78,"name":"exp_blush_awkward","face":"face_blush_heavy","mouth":"mouth_laugh","eye":"eye_smile","brow":"brow_down","emotion":"Emotion_Distress"},{"id":79,"name":"exp_blush_pain_closed","face":"face_blush_heavy","mouth":"mouth_down","eye":"eye_closed_2","brow":"brow_down","emotion":"Emotion_Confusion"},{"id":80,"name":"exp_derp","face":"face_default","mouth":"mouth_drool","eye":"eye_avert","brow":"brow_normal","emotion":"Emotion_Curiosity"},{"id":81,"name":"exp_terrified","face":"face_shadow","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_normal","other":"sweat","emotion":"Emotion_Fearful"},{"id":82,"name":"exp_furious","face":"face_blush_light","mouth":"mouth_awawa","eye":"eye_wide","brow":"brow_up_max","emotion":"Emotion_Angry"},{"id":83,"name":"exp_sadistic","face":"face_shadow","mouth":"mouth_smirk_2","eye":"eye_disgust","brow":"brow_normal"},{"id":84,"name":"exp_tehepero","face":"face_blush_light","mouth":"mouth_tongue_2","eye":"eye_half_2","brow":"brow_normal","emotion":"Emotion_Heart"},{"id":85,"name":"exp_sleep_neutral","face":"face_default","mouth":"mouth_neutral","eye":"eye_closed_1","brow":"brow_normal","emotion":"Emotion_zzz"},{"id":86,"name":"exp_sleep_peaceful","face":"face_default","mouth":"mouth_smile","eye":"eye_closed_1","brow":"brow_normal","emotion":"Emotion_zzz"},{"id":87,"name":"exp_sleep_smile","face":"face_default","mouth":"mouth_smile","eye":"eye_smile","brow":"brow_normal","emotion":"Emotion_zzz"},{"id":88,"name":"exp_sleep_drowsy","face":"face_default","mouth":"mouth_huh","eye":"eye_slit","brow":"brow_normal","emotion":["Emotion_Sleepy","Emotion_zzz"]},{"id":89,"name":"exp_sleep_purr","face":"face_default","mouth":"mouth_cat","eye":"eye_line","brow":"brow_normal","emotion":["Emotion_Sleepy","Emotion_zzz"]},{"id":90,"name":"exp_sleep_drool","face":"face_default","mouth":"mouth_drool","eye":"eye_line","brow":"brow_normal","emotion":"Emotion_zzz"},{"id":91,"name":"exp_sleep_nightmare","face":"face_default","mouth":"mouth_bite_lip","eye":"eye_closed_1","brow":"brow_down","emotion":["Emotion_Confusion","Emotion_zzz"]}]};
+      const ASSET_REFS = {"base":["nephilim","nightwear","nude","outfit_winter","school_uniform","seraphim","streetwear_full","streetwear_inner","underwear"],"face":["face_blush_heavy","face_blush_light","face_default","face_pale","face_shadow"],"eye":["eye_avert","eye_closed_1","eye_closed_2","eye_cry_1","eye_cry_2","eye_cry_3","eye_dark","eye_disgust","eye_dizzy_1","eye_dizzy_2","eye_half_1","eye_half_2","eye_heart","eye_jitome","eye_line","eye_normal","eye_puppy","eye_shock","eye_slit","eye_smile","eye_star","eye_wide","eye_wink_2","eye_xd"],"mouth":["mouth_awawa","mouth_bite_lip","mouth_blank_1","mouth_blank_2","mouth_cat","mouth_down","mouth_drool","mouth_fang_open","mouth_huh","mouth_laugh","mouth_laugh_happy","mouth_neutral","mouth_panic_open","mouth_pout_2","mouth_shock","mouth_smile","mouth_smirk_1","mouth_smirk_2","mouth_tongue_2","mouth_tremble_1"],"brow":["brow_down","brow_normal","brow_question","brow_up","brow_up_max"],"other":["pale_1","pale_2","pale_3","shadow_1","shadow_2","shadow_3","sweat"],"emotion":["Emotion_Amazed","Emotion_Angry","Emotion_Confusion","Emotion_Curiosity","Emotion_Distress","Emotion_Excited","Emotion_Fearful","Emotion_Glee","Emotion_Heart","Emotion_Laughter","Emotion_Line","Emotion_Shocked","Emotion_Sigh","Emotion_Sleepy","Emotion_Sparkle","Emotion_Star","Emotion_Steam","Emotion_Surprise","Emotion_Surprise2","Emotion_Sweat","Emotion_zzz"]};
       const ASSET_BASE_URL = 'https://hasheeper.github.io/project-mama-ena/mama-assets/standing';
       const DEFAULT_EXPRESSION = 'exp_smile_soft';
       const DEFAULT_OUTFIT = 'streetwear_full';
@@ -160,19 +176,62 @@
           face: 'expression/face_fx',
           eye: 'expression/eyes',
           mouth: 'expression/mouth',
-          brow: 'expression/brow'
+          brow: 'expression/brow',
+          other: 'expression/other',
+          emotion: 'emotion'
         };
         return ASSET_BASE_URL.replace(/\/+$/, '') + '/' + folders[group] + '/' + encodeURIComponent(name) + '.png';
       }
 
+      function resolveMoodLayers(expression, outfit) {
+        const mood = expression.face === 'face_shadow'
+          ? 'shadow'
+          : expression.face === 'face_pale'
+            ? 'pale'
+            : '';
+        if (!mood) return { under: '', top: '' };
+        const underVariant = outfit === 'nephilim' || outfit === 'seraphim' ? '3' : '2';
+        return {
+          under: assetUrl('other', mood + '_' + underVariant),
+          top: assetUrl('other', mood + '_1')
+        };
+      }
+
+      function resolveExpressionOtherUrls(expression) {
+        const names = Array.isArray(expression.other)
+          ? expression.other
+          : expression.other
+            ? [expression.other]
+            : [];
+        return names
+          .filter((name) => ASSET_REFS.other.includes(name))
+          .map((name) => assetUrl('other', name));
+      }
+
+      function resolveExpressionEmotionUrls(expression) {
+        const names = Array.isArray(expression.emotion)
+          ? expression.emotion
+          : expression.emotion
+            ? [expression.emotion]
+            : [];
+        return names
+          .filter((name) => ASSET_REFS.emotion.includes(name))
+          .map((name) => assetUrl('emotion', name));
+      }
+
       function getCriticalUrls(expression, outfit) {
+        const moodLayers = resolveMoodLayers(expression, outfit || DEFAULT_OUTFIT);
         const urls = [
           assetUrl('face', 'face_default'),
           expression.face !== 'face_default' ? assetUrl('face', expression.face) : '',
           assetUrl('mouth', expression.mouth || 'mouth_neutral'),
+          ...resolveExpressionOtherUrls(expression),
           assetUrl('base', outfit || DEFAULT_OUTFIT),
           assetUrl('eye', expression.eye || 'eye_normal'),
-          assetUrl('brow', expression.brow || 'brow_normal')
+          moodLayers.under,
+          assetUrl('brow', expression.brow || 'brow_normal'),
+          moodLayers.top,
+          ...resolveExpressionEmotionUrls(expression)
         ];
         return urls.filter(Boolean);
       }
@@ -183,7 +242,9 @@
           ASSET_REFS.face.map((name) => assetUrl('face', name)),
           ASSET_REFS.mouth.map((name) => assetUrl('mouth', name)),
           ASSET_REFS.eye.map((name) => assetUrl('eye', name)),
-          ASSET_REFS.brow.map((name) => assetUrl('brow', name))
+          ASSET_REFS.brow.map((name) => assetUrl('brow', name)),
+          ASSET_REFS.other.map((name) => assetUrl('other', name)),
+          ASSET_REFS.emotion.map((name) => assetUrl('emotion', name))
         );
       }
 
@@ -242,7 +303,7 @@
       function makeLayer(kind, src, alt) {
         if (!src) return null;
         const image = document.createElement('img');
-        image.className = 'mama-standing__layer mama-standing__layer--' + (kind === 'face_fx' ? 'face-fx' : kind);
+        image.className = 'mama-standing__layer mama-standing__layer--' + kind.replace(/_/g, '-');
         image.src = src;
         image.alt = alt || '';
         image.decoding = 'async';
@@ -251,13 +312,22 @@
       }
 
       function resolveLayers(expression, outfit) {
+        const moodLayers = resolveMoodLayers(expression, outfit || DEFAULT_OUTFIT);
         return [
           makeLayer('face_fx', assetUrl('face', 'face_default'), ''),
           expression.face !== 'face_default' ? makeLayer('face_fx', assetUrl('face', expression.face), '') : null,
           makeLayer('mouth', assetUrl('mouth', expression.mouth || 'mouth_neutral'), ''),
+          ...resolveExpressionOtherUrls(expression).map(function (url) {
+            return makeLayer('expression_other', url, '');
+          }),
           makeLayer('base', assetUrl('base', outfit || DEFAULT_OUTFIT), ''),
           makeLayer('eyes', assetUrl('eye', expression.eye || 'eye_normal'), ''),
-          makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), '')
+          makeLayer('mood_under', moodLayers.under, ''),
+          makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), ''),
+          makeLayer('mood_top', moodLayers.top, ''),
+          ...resolveExpressionEmotionUrls(expression).map(function (url) {
+            return makeLayer('emotion', url, '');
+          })
         ].filter(Boolean);
       }
 

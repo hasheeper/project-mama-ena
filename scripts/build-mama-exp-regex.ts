@@ -8,6 +8,8 @@ interface ExpressionRef {
   mouth: string;
   eye: string;
   brow: string;
+  other?: string | string[];
+  emotion?: string | string[];
 }
 
 interface ExpressionData {
@@ -21,6 +23,8 @@ interface AssetRefs {
   eye: string[];
   mouth: string[];
   brow: string[];
+  other: string[];
+  emotion: string[];
 }
 
 interface OutputConfig {
@@ -32,6 +36,8 @@ interface OutputConfig {
 const rootDir = process.cwd();
 const expressionDir = path.join(rootDir, 'src/assets/png/standing/expression');
 const baseDir = path.join(rootDir, 'src/assets/png/standing/base');
+const otherDir = path.join(expressionDir, 'other');
+const emotionDir = path.join(rootDir, 'src/assets/png/standing/emotion');
 const expDataPath = path.join(expressionDir, 'exp.json');
 const assetCachePath = path.join(rootDir, 'apps/st-bridge/packs/mama-main/asset-cache.js');
 
@@ -61,10 +67,18 @@ function collectAssetRefs(data: ExpressionData): AssetRefs {
       .filter((name) => name.endsWith('.png'))
       .map((name) => name.replace(/\.png$/i, ''))
       .sort(),
-    face: unique(['face_default', ...data.expressions.map((item) => item.face)]),
+    face: unique(['face_default', 'face_pale', ...data.expressions.map((item) => item.face)]),
     eye: unique(data.expressions.map((item) => item.eye)),
     mouth: unique(data.expressions.map((item) => item.mouth)),
-    brow: unique(data.expressions.map((item) => item.brow))
+    brow: unique(data.expressions.map((item) => item.brow)),
+    other: fs.readdirSync(otherDir)
+      .filter((name) => name.endsWith('.png'))
+      .map((name) => name.replace(/\.png$/i, ''))
+      .sort(),
+    emotion: fs.readdirSync(emotionDir)
+      .filter((name) => name.endsWith('.png'))
+      .map((name) => name.replace(/\.png$/i, ''))
+      .sort()
   };
 }
 
@@ -164,6 +178,10 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       z-index: 20;
     }
 
+    .mama-standing__layer--expression-other {
+      z-index: 25;
+    }
+
     .mama-standing__layer--base {
       z-index: 30;
     }
@@ -172,8 +190,20 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       z-index: 40;
     }
 
+    .mama-standing__layer--mood-under {
+      z-index: 45;
+    }
+
     .mama-standing__layer--brow {
       z-index: 50;
+    }
+
+    .mama-standing__layer--mood-top {
+      z-index: 60;
+    }
+
+    .mama-standing__layer--emotion {
+      z-index: 70;
     }
   </style>
 </head>
@@ -235,19 +265,62 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           face: 'expression/face_fx',
           eye: 'expression/eyes',
           mouth: 'expression/mouth',
-          brow: 'expression/brow'
+          brow: 'expression/brow',
+          other: 'expression/other',
+          emotion: 'emotion'
         };
         return ASSET_BASE_URL.replace(/\\/+$/, '') + '/' + folders[group] + '/' + encodeURIComponent(name) + '.png';
       }
 
+      function resolveMoodLayers(expression, outfit) {
+        const mood = expression.face === 'face_shadow'
+          ? 'shadow'
+          : expression.face === 'face_pale'
+            ? 'pale'
+            : '';
+        if (!mood) return { under: '', top: '' };
+        const underVariant = outfit === 'nephilim' || outfit === 'seraphim' ? '3' : '2';
+        return {
+          under: assetUrl('other', mood + '_' + underVariant),
+          top: assetUrl('other', mood + '_1')
+        };
+      }
+
+      function resolveExpressionOtherUrls(expression) {
+        const names = Array.isArray(expression.other)
+          ? expression.other
+          : expression.other
+            ? [expression.other]
+            : [];
+        return names
+          .filter((name) => ASSET_REFS.other.includes(name))
+          .map((name) => assetUrl('other', name));
+      }
+
+      function resolveExpressionEmotionUrls(expression) {
+        const names = Array.isArray(expression.emotion)
+          ? expression.emotion
+          : expression.emotion
+            ? [expression.emotion]
+            : [];
+        return names
+          .filter((name) => ASSET_REFS.emotion.includes(name))
+          .map((name) => assetUrl('emotion', name));
+      }
+
       function getCriticalUrls(expression, outfit) {
+        const moodLayers = resolveMoodLayers(expression, outfit || DEFAULT_OUTFIT);
         const urls = [
           assetUrl('face', 'face_default'),
           expression.face !== 'face_default' ? assetUrl('face', expression.face) : '',
           assetUrl('mouth', expression.mouth || 'mouth_neutral'),
+          ...resolveExpressionOtherUrls(expression),
           assetUrl('base', outfit || DEFAULT_OUTFIT),
           assetUrl('eye', expression.eye || 'eye_normal'),
-          assetUrl('brow', expression.brow || 'brow_normal')
+          moodLayers.under,
+          assetUrl('brow', expression.brow || 'brow_normal'),
+          moodLayers.top,
+          ...resolveExpressionEmotionUrls(expression)
         ];
         return urls.filter(Boolean);
       }
@@ -258,7 +331,9 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           ASSET_REFS.face.map((name) => assetUrl('face', name)),
           ASSET_REFS.mouth.map((name) => assetUrl('mouth', name)),
           ASSET_REFS.eye.map((name) => assetUrl('eye', name)),
-          ASSET_REFS.brow.map((name) => assetUrl('brow', name))
+          ASSET_REFS.brow.map((name) => assetUrl('brow', name)),
+          ASSET_REFS.other.map((name) => assetUrl('other', name)),
+          ASSET_REFS.emotion.map((name) => assetUrl('emotion', name))
         );
       }
 
@@ -317,7 +392,7 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       function makeLayer(kind, src, alt) {
         if (!src) return null;
         const image = document.createElement('img');
-        image.className = 'mama-standing__layer mama-standing__layer--' + (kind === 'face_fx' ? 'face-fx' : kind);
+        image.className = 'mama-standing__layer mama-standing__layer--' + kind.replace(/_/g, '-');
         image.src = src;
         image.alt = alt || '';
         image.decoding = 'async';
@@ -326,13 +401,22 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       }
 
       function resolveLayers(expression, outfit) {
+        const moodLayers = resolveMoodLayers(expression, outfit || DEFAULT_OUTFIT);
         return [
           makeLayer('face_fx', assetUrl('face', 'face_default'), ''),
           expression.face !== 'face_default' ? makeLayer('face_fx', assetUrl('face', expression.face), '') : null,
           makeLayer('mouth', assetUrl('mouth', expression.mouth || 'mouth_neutral'), ''),
+          ...resolveExpressionOtherUrls(expression).map(function (url) {
+            return makeLayer('expression_other', url, '');
+          }),
           makeLayer('base', assetUrl('base', outfit || DEFAULT_OUTFIT), ''),
           makeLayer('eyes', assetUrl('eye', expression.eye || 'eye_normal'), ''),
-          makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), '')
+          makeLayer('mood_under', moodLayers.under, ''),
+          makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), ''),
+          makeLayer('mood_top', moodLayers.top, ''),
+          ...resolveExpressionEmotionUrls(expression).map(function (url) {
+            return makeLayer('emotion', url, '');
+          })
         ].filter(Boolean);
       }
 
@@ -479,7 +563,9 @@ function renderAssetCacheScript(): string {
       face: 'expression/face_fx',
       eye: 'expression/eyes',
       mouth: 'expression/mouth',
-      brow: 'expression/brow'
+      brow: 'expression/brow',
+      other: 'expression/other',
+      emotion: 'emotion'
     };
     return baseUrl + '/' + folders[group] + '/' + encodeURIComponent(name) + '.png';
   }
@@ -490,7 +576,9 @@ function renderAssetCacheScript(): string {
       ASSET_REFS.face.map((name) => assetUrl(baseUrl, 'face', name)),
       ASSET_REFS.mouth.map((name) => assetUrl(baseUrl, 'mouth', name)),
       ASSET_REFS.eye.map((name) => assetUrl(baseUrl, 'eye', name)),
-      ASSET_REFS.brow.map((name) => assetUrl(baseUrl, 'brow', name))
+      ASSET_REFS.brow.map((name) => assetUrl(baseUrl, 'brow', name)),
+      ASSET_REFS.other.map((name) => assetUrl(baseUrl, 'other', name)),
+      ASSET_REFS.emotion.map((name) => assetUrl(baseUrl, 'emotion', name))
     );
   }
 

@@ -29,6 +29,15 @@
       "status": "active",
       "notes": "Static iframe target for per-message <ena-exp> portrait rendering."
     },
+    "layer-debug": {
+      "id": "layer-debug",
+      "name": "M.A.M.A. Layer Debug",
+      "type": "debug",
+      "container": "./index.html?app=layer-debug",
+      "entry": "./apps/layer-debug/index.html",
+      "status": "active",
+      "notes": "Independent base and expression layer diff inspector with draggable zoom canvas."
+    },
     "concept-preview": {
       "id": "concept-preview",
       "name": "M.A.M.A. Concept Preview",

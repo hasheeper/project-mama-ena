@@ -1,5 +1,5 @@
 {
-  "count": 84,
+  "count": 91,
   "expressions": [
     {
       "id": 1,
@@ -47,7 +47,8 @@
       "face": "face_default",
       "mouth": "mouth_huh",
       "eye": "eye_avert",
-      "brow": "brow_question"
+      "brow": "brow_question",
+      "emotion": "Emotion_Curiosity"
     },
     {
       "id": 7,
@@ -55,7 +56,8 @@
       "face": "face_default",
       "mouth": "mouth_tremble_1",
       "eye": "eye_half_1",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 8,
@@ -71,7 +73,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_half_1",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Sparkle"
     },
     {
       "id": 10,
@@ -79,7 +82,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_closed_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Excited"
     },
     {
       "id": 11,
@@ -87,7 +91,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_star",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Star"
     },
     {
       "id": 12,
@@ -95,7 +100,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_line",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Glee"
     },
     {
       "id": 13,
@@ -103,7 +109,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_xd",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Amazed"
     },
     {
       "id": 14,
@@ -111,7 +118,9 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_wide",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "other": "sweat",
+      "emotion": "Emotion_Surprise"
     },
     {
       "id": 15,
@@ -119,7 +128,8 @@
       "face": "face_default",
       "mouth": "mouth_pout_2",
       "eye": "eye_avert",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Angry"
     },
     {
       "id": 16,
@@ -127,7 +137,8 @@
       "face": "face_default",
       "mouth": "mouth_smirk_1",
       "eye": "eye_half_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Sparkle"
     },
     {
       "id": 17,
@@ -135,7 +146,8 @@
       "face": "face_default",
       "mouth": "mouth_smile",
       "eye": "eye_smile",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Sweat"
     },
     {
       "id": 18,
@@ -167,7 +179,8 @@
       "face": "face_default",
       "mouth": "mouth_tongue_2",
       "eye": "eye_wink_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Excited"
     },
     {
       "id": 22,
@@ -175,7 +188,8 @@
       "face": "face_default",
       "mouth": "mouth_blank_1",
       "eye": "eye_star",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Excited"
     },
     {
       "id": 23,
@@ -183,7 +197,9 @@
       "face": "face_default",
       "mouth": "mouth_blank_1",
       "eye": "eye_wide",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "other": "sweat",
+      "emotion": "Emotion_Surprise"
     },
     {
       "id": 24,
@@ -191,7 +207,9 @@
       "face": "face_default",
       "mouth": "mouth_blank_1",
       "eye": "eye_wide",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "other": "sweat",
+      "emotion": "Emotion_Surprise"
     },
     {
       "id": 25,
@@ -199,7 +217,9 @@
       "face": "face_default",
       "mouth": "mouth_shock",
       "eye": "eye_shock",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "other": "sweat",
+      "emotion": "Emotion_Surprise2"
     },
     {
       "id": 26,
@@ -207,7 +227,9 @@
       "face": "face_default",
       "mouth": "mouth_awawa",
       "eye": "eye_wide",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "other": "sweat",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 27,
@@ -215,7 +237,9 @@
       "face": "face_default",
       "mouth": "mouth_panic_open",
       "eye": "eye_shock",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "other": "sweat",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 28,
@@ -223,7 +247,8 @@
       "face": "face_default",
       "mouth": "mouth_huh",
       "eye": "eye_slit",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
     },
     {
       "id": 29,
@@ -239,7 +264,8 @@
       "face": "face_default",
       "mouth": "mouth_smirk_2",
       "eye": "eye_smile",
-      "brow": "brow_question"
+      "brow": "brow_question",
+      "emotion": "Emotion_Angry"
     },
     {
       "id": 31,
@@ -271,7 +297,8 @@
       "face": "face_default",
       "mouth": "mouth_laugh",
       "eye": "eye_smile",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Distress"
     },
     {
       "id": 35,
@@ -279,7 +306,8 @@
       "face": "face_default",
       "mouth": "mouth_laugh_happy",
       "eye": "eye_smile",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Glee"
     },
     {
       "id": 36,
@@ -287,7 +315,8 @@
       "face": "face_default",
       "mouth": "mouth_laugh_happy",
       "eye": "eye_wink_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Sparkle"
     },
     {
       "id": 37,
@@ -335,7 +364,8 @@
       "face": "face_blush_light",
       "mouth": "mouth_laugh",
       "eye": "eye_cry_3",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Heart"
     },
     {
       "id": 43,
@@ -343,7 +373,8 @@
       "face": "face_default",
       "mouth": "mouth_fang_open",
       "eye": "eye_xd",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Laughter"
     },
     {
       "id": 44,
@@ -351,7 +382,8 @@
       "face": "face_default",
       "mouth": "mouth_panic_open",
       "eye": "eye_xd",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 45,
@@ -359,7 +391,8 @@
       "face": "face_default",
       "mouth": "mouth_tongue_2",
       "eye": "eye_xd",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Glee"
     },
     {
       "id": 46,
@@ -367,7 +400,8 @@
       "face": "face_default",
       "mouth": "mouth_pout_2",
       "eye": "eye_xd",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Steam"
     },
     {
       "id": 47,
@@ -375,7 +409,9 @@
       "face": "face_default",
       "mouth": "mouth_panic_open",
       "eye": "eye_dizzy_2",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "other": "sweat",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 48,
@@ -383,7 +419,8 @@
       "face": "face_blush_light",
       "mouth": "mouth_smile",
       "eye": "eye_heart",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Heart"
     },
     {
       "id": 49,
@@ -399,7 +436,8 @@
       "face": "face_blush_light",
       "mouth": "mouth_cat",
       "eye": "eye_heart",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Heart"
     },
     {
       "id": 51,
@@ -407,7 +445,8 @@
       "face": "face_default",
       "mouth": "mouth_shock",
       "eye": "eye_star",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Sparkle"
     },
     {
       "id": 52,
@@ -431,7 +470,8 @@
       "face": "face_default",
       "mouth": "mouth_pout_2",
       "eye": "eye_jitome",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Angry"
     },
     {
       "id": 55,
@@ -447,7 +487,8 @@
       "face": "face_default",
       "mouth": "mouth_awawa",
       "eye": "eye_jitome",
-      "brow": "brow_question"
+      "brow": "brow_question",
+      "emotion": "Emotion_Line"
     },
     {
       "id": 57,
@@ -463,7 +504,8 @@
       "face": "face_default",
       "mouth": "mouth_down",
       "eye": "eye_jitome",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 59,
@@ -471,7 +513,8 @@
       "face": "face_default",
       "mouth": "mouth_tremble_1",
       "eye": "eye_line",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Line"
     },
     {
       "id": 60,
@@ -479,7 +522,8 @@
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_line",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
     },
     {
       "id": 61,
@@ -503,7 +547,8 @@
       "face": "face_default",
       "mouth": "mouth_bite_lip",
       "eye": "eye_closed_1",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 64,
@@ -511,7 +556,8 @@
       "face": "face_default",
       "mouth": "mouth_smile",
       "eye": "eye_closed_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Sparkle"
     },
     {
       "id": 65,
@@ -519,7 +565,8 @@
       "face": "face_default",
       "mouth": "mouth_shock",
       "eye": "eye_closed_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Amazed"
     },
     {
       "id": 66,
@@ -527,7 +574,8 @@
       "face": "face_default",
       "mouth": "mouth_neutral",
       "eye": "eye_closed_2",
-      "brow": "brow_question"
+      "brow": "brow_question",
+      "emotion": "Emotion_Curiosity"
     },
     {
       "id": 67,
@@ -535,15 +583,17 @@
       "face": "face_default",
       "mouth": "mouth_laugh",
       "eye": "eye_closed_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Excited"
     },
     {
       "id": 68,
-      "name": "exp_phew_closed",
+      "name": "exp_sigh_closed",
       "face": "face_default",
       "mouth": "mouth_blank_2",
       "eye": "eye_closed_2",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Sigh"
     },
     {
       "id": 69,
@@ -551,7 +601,8 @@
       "face": "face_default",
       "mouth": "mouth_pout_2",
       "eye": "eye_closed_2",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "emotion": "Emotion_Angry"
     },
     {
       "id": 70,
@@ -559,7 +610,8 @@
       "face": "face_blush_light",
       "mouth": "mouth_huh",
       "eye": "eye_normal",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Curiosity"
     },
     {
       "id": 71,
@@ -567,7 +619,9 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_awawa",
       "eye": "eye_wide",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "other": "sweat",
+      "emotion": "Emotion_Sweat"
     },
     {
       "id": 72,
@@ -575,7 +629,9 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_tremble_1",
       "eye": "eye_dizzy_1",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "other": "sweat",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 73,
@@ -591,7 +647,9 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_awawa",
       "eye": "eye_xd",
-      "brow": "brow_up"
+      "brow": "brow_up",
+      "other": "sweat",
+      "emotion": "Emotion_Shocked"
     },
     {
       "id": 75,
@@ -599,7 +657,8 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_tremble_1",
       "eye": "eye_jitome",
-      "brow": "brow_question"
+      "brow": "brow_question",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 76,
@@ -615,7 +674,8 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_awawa",
       "eye": "eye_closed_2",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 78,
@@ -623,15 +683,17 @@
       "face": "face_blush_heavy",
       "mouth": "mouth_laugh",
       "eye": "eye_smile",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Distress"
     },
     {
       "id": 79,
-      "name": "exp_fever_closed",
+      "name": "exp_blush_pain_closed",
       "face": "face_blush_heavy",
       "mouth": "mouth_down",
       "eye": "eye_closed_2",
-      "brow": "brow_down"
+      "brow": "brow_down",
+      "emotion": "Emotion_Confusion"
     },
     {
       "id": 80,
@@ -639,7 +701,8 @@
       "face": "face_default",
       "mouth": "mouth_drool",
       "eye": "eye_avert",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Curiosity"
     },
     {
       "id": 81,
@@ -647,7 +710,9 @@
       "face": "face_shadow",
       "mouth": "mouth_awawa",
       "eye": "eye_wide",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "other": "sweat",
+      "emotion": "Emotion_Fearful"
     },
     {
       "id": 82,
@@ -655,7 +720,8 @@
       "face": "face_blush_light",
       "mouth": "mouth_awawa",
       "eye": "eye_wide",
-      "brow": "brow_up_max"
+      "brow": "brow_up_max",
+      "emotion": "Emotion_Angry"
     },
     {
       "id": 83,
@@ -671,7 +737,80 @@
       "face": "face_blush_light",
       "mouth": "mouth_tongue_2",
       "eye": "eye_half_2",
-      "brow": "brow_normal"
+      "brow": "brow_normal",
+      "emotion": "Emotion_Heart"
+    },
+    {
+      "id": 85,
+      "name": "exp_sleep_neutral",
+      "face": "face_default",
+      "mouth": "mouth_neutral",
+      "eye": "eye_closed_1",
+      "brow": "brow_normal",
+      "emotion": "Emotion_zzz"
+    },
+    {
+      "id": 86,
+      "name": "exp_sleep_peaceful",
+      "face": "face_default",
+      "mouth": "mouth_smile",
+      "eye": "eye_closed_1",
+      "brow": "brow_normal",
+      "emotion": "Emotion_zzz"
+    },
+    {
+      "id": 87,
+      "name": "exp_sleep_smile",
+      "face": "face_default",
+      "mouth": "mouth_smile",
+      "eye": "eye_smile",
+      "brow": "brow_normal",
+      "emotion": "Emotion_zzz"
+    },
+    {
+      "id": 88,
+      "name": "exp_sleep_drowsy",
+      "face": "face_default",
+      "mouth": "mouth_huh",
+      "eye": "eye_slit",
+      "brow": "brow_normal",
+      "emotion": [
+        "Emotion_Sleepy",
+        "Emotion_zzz"
+      ]
+    },
+    {
+      "id": 89,
+      "name": "exp_sleep_purr",
+      "face": "face_default",
+      "mouth": "mouth_cat",
+      "eye": "eye_line",
+      "brow": "brow_normal",
+      "emotion": [
+        "Emotion_Sleepy",
+        "Emotion_zzz"
+      ]
+    },
+    {
+      "id": 90,
+      "name": "exp_sleep_drool",
+      "face": "face_default",
+      "mouth": "mouth_drool",
+      "eye": "eye_line",
+      "brow": "brow_normal",
+      "emotion": "Emotion_zzz"
+    },
+    {
+      "id": 91,
+      "name": "exp_sleep_nightmare",
+      "face": "face_default",
+      "mouth": "mouth_bite_lip",
+      "eye": "eye_closed_1",
+      "brow": "brow_down",
+      "emotion": [
+        "Emotion_Confusion",
+        "Emotion_zzz"
+      ]
     }
   ]
 }

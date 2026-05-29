@@ -25,6 +25,10 @@
   z-index: 20;
 }
 
+.mama-standing__layer--expression-other {
+  z-index: 25;
+}
+
 .mama-standing__layer--base {
   z-index: 30;
 }
@@ -33,6 +37,18 @@
   z-index: 40;
 }
 
+.mama-standing__layer--mood-under {
+  z-index: 45;
+}
+
 .mama-standing__layer--brow {
   z-index: 50;
+}
+
+.mama-standing__layer--mood-top {
+  z-index: 60;
+}
+
+.mama-standing__layer--emotion {
+  z-index: 70;
 }

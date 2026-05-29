@@ -107,9 +107,18 @@ Expressions_Matrix:
   exp_got_it_closed: "Loudly agreeing to stop nagging, eyes shut (Yeah, yeah!)."
   exp_thinking_closed: "Deep in thought, calculating, eyes closed with one brow raised."
   exp_proud_closed: "Laughing proudly with eyes closed, boasting."
-  exp_phew_closed: "Sigh of relief, 'That was close!', letting out breath."
+  exp_sigh_closed: "Sigh of relief, 'That was close!', letting out breath."
   exp_pout_closed: "Turning head away in anger, eyes shut (Hmph!)."
-  exp_fever_closed: "Feverish, heavy blush, tossing and turning uncomfortably."
+  exp_blush_pain_closed: "Pained blush or embarrassed discomfort, eyes squeezed shut uncomfortably."
+
+  # 💤 CATEGORY 6B: Sleep / ZZZ Variants (Dedicated sleeping diff)
+  exp_sleep_neutral: "Actually asleep or dozing quietly, neutral mouth, closed eyes, ZZZ sleep marker."
+  exp_sleep_peaceful: "Peacefully asleep with a soft smile, calm safe sleep, ZZZ sleep marker."
+  exp_sleep_smile: "Happy little sleep smile, dreaming pleasantly, ZZZ sleep marker."
+  exp_sleep_drowsy: "On the edge of falling asleep, tiny yawn, heavy eyelids, sleepy aura plus ZZZ."
+  exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura plus ZZZ."
+  exp_sleep_drool: "Deep lazy sleep, drooling or totally out, ZZZ sleep marker."
+  exp_sleep_nightmare: "Uncomfortable sleep or mild nightmare, tense closed eyes, confusion aura plus ZZZ."
 
   # ⚫ CATEGORY 7: Drama, Tears & Dark Mode (Handle with care)
   exp_pleading: "Puppy eyes, trembling lip, begging or feeling bullied."

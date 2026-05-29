@@ -1,10 +1,11 @@
-import { resolveStandingLayers, type StandingLayerKind } from './standing-assets';
+import { resolveStandingLayers, type StandingLayer, type StandingLayerKind } from './standing-assets';
 
 export interface StandingFigureOptions {
   outfit: unknown;
   expression: unknown;
   className?: string;
   label?: string;
+  extraLayers?: StandingLayer[];
 }
 
 export function createStandingFigure(options: StandingFigureOptions): HTMLElement {
@@ -17,7 +18,7 @@ export function createStandingFigure(options: StandingFigureOptions): HTMLElemen
   figure.setAttribute('role', 'img');
   figure.setAttribute('aria-label', options.label || `Ena ${layers.outfit} ${layers.expression.name}`);
 
-  layers.layers.forEach((layer) => {
+  [...layers.layers, ...(options.extraLayers || [])].forEach((layer) => {
     figure.append(createLayerImage(
       layer.url,
       `mama-standing__layer mama-standing__layer--${getLayerClass(layer.kind)}`
@@ -28,7 +29,7 @@ export function createStandingFigure(options: StandingFigureOptions): HTMLElemen
 }
 
 function getLayerClass(kind: StandingLayerKind): string {
-  return kind === 'face_fx' ? 'face-fx' : kind;
+  return kind.replace(/_/g, '-');
 }
 
 function createLayerImage(src: string, className: string): HTMLImageElement {

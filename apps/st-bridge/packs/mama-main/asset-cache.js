@@ -7,7 +7,7 @@
 
   const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
   const DEFAULT_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
-  const ASSET_REFS = {"base":["nephilim","nightwear","nude","outfit_winter","school_uniform","seraphim","streetwear_full","streetwear_inner","underwear"],"face":["face_blush_heavy","face_blush_light","face_default","face_shadow"],"eye":["eye_avert","eye_closed_1","eye_closed_2","eye_cry_1","eye_cry_2","eye_cry_3","eye_dark","eye_disgust","eye_dizzy_1","eye_dizzy_2","eye_half_1","eye_half_2","eye_heart","eye_jitome","eye_line","eye_normal","eye_puppy","eye_shock","eye_slit","eye_smile","eye_star","eye_wide","eye_wink_2","eye_xd"],"mouth":["mouth_awawa","mouth_bite_lip","mouth_blank_1","mouth_blank_2","mouth_cat","mouth_down","mouth_drool","mouth_fang_open","mouth_huh","mouth_laugh","mouth_laugh_happy","mouth_neutral","mouth_panic_open","mouth_pout_2","mouth_shock","mouth_smile","mouth_smirk_1","mouth_smirk_2","mouth_tongue_2","mouth_tremble_1"],"brow":["brow_down","brow_normal","brow_question","brow_up","brow_up_max"]};
+  const ASSET_REFS = {"base":["nephilim","nightwear","nude","outfit_winter","school_uniform","seraphim","streetwear_full","streetwear_inner","underwear"],"face":["face_blush_heavy","face_blush_light","face_default","face_pale","face_shadow"],"eye":["eye_avert","eye_closed_1","eye_closed_2","eye_cry_1","eye_cry_2","eye_cry_3","eye_dark","eye_disgust","eye_dizzy_1","eye_dizzy_2","eye_half_1","eye_half_2","eye_heart","eye_jitome","eye_line","eye_normal","eye_puppy","eye_shock","eye_slit","eye_smile","eye_star","eye_wide","eye_wink_2","eye_xd"],"mouth":["mouth_awawa","mouth_bite_lip","mouth_blank_1","mouth_blank_2","mouth_cat","mouth_down","mouth_drool","mouth_fang_open","mouth_huh","mouth_laugh","mouth_laugh_happy","mouth_neutral","mouth_panic_open","mouth_pout_2","mouth_shock","mouth_smile","mouth_smirk_1","mouth_smirk_2","mouth_tongue_2","mouth_tremble_1"],"brow":["brow_down","brow_normal","brow_question","brow_up","brow_up_max"],"other":["pale_1","pale_2","pale_3","shadow_1","shadow_2","shadow_3","sweat"],"emotion":["Emotion_Amazed","Emotion_Angry","Emotion_Confusion","Emotion_Curiosity","Emotion_Distress","Emotion_Excited","Emotion_Fearful","Emotion_Glee","Emotion_Heart","Emotion_Laughter","Emotion_Line","Emotion_Shocked","Emotion_Sigh","Emotion_Sleepy","Emotion_Sparkle","Emotion_Star","Emotion_Steam","Emotion_Surprise","Emotion_Surprise2","Emotion_Sweat","Emotion_zzz"]};
   const CACHE_KEY = '__MAMA_EXP_IMAGE_CACHE__';
 
   function readGlobalString(key) {
@@ -39,7 +39,9 @@
       face: 'expression/face_fx',
       eye: 'expression/eyes',
       mouth: 'expression/mouth',
-      brow: 'expression/brow'
+      brow: 'expression/brow',
+      other: 'expression/other',
+      emotion: 'emotion'
     };
     return baseUrl + '/' + folders[group] + '/' + encodeURIComponent(name) + '.png';
   }
@@ -50,7 +52,9 @@
       ASSET_REFS.face.map((name) => assetUrl(baseUrl, 'face', name)),
       ASSET_REFS.mouth.map((name) => assetUrl(baseUrl, 'mouth', name)),
       ASSET_REFS.eye.map((name) => assetUrl(baseUrl, 'eye', name)),
-      ASSET_REFS.brow.map((name) => assetUrl(baseUrl, 'brow', name))
+      ASSET_REFS.brow.map((name) => assetUrl(baseUrl, 'brow', name)),
+      ASSET_REFS.other.map((name) => assetUrl(baseUrl, 'other', name)),
+      ASSET_REFS.emotion.map((name) => assetUrl(baseUrl, 'emotion', name))
     );
   }
 
