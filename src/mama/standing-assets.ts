@@ -69,6 +69,7 @@ export const expressionAssets = {
 };
 
 export const expressions: ExpressionLayerRef[] = (expressionData as ExpressionFile).expressions;
+export const DEFAULT_EXPRESSION = 'exp_default';
 
 export function resolveStandingLayers(outfitInput: unknown, expressionInput: unknown): StandingLayers {
   const outfit = resolveOutfitName(outfitInput);
@@ -104,13 +105,13 @@ export function resolveOutfitName(value: unknown): string {
 }
 
 export function resolveExpression(value: unknown): ExpressionLayerRef {
-  const requested = normalizeString(value, DEFAULT_MAMA_STATE.expression);
+  const requested = normalizeString(value, DEFAULT_EXPRESSION);
   const byId = Number(requested);
   const resolved = Number.isFinite(byId)
     ? expressions.find((expression) => expression.id === Math.round(byId))
     : expressions.find((expression) => expression.name === requested);
 
-  return resolved || expressions.find((expression) => expression.name === DEFAULT_MAMA_STATE.expression) || expressions[0];
+  return resolved || expressions.find((expression) => expression.name === DEFAULT_EXPRESSION) || expressions[0];
 }
 
 function buildAssetMap(modules: Record<string, string>): AssetMap {

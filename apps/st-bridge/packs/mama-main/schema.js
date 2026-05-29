@@ -2,7 +2,6 @@ import { registerMvuSchema } from "https://testingcf.jsdelivr.net/gh/StageDog/ta
 const DEFAULT_MAMA_STATE = {
   affection: 0,
   outfit: "school_uniform",
-  expression: "exp_default",
   mascotComment: "使魔与主体反应序列已介入...",
   enaDialogue: "……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。"
 };
@@ -11,7 +10,6 @@ function normalizeMamaState(value) {
   return {
     affection: clampNumber(source.affection, 0, 255, DEFAULT_MAMA_STATE.affection),
     outfit: normalizeString(source.outfit, DEFAULT_MAMA_STATE.outfit),
-    expression: normalizeString(source.expression, DEFAULT_MAMA_STATE.expression),
     mascotComment: normalizeString(source.mascotComment, DEFAULT_MAMA_STATE.mascotComment),
     enaDialogue: normalizeString(source.enaDialogue, DEFAULT_MAMA_STATE.enaDialogue)
   };

@@ -12,7 +12,6 @@ export const MAMA_NAMESPACE = 'mama';
 export const MAMA_ALLOWED_FIELD_PATHS = [
   '/mama/affection',
   '/mama/outfit',
-  '/mama/expression',
   '/mama/mascotComment',
   '/mama/enaDialogue'
 ] as const;

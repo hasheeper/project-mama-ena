@@ -45,8 +45,7 @@ function getInitialState(): unknown {
   return {
     ...DEFAULT_MAMA_STATE,
     affection: params.get('affection') ?? DEFAULT_MAMA_STATE.affection,
-    outfit: params.get('outfit') || DEFAULT_MAMA_STATE.outfit,
-    expression: params.get('expression') || params.get('exp') || DEFAULT_MAMA_STATE.expression
+    outfit: params.get('outfit') || DEFAULT_MAMA_STATE.outfit
   };
 }
 

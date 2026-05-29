@@ -29,7 +29,6 @@ import { MAMA_ALLOWED_FIELD_PATHS } from '../../shared/mama';
     return `<mama_status>
 affection: ${state.affection}/255
 outfit: ${state.outfit}
-expression: ${state.expression}
 mascotComment: ${state.mascotComment}
 enaDialogue: ${state.enaDialogue}
 
@@ -38,7 +37,7 @@ ${ALLOWED_PATHS.map((path) => `- ${path}`).join('\n')}
 
 When MAMA state changes, append an UpdateVariable block like:
 <UpdateVariable>
-<JSONPatch>[{"op":"replace","path":"/mama/expression","value":"exp_smile_soft"}]</JSONPatch>
+<JSONPatch>[{"op":"replace","path":"/mama/outfit","value":"streetwear_inner"}]</JSONPatch>
 </UpdateVariable>
 Do not put ENA portrait tags into MAMA state. <ena-exp>...</ena-exp> only controls ENA's instant portrait expression; its outfit base follows /mama/outfit. Do not use it for other characters.
 </mama_status>`;

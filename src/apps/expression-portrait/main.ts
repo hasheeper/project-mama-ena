@@ -1,5 +1,5 @@
 import { DEFAULT_MAMA_STATE, normalizeMamaState } from '../../mama/state';
-import { resolveExpression, resolveOutfitName } from '../../mama/standing-assets';
+import { DEFAULT_EXPRESSION, resolveExpression, resolveOutfitName } from '../../mama/standing-assets';
 import { createStandingFigure } from '../../mama/standing-renderer';
 import { isMamaMessage } from '../../protocol/messages';
 
@@ -81,7 +81,7 @@ function renderPortrait(expressionName: string): HTMLElement {
 
 function getInitialExpression(): string {
   const params = new URLSearchParams(location.search);
-  return params.get('exp') || params.get('expression') || DEFAULT_MAMA_STATE.expression;
+  return params.get('exp') || params.get('expression') || DEFAULT_EXPRESSION;
 }
 
 function getInitialOutfit(): string {

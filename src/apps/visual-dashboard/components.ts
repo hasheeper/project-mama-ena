@@ -1,7 +1,6 @@
-import { createStandingFigure } from '../../mama/standing-renderer';
-import { resolveExpression } from '../../mama/standing-assets';
 import type { MamaState } from '../../mama/state';
 import type { VisualDashboardViewModel } from './types';
+import { createStatusStandingFigure } from './status-standing';
 
 interface ElementOptions {
   className?: string;
@@ -37,7 +36,6 @@ function renderHeader(titleText: string, connectedHostName = ''): HTMLElement {
 }
 
 function renderStatusShowcase(state: MamaState): HTMLElement {
-  const expression = resolveExpression(state.expression);
   const wrapper = createElement('section', {
     className: 'status-showcase',
     attributes: { 'aria-label': 'MAMA visual status' }
@@ -45,17 +43,15 @@ function renderStatusShowcase(state: MamaState): HTMLElement {
   const backdrop = createElement('div', { className: 'purple-backdrop' });
   const frame = createElement('div', { className: 'white-frame' });
   const stage = createElement('div', { className: 'standing-stage' });
-  const figure = createStandingFigure({
+  const figure = createStatusStandingFigure({
     outfit: state.outfit,
-    expression: state.expression,
     className: 'mama-standing--dashboard',
-    label: `Ena ${state.outfit} ${expression.name}`
+    label: `Ena ${state.outfit} status`
   });
   const label = createElement('div', { className: 'top-torn-label' });
-  const highlight = createElement('span', { className: 'label-highlight', text: expression.name });
   const note = createElement('div', { className: 'bottom-tag-note' });
 
-  label.append('{ EXP ', highlight, ' }');
+  label.append('{ ENA }');
   note.append(
     createElement('div', { className: 'display-tape tape-bottom' }),
     createElement('div', { className: 'note-title', text: `OUTFIT: ${state.outfit}` }),
@@ -83,8 +79,7 @@ function renderStateStrip(state: MamaState): HTMLElement {
   affection.querySelector('.affection-meter-track')?.append(affectionFill);
   strip.append(
     affection,
-    renderStatePill('服装', state.outfit),
-    renderStatePill('差分', resolveExpression(state.expression).name)
+    renderStatePill('服装', state.outfit)
   );
 
   return strip;
