@@ -51,17 +51,57 @@ function renderStatusShowcase(state: MamaState): HTMLElement {
   const label = createElement('div', { className: 'top-torn-label' });
   const note = createElement('div', { className: 'bottom-tag-note' });
 
-  label.append('{ ENA }');
+  label.append('ENA');
   note.append(
     createElement('div', { className: 'display-tape tape-bottom' }),
     createElement('div', { className: 'note-title', text: `OUTFIT: ${state.outfit}` }),
     createElement('div', { className: 'note-sub', text: `AFFECTION ${state.affection}/255` })
   );
-  stage.append(figure);
-  frame.append(stage, label, note);
+  stage.append(figure, renderStatusDots());
+  frame.append(stage, label, note, renderStampBadge());
   wrapper.append(backdrop, frame);
 
   return wrapper;
+}
+
+function renderStatusDots(): HTMLElement {
+  const dots = createElement('div', {
+    className: 'status-dots',
+    attributes: { 'aria-hidden': 'true' }
+  });
+
+  dots.append(
+    createElement('div', { className: 'dot dot-red' }),
+    createElement('div', { className: 'dot dot-blue' }),
+    createElement('div', { className: 'dot dot-yellow' })
+  );
+
+  return dots;
+}
+
+function renderStampBadge(): HTMLElement {
+  const badge = createElement('div', {
+    className: 'stamp-badge',
+    attributes: { 'aria-hidden': 'true' }
+  });
+
+  badge.innerHTML = `
+    <svg viewBox="-20 -20 140 140" fill="currentColor">
+      <circle cx="50" cy="50" r="66" fill="none" stroke="currentColor" stroke-width="2"/>
+      <circle cx="50" cy="50" r="58" fill="none" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 5"/>
+      <path id="mama-status-stamp-path" d="M 50, 3 A 47 47 0 0 1 50, 97 A 47 47 0 0 1 50, 3" fill="none"/>
+      <text font-size="7.8" font-weight="900" letter-spacing="1.4" fill="currentColor">
+        <textPath href="#mama-status-stamp-path" startOffset="10%">★ M.A.M.A. PROTOCOL SYSTEM ★</textPath>
+      </text>
+      <g transform="translate(6, 4) scale(0.88)">
+        <path d="m50 6.25c-24.125 0-43.75 19.625-43.75 43.75s19.625 43.75 43.75 43.75 43.75-19.625 43.75-43.75-19.625-43.75-43.75-43.75zm0 84.375c-22.398 0-40.625-18.227-40.625-40.625s18.227-40.625 40.625-40.625 40.625 18.227 40.625 40.625-18.227 40.625-40.625 40.625z"/>
+        <path d="m51.105 34.992c-0.60938 0.60937-1.5977 0.60937-2.2109 0-2.6875-2.6875-6.2148-4.0273-9.7422-4.0273-3.5234 0-7.0508 1.3438-9.7383 4.0273-5.3672 5.3672-5.3672 14.109 0 19.48l20.586 20.582 20.586-20.586c5.3672-5.3711 5.3672-14.109 0-19.48-5.375-5.3711-14.113-5.3633-19.48 0.003907z"/>
+        <path d="m50 12.5c-20.68 0-37.5 16.82-37.5 37.5s16.82 37.5 37.5 37.5 37.5-16.82 37.5-37.5-16.82-37.5-37.5-37.5zm22.793 44.18-21.688 21.688c-0.30469 0.30859-0.70703 0.46094-1.1055 0.46094s-0.80078-0.15234-1.1055-0.45703l-21.688-21.688c-6.5898-6.5938-6.5898-17.312 0-23.898 6.2305-6.2383 16.164-6.5664 22.793-1.0156 6.6289-5.5508 16.566-5.2227 22.793 1.0117 6.5859 6.5898 6.5859 17.309 0 23.898z"/>
+      </g>
+    </svg>
+  `;
+
+  return badge;
 }
 
 function renderStateStrip(state: MamaState): HTMLElement {
