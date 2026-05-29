@@ -1,6 +1,7 @@
 import type { MamaState } from '../../mama/state';
 import type { VisualDashboardViewModel } from './types';
 import { createStatusStandingFigure } from './status-standing';
+import enaBgmUrl from '../../assets/mp3/bgm/ena_bgm.mp3?url';
 
 interface ElementOptions {
   className?: string;
@@ -14,13 +15,13 @@ export function renderVisualDashboard(root: HTMLElement, model: VisualDashboardV
   root.replaceChildren(
     renderHeader(model.title, model.connectedHostName),
     renderStatusShowcase(model.state),
-    renderStateStrip(model.state),
     renderDialogueStack(model.state)
   );
 }
 
 function renderHeader(titleText: string, connectedHostName = ''): HTMLElement {
-  const header = createElement('div', { className: 'dash-header' });
+  const header = createElement('header', { className: 'dash-header' });
+  const statusGroup = createElement('div', { className: 'header-status-group' });
   const title = createElement('div', { className: 'header-title', text: titleText });
   const statusDot = createElement('div', {
     className: 'status-dot',
@@ -31,8 +32,70 @@ function renderHeader(titleText: string, connectedHostName = ''): HTMLElement {
     statusDot.setAttribute('title', `Connected through ${connectedHostName}`);
   }
 
-  header.append(title, statusDot);
+  statusGroup.append(title, statusDot);
+  header.append(statusGroup, renderBgmPlayer());
   return header;
+}
+
+function renderBgmPlayer(): HTMLElement {
+  const mask = createElement('div', { className: 'bgm-mask-container' });
+  const button = createElement('button', {
+    className: 'bgm-pull-tab',
+    attributes: {
+      type: 'button',
+      title: 'BGM: Ena Theme',
+      'aria-label': 'Toggle ENA BGM',
+      'aria-pressed': 'false'
+    }
+  });
+  const audio = document.createElement('audio');
+  const setPlaying = (isPlaying: boolean): void => {
+    button.classList.toggle('is-playing', isPlaying);
+    button.setAttribute('aria-pressed', String(isPlaying));
+  };
+
+  audio.src = enaBgmUrl;
+  audio.loop = true;
+  audio.preload = 'metadata';
+  button.append(
+    createElement('span', { className: 'vinyl-record', attributes: { 'aria-hidden': 'true' } }),
+    renderPlayerInfo(),
+    renderEqualizer(),
+    audio
+  );
+  audio.addEventListener('play', () => setPlaying(true));
+  audio.addEventListener('pause', () => setPlaying(false));
+  audio.addEventListener('ended', () => setPlaying(false));
+  audio.addEventListener('error', () => setPlaying(false));
+  button.addEventListener('click', () => {
+    if (audio.paused) {
+      void audio.play().catch(() => setPlaying(false));
+      return;
+    }
+    audio.pause();
+  });
+
+  mask.append(button);
+  return mask;
+}
+
+function renderPlayerInfo(): HTMLElement {
+  const info = createElement('span', { className: 'player-info' });
+  info.append(createElement('span', { className: 'track-name', text: 'ENA THEME' }));
+  return info;
+}
+
+function renderEqualizer(): HTMLElement {
+  const equalizer = createElement('span', {
+    className: 'eq-visualizer',
+    attributes: { 'aria-hidden': 'true' }
+  });
+  equalizer.append(
+    createElement('span', { className: 'eq-bar' }),
+    createElement('span', { className: 'eq-bar' }),
+    createElement('span', { className: 'eq-bar' })
+  );
+  return equalizer;
 }
 
 function renderStatusShowcase(state: MamaState): HTMLElement {
@@ -48,35 +111,142 @@ function renderStatusShowcase(state: MamaState): HTMLElement {
     className: 'mama-standing--dashboard',
     label: `Ena ${state.outfit} status`
   });
-  const label = createElement('div', { className: 'top-torn-label' });
-  const note = createElement('div', { className: 'bottom-tag-note' });
 
-  label.append('ENA');
-  note.append(
-    createElement('div', { className: 'display-tape tape-bottom' }),
-    createElement('div', { className: 'note-title', text: `OUTFIT: ${state.outfit}` }),
-    createElement('div', { className: 'note-sub', text: `AFFECTION ${state.affection}/255` })
+  stage.append(figure);
+  frame.append(
+    stage,
+    renderStatusWidgets(state),
+    renderNameTag(),
+    renderPinnedNameTag(),
+    renderOutfitManifest(state),
+    renderStampBadge()
   );
-  stage.append(figure, renderStatusDots());
-  frame.append(stage, label, note, renderStampBadge());
   wrapper.append(backdrop, frame);
 
   return wrapper;
 }
 
-function renderStatusDots(): HTMLElement {
-  const dots = createElement('div', {
-    className: 'status-dots',
-    attributes: { 'aria-hidden': 'true' }
+function renderStatusWidgets(state: MamaState): HTMLElement {
+  const widgets = createElement('div', {
+    className: 'status-widgets',
+    attributes: { 'aria-label': 'MAMA status meters' }
   });
+  const affectionPercent = Math.round((state.affection / 255) * 100);
+  const capsule = createElement('div', {
+    className: 'w-status-capsule w-affection',
+    attributes: { style: `--c: #e57091; --p: ${affectionPercent}%;` }
+  });
+  const info = createElement('div', { className: 'widget-info' });
 
-  dots.append(
-    createElement('div', { className: 'dot dot-red' }),
-    createElement('div', { className: 'dot dot-blue' }),
-    createElement('div', { className: 'dot dot-yellow' })
+  info.append(
+    createElement('div', { className: 'w-label', text: 'Affection / 好感度' }),
+    createWidgetValue(String(state.affection), '/255')
+  );
+  capsule.append(info, renderRingChart('r-affection', affectionPercent, '#e57091', 34));
+  widgets.append(
+    capsule,
+    renderCircleBadge('r-form', 100, '#2cb8ce', 'Outfit base is synced'),
+    renderCircleBadge('r-link', 100, '#5c6593', 'MAMA status bridge is active')
   );
 
-  return dots;
+  return widgets;
+}
+
+function createWidgetValue(value: string, suffix: string): HTMLElement {
+  const wrapper = createElement('div', { className: 'w-val' });
+  wrapper.append(value, createElement('span', { className: 'pct', text: suffix }));
+  return wrapper;
+}
+
+function renderCircleBadge(ringClass: string, percent: number, color: string, title: string): HTMLElement {
+  const badge = createElement('div', {
+    className: 'w-circle-badge',
+    attributes: {
+      title,
+      style: `--c: ${color}; --p: ${Math.max(0, Math.min(100, percent))}%;`
+    }
+  });
+  badge.append(renderRingChart(ringClass, percent, color, 28));
+  return badge;
+}
+
+function renderRingChart(className: string, percent: number, color: string, size: number): HTMLElement {
+  return createElement('div', {
+    className: `ring-chart ${className}`,
+    attributes: {
+      style: `--c: ${color}; --p: ${Math.max(0, Math.min(100, percent))}%; --size: ${size}px;`
+    }
+  });
+}
+
+function renderNameTag(): HTMLElement {
+  const tag = createElement('div', { className: 'ena-name-tag' });
+  const paper = createElement('div', { className: 'paper' });
+  const header = createElement('div', { className: 'date-header' });
+  const timeline = createElement('div', { className: 'timeline' });
+
+  header.append(
+    createElement('div', { className: 'week-txt', text: 'WEEK 02' }),
+    createElement('div', { className: 'day-txt', text: 'DAY 14' })
+  );
+  timeline.append(
+    createElement('div', { className: 'tl-node', text: '晨' }),
+    createElement('div', { className: 'tl-node', text: '午' }),
+    createElement('div', { className: 'tl-node active', text: '暮' }),
+    createElement('div', { className: 'tl-node', text: '夜' })
+  );
+  paper.append(header, timeline);
+  tag.append(paper);
+  return tag;
+}
+
+function renderPinnedNameTag(): HTMLElement {
+  const tag = createElement('div', { className: 'pinned-name-tag' });
+  const paper = createElement('div', { className: 'pinned-name-paper' });
+
+  paper.append(
+    createElement('div', { className: 'pinned-name-cn', text: '天宫 绘奈' }),
+    createElement('div', { className: 'pinned-name-en', text: 'AMAHA ENA' })
+  );
+  tag.append(renderPaperclip(), paper);
+  return tag;
+}
+
+function renderPaperclip(): HTMLElement {
+  const wrapper = createElement('div', { className: 'paperclip-wrapper' });
+
+  wrapper.innerHTML = `
+    <svg width="32" height="72" viewBox="0 0 28 68" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <g filter="url(#mama-paperclip-shadow)">
+        <path d="M14,35 L14,15 A 3,3 0 0,0 8,15 L8,54 A 6,6 0 0,0 20,54 L20,11 A 9,9 0 0,0 2,11 L2,42"
+          stroke="#a09ca6" stroke-width="3" stroke-linecap="round"/>
+      </g>
+      <defs>
+        <filter id="mama-paperclip-shadow" x="-5" y="-5" width="40" height="80" filterUnits="userSpaceOnUse">
+          <feDropShadow dx="1" dy="2" stdDeviation="1.5" flood-color="#000000" flood-opacity="0.15"/>
+        </filter>
+      </defs>
+    </svg>
+  `;
+  return wrapper;
+}
+
+function renderOutfitManifest(state: MamaState): HTMLElement {
+  const manifest = createElement('div', { className: 'outfit-manifest' });
+  const header = createElement('div', { className: 'om-header' });
+
+  header.append(
+    createElement('div', { className: 'om-dot' }),
+    createElement('span', { text: 'FORM_MANIFEST' })
+  );
+  manifest.append(
+    header,
+    createElement('div', { className: 'om-title', text: formatOutfitTitle(state.outfit) }),
+    createElement('div', { className: 'om-meta', text: `TYPE::${formatOutfitCode(state.outfit)}` }),
+    createElement('div', { className: 'om-barcode' })
+  );
+
+  return manifest;
 }
 
 function renderStampBadge(): HTMLElement {
@@ -104,57 +274,54 @@ function renderStampBadge(): HTMLElement {
   return badge;
 }
 
-function renderStateStrip(state: MamaState): HTMLElement {
-  const strip = createElement('section', { className: 'state-strip' });
-  const affection = createElement('div', { className: 'affection-meter' });
-  const affectionFill = createElement('div', {
-    className: 'affection-meter-fill',
-    attributes: { style: `width: ${(state.affection / 255) * 100}%` }
-  });
-
-  affection.append(
-    createElement('div', { className: 'state-label', text: '好感度' }),
-    createElement('div', { className: 'affection-meter-track' })
-  );
-  affection.querySelector('.affection-meter-track')?.append(affectionFill);
-  strip.append(
-    affection,
-    renderStatePill('服装', state.outfit)
-  );
-
-  return strip;
-}
-
-function renderStatePill(label: string, value: string): HTMLElement {
-  const pill = createElement('div', { className: 'state-pill' });
-  pill.append(
-    createElement('span', { className: 'state-label', text: label }),
-    createElement('strong', { text: value })
-  );
-  return pill;
-}
-
 function renderDialogueStack(state: MamaState): HTMLElement {
   const stack = createElement('section', { className: 'dialogue-stack' });
-  stack.append(
-    renderDialogueLine('使魔 涅露露', state.mascotComment, 'mascot'),
-    renderDialogueLine('绘奈', state.enaDialogue, 'ena')
-  );
+  stack.append(renderDialogueLine('使魔 涅露露', state.mascotComment));
   return stack;
 }
 
-function renderDialogueLine(speaker: string, text: string, tone: 'mascot' | 'ena'): HTMLElement {
+function renderDialogueLine(speaker: string, text: string): HTMLElement {
   const wrapper = createElement('div', { className: 'dialogue-wrapper' });
   const bubble = createElement('div', { className: 'msg-bubble' });
 
   bubble.append(
-    createElement('div', { className: `name-label label-${tone}`, text: speaker }),
-    createElement('div', { className: `flat-pin pin-${tone}` }),
+    createElement('div', { className: 'name-label label-mascot', text: speaker }),
+    createElement('div', { className: 'flat-pin pin-mascot' }),
     createElement('div', { className: 'vertical-line' }),
     createElement('div', { className: 'msg-text', text })
   );
   wrapper.append(bubble);
   return wrapper;
+}
+
+function formatOutfitTitle(outfit: string): string {
+  const titles: Record<string, string> = {
+    school_uniform: 'School Uniform',
+    streetwear_inner: 'Streetwear Inner',
+    streetwear_full: 'Streetwear Full',
+    outfit_winter: 'Winter Outfit',
+    nightwear: 'Nightwear',
+    underwear: 'Underwear',
+    nude: 'Nude',
+    seraphim: 'Seraphim',
+    nephilim: 'Nephilim'
+  };
+  return titles[outfit] || outfit.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function formatOutfitCode(outfit: string): string {
+  const codes: Record<string, string> = {
+    school_uniform: 'CIVILIAN_01',
+    streetwear_inner: 'CASUAL_INNER',
+    streetwear_full: 'CASUAL_FULL',
+    outfit_winter: 'WINTER_01',
+    nightwear: 'SLEEP_01',
+    underwear: 'PRIVATE_01',
+    nude: 'PRIVATE_00',
+    seraphim: 'SERAPHIM',
+    nephilim: 'NEPHILIM'
+  };
+  return codes[outfit] || outfit.toUpperCase();
 }
 
 function createElement<K extends keyof HTMLElementTagNameMap>(

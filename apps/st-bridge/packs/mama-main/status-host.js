@@ -355,13 +355,6 @@
     `;
       DOC.head.append(style);
     }
-    function waitForBody(callback) {
-      if (DOC?.body) {
-        callback();
-        return;
-      }
-      TIMER_ROOT.setTimeout(() => waitForBody(callback), 100);
-    }
     RUNTIME.createStatusHost = function createStatusHost(stateService, config = {}) {
       let frame = null;
       let host = null;
@@ -379,10 +372,52 @@
       const inlineTargets = /* @__PURE__ */ new Map();
       const targetStates = /* @__PURE__ */ new Map();
       const messageTargets = [];
+      const timeoutHandles = /* @__PURE__ */ new Set();
       const cleanupCallbacks = [];
       const version = config.version || "0.1.0";
       const injectStatusHost = !isDisabled(config.injectFixedStatus) && !isEnabled(config.disableStatusHost) && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST) && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
-      function removeExistingDom() {
+      function schedule(callback, delayMs = 0) {
+        const handle = TIMER_ROOT.setTimeout(() => {
+          timeoutHandles.delete(handle);
+          if (disposed) return;
+          callback();
+        }, delayMs);
+        timeoutHandles.add(handle);
+        return handle;
+      }
+      function clearScheduledWork() {
+        timeoutHandles.forEach((handle) => {
+          try {
+            TIMER_ROOT.clearTimeout?.(handle);
+          } catch (_) {
+          }
+          try {
+            CURRENT_ROOT.clearTimeout?.(handle);
+          } catch (_) {
+          }
+        });
+        timeoutHandles.clear();
+      }
+      function waitForBodyAvailable(callback) {
+        if (disposed) return;
+        if (DOC?.body) {
+          callback();
+          return;
+        }
+        schedule(() => waitForBodyAvailable(callback), 100);
+      }
+      function blankIframe(targetFrame) {
+        try {
+          if (targetFrame && targetFrame.src !== "about:blank") targetFrame.src = "about:blank";
+        } catch (_) {
+        }
+      }
+      function removeExistingDom(removeStyle = true) {
+        blankIframe(frame);
+        try {
+          blankIframe(DOC?.getElementById(IFRAME_ID));
+        } catch (_) {
+        }
         try {
           DOC?.getElementById(HOST_ID)?.remove();
         } catch (_) {
@@ -391,17 +426,64 @@
           DOC?.getElementById(OVERLAY_ID)?.remove();
         } catch (_) {
         }
-        try {
-          DOC?.getElementById(STYLE_ID)?.remove();
-        } catch (_) {
+        if (removeStyle) {
+          try {
+            DOC?.getElementById(STYLE_ID)?.remove();
+          } catch (_) {
+          }
         }
       }
+      function unloadPreviousInstances() {
+        const unloads = [];
+        getBridgeTargets().forEach((target) => {
+          try {
+            const previousUnload = target?.[UNLOAD_KEY];
+            if (typeof previousUnload === "function" && previousUnload !== unload && !unloads.includes(previousUnload)) {
+              unloads.push(previousUnload);
+            }
+          } catch (_) {
+          }
+        });
+        unloads.forEach((previousUnload) => {
+          try {
+            previousUnload();
+          } catch (_) {
+          }
+        });
+      }
+      function exposeUnload() {
+        getBridgeTargets().forEach((target) => {
+          try {
+            target[UNLOAD_KEY] = unload;
+          } catch (_) {
+          }
+        });
+      }
+      function clearUnloadExposure() {
+        getBridgeTargets().forEach((target) => {
+          try {
+            if (target?.[UNLOAD_KEY] === unload) delete target[UNLOAD_KEY];
+          } catch (_) {
+          }
+        });
+      }
+      function bindLifecycleUnload(target) {
+        if (!target || typeof target.addEventListener !== "function") return;
+        ["pagehide", "beforeunload"].forEach((eventName) => {
+          try {
+            target.removeEventListener(eventName, unload);
+            target.addEventListener(eventName, unload);
+            cleanupCallbacks.push(() => target.removeEventListener(eventName, unload));
+          } catch (_) {
+          }
+        });
+      }
       function ensureHost() {
+        if (disposed) return null;
         if (!disposed && host && overlay && frame && DOC?.body?.contains(host) && DOC?.body?.contains(overlay)) return host;
         if (!DOC?.body) return null;
         ensureStyle();
-        DOC.getElementById(HOST_ID)?.remove();
-        DOC.getElementById(OVERLAY_ID)?.remove();
+        removeExistingDom(false);
         host = DOC.createElement("div");
         host.id = HOST_ID;
         trigger = DOC.createElement("div");
@@ -453,9 +535,10 @@
         frame.setAttribute("sandbox", "allow-scripts allow-forms allow-modals allow-popups allow-same-origin");
         frame.dataset.mamaSrc = resolveStatusUrl(version);
         frame.addEventListener("load", () => {
+          if (disposed) return;
           ready = true;
           postContainerReady();
-          TIMER_ROOT.setTimeout(() => refreshStatus(lastReason || "iframeLoad"), 40);
+          schedule(() => refreshStatus(lastReason || "iframeLoad"), 40);
         });
         const close = DOC.createElement("button");
         close.id = CLOSE_ID;
@@ -498,20 +581,23 @@
         setTriggerCollapsed(collapsed);
       }
       function initializeIframe() {
+        if (disposed) return;
         if (!frame) ensureHost();
         if (!frame || iframeInitialized) return;
         iframeInitialized = true;
         frame.src = frame.dataset.mamaSrc || resolveStatusUrl(version);
       }
       function openStatus() {
+        if (disposed) return false;
         ensureHost();
         if (!overlay) return false;
         overlay.style.display = "flex";
         initializeIframe();
-        TIMER_ROOT.setTimeout(() => refreshStatus("open"), 80);
+        schedule(() => refreshStatus("open"), 80);
         return true;
       }
       function closeStatus() {
+        if (disposed) return false;
         if (overlay) overlay.style.display = "none";
         return Boolean(overlay);
       }
@@ -552,6 +638,7 @@
         return inlineTargets.get(target) || { persist: false };
       }
       function postStateTo(target, reason, state) {
+        if (disposed) return false;
         const nextState = state || lastState;
         if (!isMessageTarget(target) || !nextState) return false;
         try {
@@ -588,6 +675,7 @@
         return postStateTo(target, reason, state);
       }
       async function refreshTarget(target, reason = "statusRequest", readOptions = readOptionsForTarget(target)) {
+        if (disposed) return false;
         if (!isMessageTarget(target)) return false;
         let state;
         try {
@@ -603,7 +691,7 @@
       }
       async function refreshStatus(reason = "refresh") {
         if (disposed) return false;
-        if (injectStatusHost) waitForBody(() => ensureHost());
+        if (injectStatusHost) waitForBodyAvailable(() => ensureHost());
         let sent = false;
         if (frame?.contentWindow && ready) {
           try {
@@ -622,6 +710,7 @@
         return results.some(Boolean) || sent;
       }
       function handleMessage(event) {
+        if (disposed) return;
         const data = event?.data;
         if (!data || typeof data !== "object") return;
         const isReady = data.type === "MAMA_STATUS_READY" || data.type === "mama:app-ready";
@@ -665,7 +754,7 @@
         try {
           const stop = target.eventOn(eventName, () => {
             if (delayMs > 0) {
-              TIMER_ROOT.setTimeout(() => refreshStatus(reason), delayMs);
+              schedule(() => refreshStatus(reason), delayMs);
               return;
             }
             void refreshStatus(reason);
@@ -694,6 +783,7 @@
           bindMamaEvent(target, "mama:mvuz-written", mvuzWrittenHandler);
         });
         getBridgeTargets().forEach((target) => {
+          bindLifecycleUnload(target);
           bindSillyTavernEvent(target, "message_received", "messageReceived", 1200);
           bindSillyTavernEvent(target, "character_message_rendered", "messageRendered", 250);
           bindSillyTavernEvent(target, "message_updated", "messageUpdated", 400);
@@ -706,6 +796,7 @@
         disposed = true;
         ready = false;
         iframeInitialized = false;
+        clearScheduledWork();
         cleanupCallbacks.splice(0).forEach((cleanup) => {
           try {
             cleanup();
@@ -720,6 +811,7 @@
         });
         inlineTargets.clear();
         targetStates.clear();
+        blankIframe(frame);
         removeExistingDom();
         host = null;
         overlay = null;
@@ -727,32 +819,21 @@
         frame = null;
         trigger = null;
         triggerFoldButton = null;
-        try {
-          if (UI_ROOT[UNLOAD_KEY] === unload) delete UI_ROOT[UNLOAD_KEY];
-        } catch (_) {
-        }
+        lastState = null;
+        lastReason = "";
+        eventsBound = false;
+        clearUnloadExposure();
       }
       function start() {
-        try {
-          if (typeof UI_ROOT[UNLOAD_KEY] === "function" && UI_ROOT[UNLOAD_KEY] !== unload) {
-            UI_ROOT[UNLOAD_KEY]();
-          }
-        } catch (_) {
-        }
+        unloadPreviousInstances();
         disposed = false;
-        UI_ROOT[UNLOAD_KEY] = unload;
+        exposeUnload();
         bindEvents();
         if (injectStatusHost) {
-          waitForBody(() => {
+          waitForBodyAvailable(() => {
             ensureHost();
             void refreshStatus("start");
           });
-        }
-        try {
-          UI_ROOT.removeEventListener?.("pagehide", unload);
-          UI_ROOT.addEventListener?.("pagehide", unload);
-          cleanupCallbacks.push(() => UI_ROOT.removeEventListener?.("pagehide", unload));
-        } catch (_) {
         }
       }
       function debug() {
@@ -763,6 +844,7 @@
           injected: Boolean(DOC?.getElementById(TRIGGER_ID)),
           open: overlay?.style?.display || "",
           statusUrl: frame?.dataset?.mamaSrc || "",
+          scheduledWork: timeoutHandles.size,
           collapsed: Boolean(trigger?.classList?.contains(TRIGGER_COLLAPSED_CLASS)),
           hostRoot: UI_ROOT === CURRENT_ROOT ? "current" : "host",
           apiRoot: ROOT === CURRENT_ROOT ? "current" : "host"

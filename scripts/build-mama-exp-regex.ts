@@ -186,8 +186,8 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       const EXP_DATA = ${scriptJson(expData)};
       const ASSET_REFS = ${scriptJson(assetRefs)};
       const ASSET_BASE_URL = '${assetBaseUrl}';
-      const DEFAULT_EXPRESSION = 'exp_default';
-      const DEFAULT_OUTFIT = 'school_uniform';
+      const DEFAULT_EXPRESSION = 'exp_smile_soft';
+      const DEFAULT_OUTFIT = 'streetwear_full';
       const CACHE_KEY = '__MAMA_EXP_IMAGE_CACHE__';
       const app = document.getElementById('mama-exp-app');
       const hostFrame = window.frameElement;

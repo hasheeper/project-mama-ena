@@ -2,8 +2,8 @@
   "use strict";
   const DEFAULT_MAMA_STATE = {
     affection: 0,
-    outfit: "school_uniform",
-    mascotComment: "使魔与主体反应序列已介入...",
+    outfit: "streetwear_full",
+    mascotComment: "唔噜噜，绘奈今天还撑得住噜。别太欺负她，涅露露可是在看着的噜。",
     enaDialogue: "……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。"
   };
   function normalizeMamaState(value) {

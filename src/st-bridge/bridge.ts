@@ -1,3 +1,5 @@
+/// <reference path="./global.d.ts" />
+
 /**
  * Stable Project MAMA SillyTavern bridge.
  *
@@ -10,26 +12,89 @@ import {
   normalizeMamaState as normalizeSharedMamaState
 } from './shared/mama';
 
+type BridgeRoot = typeof globalThis & Window & Record<string, any>;
+type BridgeScorer = (candidate: BridgeRoot) => number;
+type BridgeVariablesOptions = { type?: string; rootKey?: string; [key: string]: any };
+type BridgePatcher = (draft: any, current: unknown) => unknown | Promise<unknown>;
+type BridgeActionHandler = (payload?: unknown) => unknown | Promise<unknown>;
+
+interface BridgeManifest {
+  version?: string;
+  activePack?: string;
+  defaultPack?: string;
+  packs?: Record<string, BridgePack>;
+}
+
+interface BridgePack {
+  product?: string;
+  label?: string;
+  globals?: Record<string, unknown>;
+  scripts?: BridgePackScript[];
+}
+
+interface BridgePackScript {
+  id?: string;
+  type?: string;
+  url: string;
+  required?: boolean;
+}
+
+interface LoadedScript {
+  id?: string;
+  type: string;
+  url: string;
+}
+
+interface BridgeState {
+  bridgeVersion: string;
+  manifestUrl: string;
+  manifestVersion: string;
+  packId: string;
+  product: string;
+  label: string;
+  loaded: LoadedScript[];
+  loadedAt: string;
+}
+
+interface BridgeSchemaInput {
+  version?: string;
+  rootKey?: string;
+  defaults?: unknown;
+  makeDefaultState?: () => unknown;
+  normalize?: (value: unknown) => unknown;
+  migrate?: ((legacyVars: unknown) => unknown | Promise<unknown>) | null;
+}
+
+interface RegisteredBridgeSchema {
+  namespace: string;
+  version: string;
+  rootKey: string;
+  makeDefaultState: () => unknown;
+  normalize: (value: unknown) => unknown;
+  migrate: ((legacyVars: unknown) => unknown | Promise<unknown>) | null;
+}
+
 (async function () {
   'use strict';
 
-  const ROOT = typeof window !== 'undefined' ? window : globalThis;
+  const ROOT = (typeof window !== 'undefined' ? window : globalThis) as BridgeRoot;
   const BRIDGE_NAME = '[MAMA ST Bridge]';
   const VERSION = '0.1.0';
   const DEFAULT_MANIFEST = './manifest.json';
   const FALLBACK_BRIDGE_URL = 'https://hasheeper.github.io/project-mama-ena/apps/st-bridge/bridge.js';
 
-  function pushWindowCandidate(candidates, value) {
+  function pushWindowCandidate(candidates: BridgeRoot[], value: unknown): void {
     try {
-      if (!value || candidates.includes(value)) return;
-      candidates.push(value);
+      const candidate = value as BridgeRoot | null | undefined;
+      if (!candidate || candidates.includes(candidate)) return;
+      candidates.push(candidate);
     } catch (_) {}
   }
 
-  function getWindowCandidates() {
-    const candidates = [];
+  function getWindowCandidates(): BridgeRoot[] {
+    const candidates: BridgeRoot[] = [];
     pushWindowCandidate(candidates, ROOT);
-    pushWindowCandidate(candidates, globalThis);
+    pushWindowCandidate(candidates, globalThis as BridgeRoot);
     try { pushWindowCandidate(candidates, typeof window !== 'undefined' ? window : null); } catch (_) {}
     try { pushWindowCandidate(candidates, typeof unsafeWindow === 'object' ? unsafeWindow : null); } catch (_) {}
     Array.from(candidates).forEach((candidate) => {
@@ -40,7 +105,7 @@ import {
     return candidates;
   }
 
-  function getCandidateDocument(candidate) {
+  function getCandidateDocument(candidate: BridgeRoot): Document | null {
     try {
       return candidate?.document || null;
     } catch (_) {
@@ -48,7 +113,7 @@ import {
     }
   }
 
-  function hasCandidateFunction(candidate, key) {
+  function hasCandidateFunction(candidate: BridgeRoot, key: string): boolean {
     try {
       return typeof candidate?.[key] === 'function';
     } catch (_) {
@@ -56,7 +121,7 @@ import {
     }
   }
 
-  function hasCandidateValue(candidate, key) {
+  function hasCandidateValue(candidate: BridgeRoot, key: string): boolean {
     try {
       return Boolean(candidate?.[key]);
     } catch (_) {
@@ -64,7 +129,7 @@ import {
     }
   }
 
-  function queryCandidateDocument(candidate, selector) {
+  function queryCandidateDocument(candidate: BridgeRoot, selector: string): boolean {
     const doc = getCandidateDocument(candidate);
     try {
       return Boolean(doc?.querySelector?.(selector));
@@ -73,7 +138,7 @@ import {
     }
   }
 
-  function scoreUiRoot(candidate) {
+  function scoreUiRoot(candidate: BridgeRoot): number {
     const doc = getCandidateDocument(candidate);
     if (!doc) return -1;
     let score = 0;
@@ -89,7 +154,7 @@ import {
     return score;
   }
 
-  function scoreApiRoot(candidate) {
+  function scoreApiRoot(candidate: BridgeRoot): number {
     let score = 0;
     if (hasCandidateFunction(candidate, 'getVariables')) score += 140;
     if (hasCandidateFunction(candidate, 'insertOrAssignVariables')) score += 120;
@@ -104,7 +169,7 @@ import {
     return score;
   }
 
-  function pickBestWindow(candidates, scorer, fallback = ROOT) {
+  function pickBestWindow(candidates: BridgeRoot[], scorer: BridgeScorer, fallback: BridgeRoot = ROOT): BridgeRoot {
     let best = fallback;
     let bestScore = -1;
     candidates.forEach((candidate) => {
@@ -121,13 +186,13 @@ import {
   const HOST_ROOT = pickBestWindow(WINDOW_CANDIDATES, scoreUiRoot, ROOT);
   const API_ROOT = pickBestWindow(WINDOW_CANDIDATES, scoreApiRoot, HOST_ROOT);
 
-  function getBridgeTargets() {
-    const targets = [];
+  function getBridgeTargets(): BridgeRoot[] {
+    const targets: BridgeRoot[] = [];
     [ROOT, HOST_ROOT, API_ROOT, ...WINDOW_CANDIDATES].forEach((candidate) => pushWindowCandidate(targets, candidate));
     return targets;
   }
 
-  function getGlobalValue(key) {
+  function getGlobalValue(key: string): any {
     for (const candidate of getBridgeTargets()) {
       try {
         if (candidate?.[key] !== undefined && candidate?.[key] !== null && candidate?.[key] !== '') {
@@ -138,7 +203,7 @@ import {
     return undefined;
   }
 
-  function publishHostInfo(extra = {}) {
+  function publishHostInfo(extra: Record<string, unknown> = {}): Record<string, unknown> {
     const info = {
       product: 'mama-ena',
       version: VERSION,
@@ -162,33 +227,33 @@ import {
 
   publishHostInfo();
 
-  function isObject(value) {
+  function isObject(value: unknown): value is Record<string, any> {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
   }
 
-  function clone(value, fallback: any = null): any {
+  function clone<T = any>(value: unknown, fallback: T | null = null): T {
     return cloneJson(value, fallback);
   }
 
-  function makeDefaultMamaState() {
+  function makeDefaultMamaState(): unknown {
     return clone(SHARED_DEFAULT_MAMA_STATE, SHARED_DEFAULT_MAMA_STATE);
   }
 
-  function clampNumber(value, min, max, fallback = 0) {
+  function clampNumber(value: unknown, min: number, max: number, fallback = 0): number {
     const next = Number(value);
     if (!Number.isFinite(next)) return fallback;
     return Math.max(min, Math.min(max, Math.round(next)));
   }
 
-  function normalizeMamaState(value) {
+  function normalizeMamaState(value: unknown): unknown {
     return normalizeSharedMamaState(value);
   }
 
-  function normalizeString(value, fallback = '') {
+  function normalizeString(value: unknown, fallback = ''): string {
     return typeof value === 'string' && value.trim() ? value.trim() : fallback;
   }
 
-  function isUsableBridgeUrl(value) {
+  function isUsableBridgeUrl(value: unknown): value is string {
     if (!value || typeof value !== 'string') return false;
     if (!/^https?:\/\//i.test(value)) return false;
     try {
@@ -201,9 +266,8 @@ import {
   function getCurrentScriptUrl() {
     try {
       const currentScript = document.currentScript as HTMLScriptElement | null;
-      if (isUsableBridgeUrl(currentScript?.src)) {
-        return currentScript.src;
-      }
+      const currentScriptUrl = currentScript?.src;
+      if (isUsableBridgeUrl(currentScriptUrl)) return currentScriptUrl;
     } catch (_) {}
     try {
       const scripts = Array.from(document.getElementsByTagName('script'));
@@ -405,8 +469,10 @@ import {
     return writeNamespace(namespace, await schema.migrate(legacyVars || await readVariables(options)), options);
   }
 
-  function exposeApi(state) {
-    const existing = isObject(API_ROOT.STBridge) ? API_ROOT.STBridge : {};
+  function exposeApi(state: BridgeState) {
+    const existing = (isObject(API_ROOT.STBridge) ? API_ROOT.STBridge : {}) as Record<string, any> & {
+      actionHandlers?: Record<string, Record<string, BridgeActionHandler>>;
+    };
     const actionHandlers = existing.actionHandlers || {};
     const api = {
       ...existing,

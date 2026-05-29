@@ -2,6 +2,8 @@
   'use strict';
 
   const CURRENT_ROOT = typeof window !== 'undefined' ? window : globalThis;
+  const PLUGIN_UNLOAD_KEY = '__MAMA_PLUGIN_UNLOAD__';
+  const PROMPT_TOKEN_KEY = '__MAMA_PROMPT_INJECTION_TOKEN__';
 
   function resolveBridgeHost() {
     try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
@@ -11,7 +13,7 @@
     return {};
   }
 
-  function exposePlugin(api, host) {
+  function getPluginTargets(host, root = null, uiRoot = null) {
     const targets = [];
     const pushTarget = (target) => {
       try {
@@ -22,10 +24,39 @@
     pushTarget(host.root);
     pushTarget(host.uiRoot);
     pushTarget(host.apiRoot);
+    pushTarget(root);
+    pushTarget(uiRoot);
+    (Array.isArray(host.candidates) ? host.candidates : []).forEach((target) => pushTarget(target));
     try { pushTarget(CURRENT_ROOT.parent); } catch (_) {}
     try { pushTarget(CURRENT_ROOT.top); } catch (_) {}
+    targets.slice().forEach((target) => {
+      try { pushTarget(target.parent); } catch (_) {}
+      try { pushTarget(target.top); } catch (_) {}
+    });
+    return targets;
+  }
+
+  function unloadPreviousPlugin(targets) {
+    const unloads = [];
     targets.forEach((target) => {
-      try { target.MAMAPlugin = api; } catch (_) {}
+      try {
+        const previousUnload = target?.[PLUGIN_UNLOAD_KEY];
+        if (typeof previousUnload === 'function' && !unloads.includes(previousUnload)) {
+          unloads.push(previousUnload);
+        }
+      } catch (_) {}
+    });
+    unloads.forEach((previousUnload) => {
+      try { previousUnload(); } catch (_) {}
+    });
+  }
+
+  function exposePlugin(api, unload, targets) {
+    targets.forEach((target) => {
+      try {
+        target.MAMAPlugin = api;
+        target[PLUGIN_UNLOAD_KEY] = unload;
+      } catch (_) {}
     });
   }
 
@@ -34,6 +65,8 @@
   const UI_ROOT = BRIDGE_HOST.root || BRIDGE_HOST.uiRoot || CURRENT_ROOT.MAMA_ST_UI_ROOT || ROOT;
   const bridge = ROOT.STBridge || CURRENT_ROOT.STBridge || UI_ROOT.STBridge;
   if (!bridge) return;
+  const pluginTargets = getPluginTargets(BRIDGE_HOST, ROOT, UI_ROOT);
+  unloadPreviousPlugin(pluginTargets);
 
   const RUNTIME = ROOT.MAMAMainRuntime || CURRENT_ROOT.MAMAMainRuntime || {};
   ROOT.MAMAMainRuntime = RUNTIME;
@@ -47,6 +80,16 @@
   const statusHost = stateService && typeof RUNTIME.createStatusHost === 'function'
     ? RUNTIME.createStatusHost(stateService, { version: bridge.version || '0.1.0' })
     : null;
+  const cleanupCallbacks: Array<() => void> = [];
+  let disposed = false;
+  let pluginApi: any = null;
+  const promptToken = {};
+  try { ROOT[PROMPT_TOKEN_KEY] = promptToken; } catch (_) {}
+  cleanupCallbacks.push(() => {
+    try {
+      if (ROOT[PROMPT_TOKEN_KEY] === promptToken) delete ROOT[PROMPT_TOKEN_KEY];
+    } catch (_) {}
+  });
 
   async function loadState(options: any = {}) {
     return stateService ? stateService.loadState(options) : bridge.mvuz.read('mama', options);
@@ -69,18 +112,25 @@
   }
 
   async function refreshStatus(reason = 'refresh') {
+    if (disposed) return false;
     if (!statusHost) return false;
     return statusHost.refreshStatus(reason);
   }
 
   function bindPromptInjection() {
     if (!promptRuntime || typeof ROOT.eventOn !== 'function') return;
-    ROOT.eventOn('GENERATION_AFTER_COMMANDS', (...args) => {
+    const handler = (...args) => {
+      if (disposed) return;
+      try {
+        if (ROOT[PROMPT_TOKEN_KEY] !== promptToken) return;
+      } catch (_) {}
       promptRuntime.injectCurrentState(...args);
-    });
+    };
+    const stop = ROOT.eventOn('GENERATION_AFTER_COMMANDS', handler);
+    if (typeof stop === 'function') cleanupCallbacks.push(stop);
   }
 
-  bridge.registerActions('mama', {
+  const actionHandlers = {
     async ping(payload) {
       return {
         ok: true,
@@ -117,9 +167,36 @@
         refreshed: await refreshStatus(payload?.reason || 'actionRefresh')
       };
     }
+  };
+  bridge.registerActions('mama', actionHandlers);
+  cleanupCallbacks.push(() => {
+    const registered = bridge.actionHandlers?.mama;
+    if (!registered) return;
+    Object.entries(actionHandlers).forEach(([key, handler]) => {
+      try {
+        if (registered[key] === handler) delete registered[key];
+      } catch (_) {}
+    });
   });
 
-  const pluginApi = {
+  function unload() {
+    if (disposed) return;
+    disposed = true;
+    try { statusHost?.unload?.(); } catch (_) {}
+    cleanupCallbacks.splice(0).forEach((cleanup) => {
+      try { cleanup(); } catch (_) {}
+    });
+    pluginTargets.forEach((target) => {
+      try {
+        if (target?.MAMAPlugin === pluginApi) delete target.MAMAPlugin;
+      } catch (_) {}
+      try {
+        if (target?.[PLUGIN_UNLOAD_KEY] === unload) delete target[PLUGIN_UNLOAD_KEY];
+      } catch (_) {}
+    });
+  }
+
+  pluginApi = {
     version: '0.1.0',
     bridge,
     loadState,
@@ -132,9 +209,13 @@
     closeStatus() {
       return statusHost?.closeStatus?.();
     },
+    debugStatus() {
+      return statusHost?.debug?.();
+    },
+    unload,
     openDashboardUrl: ROOT.MAMA_STATUS_URL || UI_ROOT.MAMA_STATUS_URL || ROOT.MAMA_APP_URL || UI_ROOT.MAMA_APP_URL || ''
   };
-  exposePlugin(pluginApi, BRIDGE_HOST);
+  exposePlugin(pluginApi, unload, pluginTargets);
 
   bindPromptInjection();
   statusHost?.start?.();

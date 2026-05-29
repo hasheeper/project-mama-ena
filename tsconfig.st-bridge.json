@@ -5,5 +5,6 @@
     "strict": false,
     "noImplicitAny": false
   },
-  "include": ["src/st-bridge/**/*.ts", "src/st-bridge/**/*.d.ts", "src/bridge/st-bridge-types.ts", "src/mama/state.ts"]
+  "include": ["src/st-bridge/**/*.ts", "src/st-bridge/**/*.d.ts", "src/bridge/st-bridge-types.ts", "src/mama/state.ts"],
+  "exclude": []
 }

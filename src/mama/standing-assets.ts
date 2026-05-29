@@ -69,7 +69,7 @@ export const expressionAssets = {
 };
 
 export const expressions: ExpressionLayerRef[] = (expressionData as ExpressionFile).expressions;
-export const DEFAULT_EXPRESSION = 'exp_default';
+export const DEFAULT_EXPRESSION = 'exp_smile_soft';
 
 export function resolveStandingLayers(outfitInput: unknown, expressionInput: unknown): StandingLayers {
   const outfit = resolveOutfitName(outfitInput);

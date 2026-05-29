@@ -50,6 +50,6 @@ declare global {
     ST_BRIDGE_PACK?: string;
     ST_BRIDGE_URL?: string;
     ST_BRIDGE_MANIFEST_URL?: string;
-    MAMAPlugin?: unknown;
+    MAMAPlugin?: any;
   }
 }

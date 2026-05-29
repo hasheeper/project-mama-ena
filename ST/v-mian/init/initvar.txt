@@ -1,5 +1,5 @@
 mama:
   affection: 0
-  outfit: school_uniform
+  outfit: streetwear_full
   mascotComment: ""
   enaDialogue: ""
