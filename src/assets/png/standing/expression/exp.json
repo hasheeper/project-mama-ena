@@ -1,5 +1,5 @@
 {
-  "count": 91,
+  "count": 90,
   "expressions": [
     {
       "id": 1,
@@ -760,39 +760,24 @@
     },
     {
       "id": 87,
-      "name": "exp_sleep_smile",
-      "face": "face_default",
-      "mouth": "mouth_smile",
-      "eye": "eye_smile",
-      "brow": "brow_normal",
-      "emotion": "Emotion_zzz"
-    },
-    {
-      "id": 88,
       "name": "exp_sleep_drowsy",
       "face": "face_default",
       "mouth": "mouth_huh",
       "eye": "eye_slit",
       "brow": "brow_normal",
-      "emotion": [
-        "Emotion_Sleepy",
-        "Emotion_zzz"
-      ]
+      "emotion": "Emotion_Sleepy"
     },
     {
-      "id": 89,
+      "id": 88,
       "name": "exp_sleep_purr",
       "face": "face_default",
       "mouth": "mouth_cat",
       "eye": "eye_line",
       "brow": "brow_normal",
-      "emotion": [
-        "Emotion_Sleepy",
-        "Emotion_zzz"
-      ]
+      "emotion": "Emotion_Sleepy"
     },
     {
-      "id": 90,
+      "id": 89,
       "name": "exp_sleep_drool",
       "face": "face_default",
       "mouth": "mouth_drool",
@@ -801,7 +786,7 @@
       "emotion": "Emotion_zzz"
     },
     {
-      "id": 91,
+      "id": 90,
       "name": "exp_sleep_nightmare",
       "face": "face_default",
       "mouth": "mouth_bite_lip",

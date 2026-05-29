@@ -114,9 +114,8 @@ Expressions_Matrix:
   # 💤 CATEGORY 6B: Sleep / ZZZ Variants (Dedicated sleeping diff)
   exp_sleep_neutral: "Actually asleep or dozing quietly, neutral mouth, closed eyes, ZZZ sleep marker."
   exp_sleep_peaceful: "Peacefully asleep with a soft smile, calm safe sleep, ZZZ sleep marker."
-  exp_sleep_smile: "Happy little sleep smile, dreaming pleasantly, ZZZ sleep marker."
-  exp_sleep_drowsy: "On the edge of falling asleep, tiny yawn, heavy eyelids, sleepy aura plus ZZZ."
-  exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura plus ZZZ."
+  exp_sleep_drowsy: "On the edge of falling asleep, tiny yawn, heavy eyelids, sleepy aura only."
+  exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura only."
   exp_sleep_drool: "Deep lazy sleep, drooling or totally out, ZZZ sleep marker."
   exp_sleep_nightmare: "Uncomfortable sleep or mild nightmare, tense closed eyes, confusion aura plus ZZZ."
 
