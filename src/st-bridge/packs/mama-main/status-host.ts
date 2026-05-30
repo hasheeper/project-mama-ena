@@ -103,20 +103,27 @@
     const style = DOC.createElement('style');
     style.id = STYLE_ID;
     style.textContent = `
+      @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;900&display=swap');
+
       @keyframes mamaStatusFloat {
         0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-5px); }
+        50% { transform: translateY(-4px); }
       }
 
       @keyframes mamaStatusPulse {
-        0%, 100% { box-shadow: 0 0 0 0 rgba(228, 124, 154, 0.26), 0 16px 38px rgba(45, 35, 50, 0.22); }
-        50% { box-shadow: 0 0 0 14px rgba(228, 124, 154, 0), 0 18px 42px rgba(45, 35, 50, 0.26); }
+        0%, 100% { box-shadow: 0 0 0 0 rgba(228, 124, 154, 0.25), 0 10px 24px rgba(45, 35, 50, 0.12); }
+        50% { box-shadow: 0 0 0 12px rgba(228, 124, 154, 0), 0 14px 28px rgba(45, 35, 50, 0.16); }
       }
 
       #${HOST_ID} {
         position: static !important;
         z-index: 2147483645 !important;
         pointer-events: none !important;
+        --text-main: #332d36;
+        --text-sub: #8d8592;
+        --frame-purple: #dfd1eb;
+        --ena-pink: #e47c9a;
+        --bg-cream: #fdfcff;
       }
 
       #${TRIGGER_ID} {
@@ -125,12 +132,10 @@
         right: 20px !important;
         width: 68px;
         height: 68px;
-        border: 1px solid rgba(228, 124, 154, 0.34);
-        border-radius: 22px;
-        background:
-          radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.9), transparent 34%),
-          linear-gradient(160deg, rgba(252, 250, 247, 0.98), rgba(223, 209, 235, 0.98));
-        color: #401f2c;
+        background: var(--bg-cream);
+        border: 1.5px solid rgba(228, 124, 154, 0.4);
+        border-radius: 18px;
+        color: var(--text-main);
         cursor: pointer;
         display: flex;
         align-items: center;
@@ -139,11 +144,10 @@
         overflow: visible;
         z-index: 2147483645 !important;
         pointer-events: auto !important;
-        box-shadow: 0 16px 38px rgba(45, 35, 50, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.68);
-        animation: mamaStatusFloat 3.2s ease-in-out infinite, mamaStatusPulse 3.4s ease-in-out infinite;
-        font: 900 13px/1.05 ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-        letter-spacing: 1px;
-        transition: width 0.28s ease, height 0.28s ease, right 0.28s ease, border-radius 0.28s ease, transform 0.2s ease, opacity 0.2s ease, border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 10px 24px rgba(45, 35, 50, 0.12), inset 0 0 0 2px #ffffff;
+        animation: mamaStatusFloat 3.5s ease-in-out infinite, mamaStatusPulse 3.5s cubic-bezier(0.2, 0.8, 0.2, 1) infinite;
+        font-family: "Nunito", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
       }
 
       #${TRIGGER_ID}::before {
@@ -151,9 +155,9 @@
       }
 
       #${TRIGGER_ID}:hover {
-        transform: scale(1.07);
-        border-color: rgba(228, 124, 154, 0.62);
-        box-shadow: 0 18px 46px rgba(45, 35, 50, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+        transform: scale(1.06);
+        border-color: var(--ena-pink);
+        box-shadow: 0 14px 32px rgba(45, 35, 50, 0.16), inset 0 0 0 2px #ffffff;
       }
 
       #${TRIGGER_ID} .mama-status-trigger-mark {
@@ -161,58 +165,67 @@
         place-items: center;
         width: 52px;
         height: 52px;
-        border-radius: 17px;
-        background: rgba(255, 255, 255, 0.44);
-        box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.56);
-        transition: transform 0.25s ease, opacity 0.2s ease;
+        border-radius: 12px;
+        background: #f8f6fa;
+        border: 1px dashed var(--frame-purple);
+        transition: transform 0.25s ease;
       }
 
       #${TRIGGER_ID}:hover .mama-status-trigger-mark {
-        transform: scale(1.08);
+        transform: scale(1.04);
+      }
+
+      #${TRIGGER_ID} .mama-status-trigger-main {
+        font-weight: 900;
+        font-size: 11px;
+        line-height: 1.1;
+        letter-spacing: 1px;
+        color: var(--text-main);
+        text-align: center;
+      }
+
+      #${TRIGGER_ID} .mama-status-trigger-sub {
+        display: block;
+        margin-top: 2px;
+        font-size: 8px;
+        color: var(--text-sub);
+        letter-spacing: 1.5px;
       }
 
       #${TRIGGER_ID} .mama-status-trigger-mini {
         display: none;
       }
 
-      #${TRIGGER_ID} .mama-status-trigger-sub {
-        display: block;
-        margin-top: 3px;
-        font-size: 8px;
-        color: rgba(64, 31, 44, 0.62);
-        letter-spacing: 1.6px;
-      }
-
       .mama-status-trigger-fold {
         position: absolute;
-        right: -2px;
-        bottom: -2px;
+        right: -6px;
+        bottom: -6px;
         appearance: none;
         display: flex;
         align-items: center;
         justify-content: center;
-        width: 22px;
-        height: 22px;
-        border: 1px solid rgba(255, 255, 255, 0.38);
-        border-radius: 999px;
-        background: rgba(54, 38, 50, 0.84);
-        color: rgba(255, 255, 255, 0.92);
+        width: 24px;
+        height: 24px;
+        background: var(--ena-pink);
+        border: 2px solid #ffffff;
+        border-radius: 50%;
+        color: #ffffff;
         cursor: pointer;
         padding: 0;
         z-index: 2;
-        box-shadow: 0 4px 10px rgba(45, 35, 50, 0.26);
-        transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+        box-shadow: 0 4px 8px rgba(228, 124, 154, 0.35);
+        transition: transform 0.2s ease, background 0.2s ease;
       }
 
       .mama-status-trigger-fold:hover {
-        transform: translateY(-1px);
-        background: rgba(81, 34, 52, 0.94);
-        border-color: rgba(255, 255, 255, 0.58);
+        transform: translateY(-1px) scale(1.05);
+        background: #d66484;
       }
 
       .mama-status-trigger-fold svg {
-        width: 12px;
-        height: 12px;
+        width: 14px;
+        height: 14px;
+        transform: translateX(0.5px);
       }
 
       .mama-status-trigger-fold-open {
@@ -221,16 +234,15 @@
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} {
         right: 0 !important;
-        width: 30px;
-        height: 62px;
-        border-radius: 18px 0 0 18px;
-        opacity: 0.78;
+        width: 26px;
+        height: 56px;
+        border-radius: 12px 0 0 12px;
+        background: var(--bg-cream);
+        border: 1.5px solid rgba(228, 124, 154, 0.4);
+        border-right: none;
+        opacity: 1;
         animation: none;
-        background: rgba(54, 38, 50, 0.78);
-        border-color: rgba(255, 255, 255, 0.2);
-        box-shadow:
-          0 6px 16px rgba(45, 35, 50, 0.28),
-          inset 0 0 10px rgba(255, 255, 255, 0.16);
+        box-shadow: -4px 4px 14px rgba(45, 35, 50, 0.08);
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}::before {
@@ -239,23 +251,21 @@
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}:hover {
         transform: none;
-        opacity: 0.96;
-        background: rgba(64, 45, 60, 0.92);
+        background: #ffffff;
+        border-color: var(--ena-pink);
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-mark {
-        width: 20px;
-        height: 20px;
-        border-radius: 10px;
+        width: 100%;
+        height: 100%;
+        border-radius: 0;
         background: transparent;
-        box-shadow: none;
-        transform: translateY(-10px);
-        opacity: 0.88;
-        color: rgba(255, 245, 248, 0.92);
+        border: none;
+        transform: translateY(-8px);
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS}:hover .mama-status-trigger-mark {
-        transform: translateY(-10px);
+        transform: translateY(-8px);
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-main {
@@ -263,21 +273,32 @@
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-mini {
-        display: block;
-        font-size: 14px;
-        line-height: 1;
-        color: rgba(255, 245, 248, 0.94);
-        letter-spacing: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        width: 100%;
+        height: 100%;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-mini svg {
+        width: 16px;
+        height: 16px;
+        margin-left: 2px;
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold {
-        right: 3px;
-        bottom: 5px;
-        width: 24px;
-        height: 24px;
-        border-color: transparent;
-        background: transparent;
+        right: 1.5px;
+        bottom: 2px;
+        width: 20px;
+        height: 20px;
+        border-width: 1.5px;
         box-shadow: none;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold svg {
+        width: 12px;
+        height: 12px;
+        transform: translateX(-0.5px);
       }
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold-close {
@@ -496,14 +517,19 @@
       trigger.innerHTML = [
         '<span class="mama-status-trigger-mark" aria-hidden="true">',
         '<span class="mama-status-trigger-main">MAMA<span class="mama-status-trigger-sub">STATUS</span></span>',
-        '<span class="mama-status-trigger-mini">M</span>',
+        '<span class="mama-status-trigger-mini">',
+        '<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">',
+        '<path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" stroke="var(--ena-pink)" stroke-width="2.5" stroke-linejoin="round"/>',
+        '<path d="M12 17.5l-1.1-1C7.5 13.5 5.5 11.5 5.5 9C5.5 7.5 6.5 6.5 8 6.5c1 0 1.8.5 2.2 1.2C10.8 6.5 11.5 6.5 12 7c.5-.5 1.2-.5 1.8-.7C14.2 5.6 15 6 16 6.5c1.5 0 2.5 1 2.5 2.5 0 2.5-2 4.5-5.4 7.5L12 17.5z" fill="var(--ena-pink)"/>',
+        '</svg>',
+        '</span>',
         '</span>',
         '<button class="mama-status-trigger-fold" type="button" title="收起悬浮球" aria-label="收起悬浮球">',
-        '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
-        '<path d="m15 18-6-6 6-6" />',
-        '</svg>',
-        '<svg class="mama-status-trigger-fold-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+        '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
         '<path d="m9 18 6-6-6-6" />',
+        '</svg>',
+        '<svg class="mama-status-trigger-fold-open" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
+        '<path d="m15 18-6-6 6-6" />',
         '</svg>',
         '</button>'
       ].join('');
