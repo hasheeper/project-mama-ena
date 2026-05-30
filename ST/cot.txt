@@ -23,8 +23,8 @@
    -------------------- [END LOOP] --------------------
 
 4.【语言协议】
-   - 在 planning 内先复述以下要求，再输出正文：
-     1. 台词必须严格使用ena-line 格式
+   - 在 planning 内先复述预热以下格式，再输出正文：
+     1. ENA 台词必须严格使用 ena-line 格式
      * 例：
         <ena-line>
         <jp>……だめ。もう少し、このままでいなさい。</jp>
@@ -32,5 +32,11 @@
         <exp-think>思考内容</exp-think>
         <ena-exp>exp_line_purr</ena-exp>
         </ena-line>
-     2. 保留日文原文的语癖、片假名习惯与口语缩略
+     2. Neruru 台词必须严格使用 neruru-line 格式
+     * 例：
+        <neruru-line>
+        <jp>むるる、エナは今ちょっと強がってるだけだる。</jp>
+        <cn>唔噜噜，绘奈现在只是有点逞强噜。</cn>
+        </neruru-line>
+     3. 保留日文原文的语癖、片假名习惯与口语缩略，不要预热复述内容
 </planning>

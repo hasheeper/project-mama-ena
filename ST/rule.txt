@@ -40,7 +40,6 @@ Expressions_Matrix:
   exp_huh: "Skeptical, confused 'Wait, what?'. Slightly parted mouth, averted eyes."
   exp_deflated: "Defeated, exhausted, trembling mouth. Verbally out of options."
   exp_concerned: "Quiet worry, empathetic, lowered brows showing care."
-  exp_drowsy: "Sleepy, zoning out, half-closed eyes, small yawn."
   exp_smile_closed: "Pure, wholesome, 100% genuine closed-eye smile."
   exp_craving: "Drooling, spaced-out, daydreaming about food/desires."
   exp_laugh_joyful: "Laughing out loud brightly, genuine pure joy."
@@ -119,10 +118,16 @@ Expressions_Matrix:
   # 💤 CATEGORY 6B: Sleep / ZZZ Variants (Dedicated sleeping diff)
   exp_sleep_neutral: "Actually asleep or dozing quietly, neutral mouth, closed eyes, ZZZ sleep marker."
   exp_sleep_peaceful: "Peacefully asleep with a soft smile, calm safe sleep, ZZZ sleep marker."
-  exp_sleep_drowsy: "On the edge of falling asleep, tiny yawn, heavy eyelids, sleepy aura only."
   exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura only."
   exp_sleep_drool: "Deep lazy sleep, drooling or totally out, ZZZ sleep marker."
   exp_sleep_nightmare: "Uncomfortable sleep or mild nightmare, tense closed eyes, confusion aura plus ZZZ."
+
+  # 💤 CATEGORY 6C: The Drowsy Universe (Sleepy & Waking Up States)
+  exp_drowsy_yawn: "Big loud yawn with sleepy slit eyes. Used when completely exhausted or stretching in the morning."
+  exp_drowsy_huh: "Eyes half-open, mouth slightly parted. Sleepy and dazed, spacing out, brain loading very slowly."
+  exp_drowsy_neutral: "Eyes half-open, mouth closed shut. Quietly dozing off, nodding off, or desperately fighting the urge to sleep."
+  exp_drowsy_smile: "Sleepy, soft smile with half-open eyes. Extremely relaxed, feeling safe, waking up gracefully, or lazily greeting."
+  exp_blush_drowsy: "Flushed red cheeks, half-open eyes. Used for cute morning clumsiness, taking a warm nap, or being embarrassed about waking up messy."
 
   # ⚫ CATEGORY 7: Drama, Tears & Dark Mode (Handle with care)
   exp_pleading: "Puppy eyes, trembling lip, begging or feeling bullied."

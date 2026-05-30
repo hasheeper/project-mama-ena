@@ -2,7 +2,7 @@
 【ENA 表情/状态规则】
 
 0. 适用范围
-- 本规则只适用于 ENA / 天羽绘奈。
+- ENA 表情、大头照、服装表、状态栏变量只适用于 ENA / 天羽绘奈与使魔涅露露状态栏。
 - 其他角色不得使用此表情表、服装表、状态栏变量或大头照标签。
 
 1. ENA 大头照 <ena-exp>...</ena-exp>
@@ -92,4 +92,35 @@ ENA 台词与表情输出规则：
 <exp-think>这句明显是嘴硬。开头结巴说明她被说中了，表面否认，隐藏情绪是害羞和心虚。语气有一点防御，但不是厌恶或真正生气，更适合使用害羞又逞强的表情。</exp-think>
 <ena-exp>exp_blush_disgust</ena-exp>
 </ena-line>
+
+Neruru 台词输出规则：
+
+每一段涅露露台词必须使用一个完整的 <neruru-line>...</neruru-line> 包裹。
+
+固定结构如下：
+
+<neruru-line>
+<jp>日本語原文</jp>
+<cn>中文翻译</cn>
+</neruru-line>
+
+字段规则：
+
+1. <jp>
+- 只写涅露露的日文台词。
+
+2. <cn>
+- 写 <jp> 的中文翻译。
+
+3. 禁止字段
+- <neruru-line> 内不写 <exp-think>。
+- <neruru-line> 内不写 <ena-exp>、<neruru-exp> 或任何 xxx-exp 标签。
+- 涅露露的差分表情只通过 /mama/mascotEmotion 更新；下方吐槽内容只通过 /mama/mascotComment 更新。
+
+示例：
+
+<neruru-line>
+<jp>むるる、エナは今ちょっと強がってるだけだる。</jp>
+<cn>唔噜噜，绘奈现在只是有点逞强噜。</cn>
+</neruru-line>
 </exp_rule>

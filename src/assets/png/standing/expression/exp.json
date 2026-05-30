@@ -1,5 +1,5 @@
 {
-  "count": 90,
+  "count": 93,
   "expressions": [
     {
       "id": 1,
@@ -243,8 +243,44 @@
     },
     {
       "id": 28,
-      "name": "exp_drowsy",
+      "name": "exp_drowsy_huh",
       "face": "face_default",
+      "mouth": "mouth_huh",
+      "eye": "eye_slit",
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
+    },
+    {
+      "id": 91,
+      "name": "exp_drowsy_yawn",
+      "face": "face_default",
+      "mouth": "mouth_blank_1",
+      "eye": "eye_slit",
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
+    },
+    {
+      "id": 92,
+      "name": "exp_drowsy_neutral",
+      "face": "face_default",
+      "mouth": "mouth_neutral",
+      "eye": "eye_slit",
+      "brow": "brow_down",
+      "emotion": "Emotion_Sleepy"
+    },
+    {
+      "id": 93,
+      "name": "exp_drowsy_smile",
+      "face": "face_default",
+      "mouth": "mouth_smile",
+      "eye": "eye_slit",
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
+    },
+    {
+      "id": 94,
+      "name": "exp_blush_drowsy",
+      "face": "face_blush_light",
       "mouth": "mouth_huh",
       "eye": "eye_slit",
       "brow": "brow_normal",
@@ -757,15 +793,6 @@
       "eye": "eye_closed_1",
       "brow": "brow_normal",
       "emotion": "Emotion_zzz"
-    },
-    {
-      "id": 87,
-      "name": "exp_sleep_drowsy",
-      "face": "face_default",
-      "mouth": "mouth_huh",
-      "eye": "eye_slit",
-      "brow": "brow_normal",
-      "emotion": "Emotion_Sleepy"
     },
     {
       "id": 88,
