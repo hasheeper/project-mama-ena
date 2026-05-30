@@ -398,7 +398,7 @@
       const messageTargets = [];
       const timeoutHandles = /* @__PURE__ */ new Set();
       const cleanupCallbacks = [];
-      const version = config.version || "0.1.0";
+      const version = config.cacheBust || config.version || "0.1.0";
       const injectStatusHost = !isDisabled(config.injectFixedStatus) && !isEnabled(config.disableStatusHost) && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST) && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
       function schedule(callback, delayMs = 0) {
         const handle = TIMER_ROOT.setTimeout(() => {

@@ -17,6 +17,7 @@ type BridgeScorer = (candidate: BridgeRoot) => number;
 type BridgeVariablesOptions = { type?: string; rootKey?: string; [key: string]: any };
 type BridgePatcher = (draft: any, current: unknown) => unknown | Promise<unknown>;
 type BridgeActionHandler = (payload?: unknown) => unknown | Promise<unknown>;
+declare const __MAMA_BRIDGE_BUILD_CACHE_KEY__: string | undefined;
 
 interface BridgeManifest {
   version?: string;
@@ -284,7 +285,10 @@ interface RegisteredBridgeSchema {
   const bridgeUrl = new URL(getCurrentScriptUrl());
   const bridgeRoot = new URL('.', bridgeUrl);
   const params = bridgeUrl.searchParams;
-  const cacheBust = params.get('v') || params.get('cache') || '';
+  const buildCacheKey = typeof __MAMA_BRIDGE_BUILD_CACHE_KEY__ === 'string'
+    ? __MAMA_BRIDGE_BUILD_CACHE_KEY__
+    : 'dev';
+  const cacheBust = params.get('v') || params.get('cache') || normalizeString(getGlobalValue('ST_BRIDGE_CACHE_BUST')) || buildCacheKey;
   const forceReload = params.get('force') === '1';
   publishHostInfo({
     bridgeUrl: bridgeUrl.href,

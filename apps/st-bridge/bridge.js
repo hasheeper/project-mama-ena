@@ -244,6 +244,9 @@
     function normalizeMamaState$1(value) {
       return normalizeMamaState(value);
     }
+    function normalizeString2(value, fallback = "") {
+      return typeof value === "string" && value.trim() ? value.trim() : fallback;
+    }
     function isUsableBridgeUrl(value) {
       if (!value || typeof value !== "string") return false;
       if (!/^https?:\/\//i.test(value)) return false;
@@ -276,7 +279,8 @@
     const bridgeUrl = new URL(getCurrentScriptUrl());
     const bridgeRoot = new URL(".", bridgeUrl);
     const params = bridgeUrl.searchParams;
-    const cacheBust = params.get("v") || params.get("cache") || "";
+    const buildCacheKey = "b8ee54130b87";
+    const cacheBust = params.get("v") || params.get("cache") || normalizeString2(getGlobalValue("ST_BRIDGE_CACHE_BUST")) || buildCacheKey;
     const forceReload = params.get("force") === "1";
     publishHostInfo({
       bridgeUrl: bridgeUrl.href,
@@ -285,7 +289,6 @@
       forceReload
     });
     function withCache(url) {
-      if (!cacheBust) return url;
       const next = new URL(url);
       next.searchParams.set("_mama_bridge_v", cacheBust);
       return next.href;
@@ -294,12 +297,12 @@
       return new URL(path, base).href;
     }
     async function fetchJson(url) {
-      const response = await fetch(withCache(url), { cache: cacheBust ? "reload" : "no-cache" });
+      const response = await fetch(withCache(url), { cache: "reload" });
       if (!response.ok) throw new Error(`HTTP ${response.status} while loading ${url}`);
       return response.json();
     }
     async function fetchText(url) {
-      const response = await fetch(withCache(url), { cache: cacheBust ? "reload" : "no-cache" });
+      const response = await fetch(withCache(url), { cache: "reload" });
       if (!response.ok) throw new Error(`HTTP ${response.status} while loading ${url}`);
       return response.text();
     }
@@ -526,7 +529,7 @@
       const manifest = await fetchJson(manifestUrl);
       const { id: packId, pack } = selectPack(manifest);
       const registry = getLoadedRegistry();
-      const registryKey = `${manifestUrl}::${packId}::${cacheBust || "default"}`;
+      const registryKey = `${manifestUrl}::${packId}::${cacheBust}`;
       if (registry[registryKey] && !forceReload) {
         exposeApi(registry[registryKey]);
         return registry[registryKey];

@@ -77,8 +77,11 @@
   const promptRuntime = stateService && typeof RUNTIME.createPromptInjection === 'function'
     ? RUNTIME.createPromptInjection(stateService)
     : null;
+  const statusCacheKey = typeof bridge.host?.cacheBust === 'string' && bridge.host.cacheBust.trim()
+    ? bridge.host.cacheBust.trim()
+    : bridge.version || '0.1.0';
   const statusHost = stateService && typeof RUNTIME.createStatusHost === 'function'
-    ? RUNTIME.createStatusHost(stateService, { version: bridge.version || '0.1.0' })
+    ? RUNTIME.createStatusHost(stateService, { version: statusCacheKey, cacheBust: statusCacheKey })
     : null;
   const cleanupCallbacks: Array<() => void> = [];
   let disposed = false;

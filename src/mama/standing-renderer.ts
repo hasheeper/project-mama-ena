@@ -38,6 +38,8 @@ function createLayerImage(src: string, className: string): HTMLImageElement {
   image.src = src;
   image.alt = '';
   image.decoding = 'async';
+  image.loading = 'eager';
+  (image as any).fetchPriority = 'high';
   image.draggable = false;
   return image;
 }

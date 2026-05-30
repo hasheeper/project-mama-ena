@@ -68,17 +68,26 @@
       transform: translate(-50%, -50%);
       overflow: visible;
       isolation: isolate;
+      -webkit-transform: translate(-50%, -50%);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     .mama-standing__layer {
       position: absolute;
       inset: 0;
+      display: block;
       width: 100%;
       height: 100%;
       object-fit: contain;
       object-position: center bottom;
       pointer-events: none;
       user-select: none;
+      -webkit-user-drag: none;
+      transform: translate3d(0, 0, 0);
+      -webkit-transform: translate3d(0, 0, 0);
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
     }
 
     .mama-standing__layer--face-fx {
@@ -116,10 +125,28 @@
     .mama-standing__layer--emotion {
       z-index: 70;
     }
+
+    @supports (-webkit-touch-callout: none) {
+      .portrait-frame,
+      .portrait-crop,
+      .mama-standing {
+        transform: translate3d(0, 0, 0);
+        -webkit-transform: translate3d(0, 0, 0);
+        backface-visibility: hidden;
+        -webkit-backface-visibility: hidden;
+      }
+
+      .mama-standing {
+        transform: translate3d(-50%, -50%, 0);
+        -webkit-transform: translate3d(-50%, -50%, 0);
+        filter: none;
+        -webkit-filter: none;
+      }
+    }
   </style>
 </head>
 <body>
-  <script id="mama-exp" type="application/json">$4</script>
+  <script id="mama-exp" type="application/json">$1</script>
   <main id="mama-exp-app" data-app-id="expression-portrait"></main>
 
   <script>
@@ -307,6 +334,8 @@
         image.src = src;
         image.alt = alt || '';
         image.decoding = 'async';
+        image.loading = 'eager';
+        try { image.fetchPriority = 'high'; } catch (_) {}
         image.draggable = false;
         return image;
       }

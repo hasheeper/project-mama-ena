@@ -1,4 +1,6 @@
-import { resolve } from 'node:path';
+import { createHash } from 'node:crypto';
+import { readdir, readFile } from 'node:fs/promises';
+import { extname, join, relative, resolve } from 'node:path';
 import { build, type InlineConfig } from 'vite';
 
 type BridgeFormat = 'es' | 'iife';
@@ -12,6 +14,7 @@ interface BridgeEntry {
 }
 
 const rootDir = process.cwd();
+const buildCacheKey = process.env.MAMA_BUILD_VERSION || await makeBuildCacheKey();
 
 const entries: BridgeEntry[] = [
   {
@@ -66,6 +69,9 @@ function makeConfig(entry: BridgeEntry): InlineConfig {
     configFile: false,
     publicDir: false,
     logLevel: 'warn',
+    define: {
+      __MAMA_BRIDGE_BUILD_CACHE_KEY__: JSON.stringify(buildCacheKey)
+    },
     build: {
       outDir,
       emptyOutDir: false,
@@ -94,4 +100,43 @@ function makeConfig(entry: BridgeEntry): InlineConfig {
 for (const entry of entries) {
   await build(makeConfig(entry));
   console.log(`Built ${entry.outDir}/${entry.fileName}`);
+}
+
+async function makeBuildCacheKey(): Promise<string> {
+  const hash = createHash('sha256');
+  const targets = [
+    resolve(rootDir, 'apps/st-bridge/manifest.json'),
+    resolve(rootDir, 'package.json'),
+    resolve(rootDir, 'src/apps/expression-portrait'),
+    resolve(rootDir, 'src/apps/visual-dashboard'),
+    resolve(rootDir, 'src/mama'),
+    resolve(rootDir, 'src/st-bridge')
+  ];
+  const files = (await Promise.all(targets.map(collectHashableFiles))).flat().sort();
+
+  for (const file of files) {
+    hash.update(relative(rootDir, file));
+    hash.update('\0');
+    hash.update(await readFile(file));
+    hash.update('\0');
+  }
+
+  return hash.digest('hex').slice(0, 12);
+}
+
+async function collectHashableFiles(target: string): Promise<string[]> {
+  const entries = await readdir(target, { withFileTypes: true }).catch(() => []);
+  if (!entries.length) {
+    const ext = extname(target);
+    return ['.css', '.html', '.json', '.ts'].includes(ext) ? [target] : [];
+  }
+
+  const files = await Promise.all(entries.map(async (entry) => {
+    const child = join(target, entry.name);
+    if (entry.isDirectory()) return collectHashableFiles(child);
+    if (!entry.isFile()) return [];
+    return ['.css', '.html', '.json', '.ts'].includes(extname(entry.name)) ? [child] : [];
+  }));
+
+  return files.flat();
 }
