@@ -73,7 +73,7 @@
       -webkit-backface-visibility: hidden;
     }
 
-    .mama-standing__layer {
+    .mama-standing__canvas {
       position: absolute;
       inset: 0;
       display: block;
@@ -90,59 +90,6 @@
       -webkit-backface-visibility: hidden;
     }
 
-    .mama-standing__layer--face-fx {
-      z-index: 10;
-    }
-
-    .mama-standing__layer--mouth {
-      z-index: 20;
-    }
-
-    .mama-standing__layer--expression-other {
-      z-index: 25;
-    }
-
-    .mama-standing__layer--base {
-      z-index: 30;
-    }
-
-    .mama-standing__layer--eyes {
-      z-index: 40;
-    }
-
-    .mama-standing__layer--mood-under {
-      z-index: 45;
-    }
-
-    .mama-standing__layer--brow {
-      z-index: 50;
-    }
-
-    .mama-standing__layer--mood-top {
-      z-index: 60;
-    }
-
-    .mama-standing__layer--emotion {
-      z-index: 70;
-    }
-
-    @supports (-webkit-touch-callout: none) {
-      .portrait-frame,
-      .portrait-crop,
-      .mama-standing {
-        transform: translate3d(0, 0, 0);
-        -webkit-transform: translate3d(0, 0, 0);
-        backface-visibility: hidden;
-        -webkit-backface-visibility: hidden;
-      }
-
-      .mama-standing {
-        transform: translate3d(-50%, -50%, 0);
-        -webkit-transform: translate3d(-50%, -50%, 0);
-        filter: none;
-        -webkit-filter: none;
-      }
-    }
   </style>
 </head>
 <body>
@@ -327,37 +274,90 @@
         hostFrame.style.background = 'transparent';
       }
 
-      function makeLayer(kind, src, alt) {
-        if (!src) return null;
-        const image = document.createElement('img');
-        image.className = 'mama-standing__layer mama-standing__layer--' + kind.replace(/_/g, '-');
-        image.src = src;
-        image.alt = alt || '';
-        image.decoding = 'async';
-        image.loading = 'eager';
-        try { image.fetchPriority = 'high'; } catch (_) {}
-        image.draggable = false;
-        return image;
+      function makeLayer(src) {
+        return src ? { url: src } : null;
       }
 
       function resolveLayers(expression, outfit) {
         const moodLayers = resolveMoodLayers(expression, outfit || DEFAULT_OUTFIT);
         return [
-          makeLayer('face_fx', assetUrl('face', 'face_default'), ''),
-          expression.face !== 'face_default' ? makeLayer('face_fx', assetUrl('face', expression.face), '') : null,
-          makeLayer('mouth', assetUrl('mouth', expression.mouth || 'mouth_neutral'), ''),
+          makeLayer(assetUrl('face', 'face_default')),
+          expression.face !== 'face_default' ? makeLayer(assetUrl('face', expression.face)) : null,
+          makeLayer(assetUrl('mouth', expression.mouth || 'mouth_neutral')),
           ...resolveExpressionOtherUrls(expression).map(function (url) {
-            return makeLayer('expression_other', url, '');
+            return makeLayer(url);
           }),
-          makeLayer('base', assetUrl('base', outfit || DEFAULT_OUTFIT), ''),
-          makeLayer('eyes', assetUrl('eye', expression.eye || 'eye_normal'), ''),
-          makeLayer('mood_under', moodLayers.under, ''),
-          makeLayer('brow', assetUrl('brow', expression.brow || 'brow_normal'), ''),
-          makeLayer('mood_top', moodLayers.top, ''),
+          makeLayer(assetUrl('base', outfit || DEFAULT_OUTFIT)),
+          makeLayer(assetUrl('eye', expression.eye || 'eye_normal')),
+          makeLayer(moodLayers.under),
+          makeLayer(assetUrl('brow', expression.brow || 'brow_normal')),
+          makeLayer(moodLayers.top),
           ...resolveExpressionEmotionUrls(expression).map(function (url) {
-            return makeLayer('emotion', url, '');
+            return makeLayer(url);
           })
         ].filter(Boolean);
+      }
+
+      function createStandingCanvas(layers) {
+        const canvas = document.createElement('canvas');
+        canvas.className = 'mama-standing__canvas';
+        canvas.width = 2048;
+        canvas.height = 2048;
+        canvas.setAttribute('aria-hidden', 'true');
+        canvas.dataset.layerCount = String(layers.length);
+        paintStandingCanvas(canvas, layers);
+        return canvas;
+      }
+
+      async function paintStandingCanvas(canvas, layers) {
+        const images = await Promise.all(layers.map(function (layer) {
+          return loadCanvasImage(layer.url);
+        }));
+        const drawableImages = images.filter(Boolean);
+        const firstImage = drawableImages[0];
+        const width = firstImage && firstImage.naturalWidth || 2048;
+        const height = firstImage && firstImage.naturalHeight || 2048;
+        const context = canvas.getContext('2d');
+        if (!context) return;
+
+        if (canvas.width !== width) canvas.width = width;
+        if (canvas.height !== height) canvas.height = height;
+
+        context.clearRect(0, 0, width, height);
+        context.imageSmoothingEnabled = true;
+        context.imageSmoothingQuality = 'high';
+        drawableImages.forEach(function (image) {
+          context.drawImage(image, 0, 0, width, height);
+        });
+        canvas.dataset.rendered = 'true';
+      }
+
+      function loadCanvasImage(src) {
+        return new Promise(function (resolve) {
+          if (!src) {
+            resolve(null);
+            return;
+          }
+
+          let settled = false;
+          function done(image) {
+            if (settled) return;
+            settled = true;
+            resolve(image);
+          }
+
+          const image = new Image();
+          image.decoding = 'async';
+          image.loading = 'eager';
+          try { image.fetchPriority = 'high'; } catch (_) {}
+          image.onload = function () { done(image); };
+          image.onerror = function () { done(null); };
+          image.src = src;
+
+          if (image.complete && image.naturalWidth > 0) {
+            done(image);
+          }
+        });
       }
 
       function applyState(state) {
@@ -429,7 +429,7 @@
         figure.dataset.outfit = currentOutfit;
         figure.dataset.expression = expression.name;
         figure.setAttribute('aria-label', 'Ena ' + currentOutfit + ' ' + expression.name);
-        figure.append.apply(figure, resolveLayers(expression, currentOutfit));
+        figure.append(createStandingCanvas(resolveLayers(expression, currentOutfit)));
 
         crop.append(figure);
         frame.append(crop);

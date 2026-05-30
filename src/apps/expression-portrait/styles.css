@@ -65,21 +65,3 @@ body {
   height: 280%;
   transform: translate(-50%, -50%);
 }
-
-@supports (-webkit-touch-callout: none) {
-  .portrait-frame,
-  .portrait-crop,
-  .mama-standing--portrait {
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .mama-standing--portrait {
-    transform: translate3d(-50%, -50%, 0);
-    -webkit-transform: translate3d(-50%, -50%, 0);
-    filter: none;
-    -webkit-filter: none;
-  }
-}

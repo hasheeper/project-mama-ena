@@ -180,7 +180,8 @@ function renderPreviewPanel(): HTMLElement {
     expression: resolved.expression,
     className: 'mama-standing--layer-debug',
     label: `Ena ${resolved.outfit} ${resolved.expression.name}`,
-    extraLayers: debugEmotionLayers
+    extraLayers: debugEmotionLayers,
+    renderMode: 'layers'
   });
 
   viewport.append(figure);

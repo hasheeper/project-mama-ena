@@ -388,36 +388,6 @@ body::-webkit-scrollbar {
     drop-shadow(0 14px 18px rgba(45, 35, 50, 0.16));
 }
 
-@supports (-webkit-touch-callout: none) {
-  html,
-  body {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .standing-stage {
-    transform: translate3d(0, 0, 0);
-    -webkit-transform: translate3d(0, 0, 0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .white-frame {
-    transform: rotate(-1.5deg) translate3d(0, 0, 0);
-    -webkit-transform: rotate(-1.5deg) translate3d(0, 0, 0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-  }
-
-  .mama-standing--dashboard {
-    transform: translate3d(0, 3%, 0);
-    -webkit-transform: translate3d(0, 3%, 0);
-    backface-visibility: hidden;
-    -webkit-backface-visibility: hidden;
-    filter: none;
-    -webkit-filter: none;
-  }
-}
-
 .status-widgets {
   position: absolute;
   top: 32px;

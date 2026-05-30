@@ -1,4 +1,5 @@
 import { resolveStandingLayers, type StandingLayer, type StandingLayerKind } from './standing-assets';
+import { createStandingCanvas } from './standing-canvas';
 
 export interface StandingFigureOptions {
   outfit: unknown;
@@ -6,6 +7,7 @@ export interface StandingFigureOptions {
   className?: string;
   label?: string;
   extraLayers?: StandingLayer[];
+  renderMode?: 'canvas' | 'layers';
 }
 
 export function createStandingFigure(options: StandingFigureOptions): HTMLElement {
@@ -18,12 +20,17 @@ export function createStandingFigure(options: StandingFigureOptions): HTMLElemen
   figure.setAttribute('role', 'img');
   figure.setAttribute('aria-label', options.label || `Ena ${layers.outfit} ${layers.expression.name}`);
 
-  [...layers.layers, ...(options.extraLayers || [])].forEach((layer) => {
-    figure.append(createLayerImage(
-      layer.url,
-      `mama-standing__layer mama-standing__layer--${getLayerClass(layer.kind)}`
-    ));
-  });
+  const standingLayers = [...layers.layers, ...(options.extraLayers || [])];
+  if (options.renderMode === 'layers') {
+    standingLayers.forEach((layer) => {
+      figure.append(createLayerImage(
+        layer.url,
+        `mama-standing__layer mama-standing__layer--${getLayerClass(layer.kind)}`
+      ));
+    });
+  } else {
+    figure.append(createStandingCanvas(standingLayers));
+  }
 
   return figure;
 }
