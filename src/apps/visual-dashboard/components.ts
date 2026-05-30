@@ -1,14 +1,28 @@
-import { MAMA_TIME_PHASE_LABELS, MAMA_TIME_PHASES, type MamaState } from '../../mama/state';
+import {
+  DEFAULT_MAMA_MASCOT_EXPRESSION,
+  MAMA_MASCOT_EXPRESSIONS,
+  MAMA_TIME_PHASE_LABELS,
+  MAMA_TIME_PHASES,
+  normalizeMascotExpression,
+  type MamaMascotExpression,
+  type MamaState
+} from '../../mama/state';
 import type { VisualDashboardViewModel } from './types';
 import { createStatusStandingFigure } from './status-standing';
 import enaBgmUrl from '../../assets/mp3/bgm/ena_bgm.mp3?url';
-import neruruDefaultUrl from '../../assets/png/q/mascot/neruru_default.png?url';
 
 interface ElementOptions {
   className?: string;
   text?: string;
   attributes?: Record<string, string>;
 }
+
+const mascotModules = import.meta.glob<string>('../../assets/png/q/mascot/*.png', {
+  eager: true,
+  query: '?url',
+  import: 'default'
+});
+const mascotAssets = buildMascotAssetMap(mascotModules);
 
 export function renderVisualDashboard(root: HTMLElement, model: VisualDashboardViewModel): void {
   root.classList.add('visual-dashboard');
@@ -293,19 +307,30 @@ function renderStampBadge(): HTMLElement {
 
 function renderDialogueStack(state: MamaState): HTMLElement {
   const stack = createElement('section', { className: 'dialogue-stack' });
-  stack.append(renderDialogueLine('使魔 涅露露', state.mascotComment));
+  stack.append(renderDialogueLine('使魔 涅露露', state.mascotComment, state.mascotEmotion));
   return stack;
 }
 
-function renderDialogueLine(speaker: string, text: string): HTMLElement {
-  const wrapper = createElement('div', { className: 'mascot-dialogue-section' });
+function renderDialogueLine(speaker: string, text: string, mascotEmotion: unknown): HTMLElement {
+  const expression = resolveMascotExpression(mascotEmotion);
+  const description = MAMA_MASCOT_EXPRESSIONS[expression];
+  const wrapper = createElement('div', {
+    className: 'mascot-dialogue-section',
+    attributes: { 'data-mascot-expression': expression }
+  });
   const bubble = createElement('div', { className: 'mascot-bubble' });
-  const avatar = createElement('div', { className: 'mascot-raw-avatar' });
+  const avatar = createElement('div', {
+    className: 'mascot-raw-avatar',
+    attributes: {
+      'data-mascot-expression': expression,
+      title: description
+    }
+  });
   const image = createElement('img', {
     className: 'mascot-avatar-img',
     attributes: {
-      src: neruruDefaultUrl,
-      alt: speaker
+      src: getMascotExpressionUrl(expression),
+      alt: `${speaker} ${expression}`
     }
   });
 
@@ -355,10 +380,29 @@ function formatCounter(value: number): string {
   return String(safeValue).padStart(2, '0');
 }
 
+function resolveMascotExpression(value: unknown): MamaMascotExpression {
+  const expression = normalizeMascotExpression(value);
+  return mascotAssets[expression] ? expression : DEFAULT_MAMA_MASCOT_EXPRESSION;
+}
+
+function getMascotExpressionUrl(expression: MamaMascotExpression): string {
+  return mascotAssets[expression] || mascotAssets[DEFAULT_MAMA_MASCOT_EXPRESSION] || '';
+}
+
 function formatLocationLabel(location: string): string {
   const value = location.trim();
   if (!value || value === 'unknown') return 'UNKNOWN';
   return value.replace(/[_-]+/g, ' ').toUpperCase();
+}
+
+function buildMascotAssetMap(modules: Record<string, string>): Partial<Record<MamaMascotExpression, string>> {
+  return Object.entries(modules).reduce<Partial<Record<MamaMascotExpression, string>>>((map, [path, url]) => {
+    const key = path.split('/').pop()?.replace(/\.png$/i, '');
+    if (key && key in MAMA_MASCOT_EXPRESSIONS) {
+      map[key as MamaMascotExpression] = url;
+    }
+    return map;
+  }, {});
 }
 
 function createElement<K extends keyof HTMLElementTagNameMap>(

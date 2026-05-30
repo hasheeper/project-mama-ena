@@ -14,8 +14,8 @@
   <ena-exp>exp_smile_soft</ena-exp>
 
 2. 状态栏 MVU
-- 状态栏代表“ENA 的长期状态/时间地点/服装形态/下方文本状态”，不是每一句话的即时表情。
-- 只在长期状态变化时更新：好感度、时间推进、地点变化、服装底座、使魔情绪/差分、下方吐槽、下方对白。
+- 状态栏代表“ENA 的长期状态/时间地点/服装形态/下方涅露露吐槽状态”，不是每一句话的即时表情。
+- 只在长期状态变化时更新：好感度、时间推进、地点变化、服装底座、使魔情绪/差分、使魔吐槽。
 - 只允许更新这些路径：
   /mama/affection
   /mama/week
@@ -25,11 +25,10 @@
   /mama/outfit
   /mama/mascotEmotion
   /mama/mascotComment
-  /mama/enaDialogue
 
 3. 状态更新格式
 <UpdateVariable>
-<JSONPatch>[{"op":"replace","path":"/mama/timePhase","value":"noon"},{"op":"replace","path":"/mama/location","value":"school_rooftop"}]</JSONPatch>
+<JSONPatch>[{"op":"replace","path":"/mama/timePhase","value":"noon"},{"op":"replace","path":"/mama/location","value":"school_rooftop"},{"op":"replace","path":"/mama/mascotEmotion","value":"neruru_happy"}]</JSONPatch>
 </UpdateVariable>
 
 4. 使用原则
@@ -39,9 +38,8 @@
 - /mama/timePhase 表示一天四相，只允许 morning、noon、dusk、night；对应显示为 晨、午、暮、夜。
 - /mama/location 是当前场景地点，只在地点确实变化时更新。
 - /mama/outfit 只在 ENA 服装底座/长期形态确实变化时更新。
-- /mama/mascotEmotion 是使魔的当前情绪/差分状态，不另拆第二个差分变量。
-- /mama/mascotComment 是下方小吐槽。
-- /mama/enaDialogue 是下方绘奈对白。
+- /mama/mascotEmotion 是使魔涅露露的当前情绪/差分状态，不另拆第二个差分变量；只能使用 ST/rule.txt 里的 Mascot_Expressions key。
+- /mama/mascotComment 是下方涅露露吐槽。
 
 ENA 台词与表情输出规则：
 

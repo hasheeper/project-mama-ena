@@ -5,6 +5,5 @@ mama:
   timePhase: morning
   location: unknown
   outfit: streetwear_full
-  mascotEmotion: neutral
+  mascotEmotion: neruru_default
   mascotComment: ""
-  enaDialogue: ""

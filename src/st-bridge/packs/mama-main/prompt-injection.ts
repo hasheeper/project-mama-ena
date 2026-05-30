@@ -1,7 +1,7 @@
 /**
  * MAMA prompt injection runtime.
  */
-import { MAMA_ALLOWED_FIELD_PATHS, MAMA_TIME_PHASE_LABELS } from '../../shared/mama';
+import { MAMA_OUTFIT_DETAILS, MAMA_TIME_PHASE_LABELS } from '../../shared/mama';
 
 (function () {
   'use strict';
@@ -23,7 +23,6 @@ import { MAMA_ALLOWED_FIELD_PATHS, MAMA_TIME_PHASE_LABELS } from '../../shared/m
   CURRENT_ROOT.MAMAMainRuntime = RUNTIME;
 
   const INJECT_ID = 'mama_status_context';
-  const ALLOWED_PATHS = [...MAMA_ALLOWED_FIELD_PATHS];
 
   function formatCounter(value) {
     const number = Number(value);
@@ -35,36 +34,33 @@ import { MAMA_ALLOWED_FIELD_PATHS, MAMA_TIME_PHASE_LABELS } from '../../shared/m
     return MAMA_TIME_PHASE_LABELS[timePhase] || MAMA_TIME_PHASE_LABELS.morning;
   }
 
-  function formatTimePhaseGuide() {
-    return Object.entries(MAMA_TIME_PHASE_LABELS)
-      .map(([key, label]) => `${key}=${label}`)
-      .join(', ');
+  function formatCurrentOutfitDetail(outfit) {
+    const detail = MAMA_OUTFIT_DETAILS[outfit];
+    if (!detail) return '';
+
+    const lines = [
+      'currentOutfitDetail:',
+      `  visuals: ${detail.visuals}`
+    ];
+    if (detail.weapon) lines.push(`  weapon: ${detail.weapon}`);
+    lines.push(
+      `  vibe: ${detail.vibe}`,
+      `  triggers: ${detail.triggers}`,
+      `  action_cues: ${detail.action_cues}`
+    );
+    return lines.join('\n');
   }
 
   function buildMamaPrompt(state) {
     const timePhaseLabel = getTimePhaseLabel(state.timePhase);
+    const currentOutfitDetail = formatCurrentOutfitDetail(state.outfit);
     return `<mama_status>
 affection: ${state.affection}/255
 time: WEEK ${formatCounter(state.week)} / DAY ${formatCounter(state.day)} / ${state.timePhase}(${timePhaseLabel})
-timePhaseGuide: ${formatTimePhaseGuide()}
 location: ${state.location}
 outfit: ${state.outfit}
-mascotEmotion: ${state.mascotEmotion}
+${currentOutfitDetail ? `${currentOutfitDetail}\n` : ''}mascotEmotion: ${state.mascotEmotion}
 mascotComment: ${state.mascotComment}
-enaDialogue: ${state.enaDialogue}
-
-You may update only these MVU JSONPatch paths:
-${ALLOWED_PATHS.map((path) => `- ${path}`).join('\n')}
-
-When MAMA state changes, append an UpdateVariable block like:
-<UpdateVariable>
-<JSONPatch>[{"op":"replace","path":"/mama/timePhase","value":"noon"},{"op":"replace","path":"/mama/location","value":"school_rooftop"}]</JSONPatch>
-</UpdateVariable>
-Update /mama/week, /mama/day, and /mama/timePhase only when story time advances. Valid timePhase values are morning, noon, dusk, night.
-Update /mama/location only when the scene location changes.
-Update /mama/outfit only when ENA's persistent form or clothing base changes.
-Update /mama/mascotEmotion when the familiar's emotion/diff state changes.
-Do not put ENA portrait tags into MAMA state. <ena-exp>...</ena-exp> only controls ENA's instant portrait expression; its outfit base follows /mama/outfit. Do not use it for other characters.
 </mama_status>`;
   }
 
@@ -104,7 +100,6 @@ Do not put ENA portrait tags into MAMA state. <ena-exp>...</ena-exp> only contro
 
     return {
       INJECT_ID,
-      ALLOWED_PATHS,
       buildMamaPrompt,
       injectCurrentState
     };

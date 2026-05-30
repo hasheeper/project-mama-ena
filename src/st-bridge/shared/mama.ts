@@ -1,19 +1,31 @@
 import {
   DEFAULT_MAMA_STATE,
+  DEFAULT_MAMA_MASCOT_EXPRESSION,
+  MAMA_MASCOT_EXPRESSIONS,
+  MAMA_OUTFIT_DETAILS,
   MAMA_TIME_PHASE_LABELS,
   MAMA_TIME_PHASES,
+  normalizeMascotExpression,
   normalizeMamaState,
   normalizeTimePhase,
+  type MamaMascotExpression,
+  type MamaOutfitDetailKey,
   type MamaTimePhase,
   type MamaState
 } from '../../mama/state';
 
 export {
   DEFAULT_MAMA_STATE,
+  DEFAULT_MAMA_MASCOT_EXPRESSION,
+  MAMA_MASCOT_EXPRESSIONS,
+  MAMA_OUTFIT_DETAILS,
   MAMA_TIME_PHASE_LABELS,
   MAMA_TIME_PHASES,
+  normalizeMascotExpression,
   normalizeMamaState,
   normalizeTimePhase,
+  type MamaMascotExpression,
+  type MamaOutfitDetailKey,
   type MamaTimePhase,
   type MamaState
 };
@@ -29,8 +41,7 @@ export const MAMA_ALLOWED_FIELD_PATHS = [
   '/mama/location',
   '/mama/outfit',
   '/mama/mascotEmotion',
-  '/mama/mascotComment',
-  '/mama/enaDialogue'
+  '/mama/mascotComment'
 ] as const;
 
 export function cloneJson<T>(value: unknown, fallback: T): T {

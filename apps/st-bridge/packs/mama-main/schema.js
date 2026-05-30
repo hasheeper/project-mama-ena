@@ -1,5 +1,28 @@
 import { registerMvuSchema } from "https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js";
 const MAMA_TIME_PHASES = ["morning", "noon", "dusk", "night"];
+const MAMA_MASCOT_EXPRESSIONS = {
+  neruru_default: "Cute, neutral smiling mascot.",
+  neruru_happy: "Big happy smile, radiating joyful energy.",
+  neruru_laughing: "Laughing out loud with (> <) eyes and crossed arms.",
+  neruru_playful: "Cheeky wink with a star popping out. Playful and energetic.",
+  neruru_confident: "Eyes closed, chin up, shining with sparkles. Very proud.",
+  neruru_shy: "Heavy blush, holding hands together with floating hearts.",
+  neruru_starstruck: "Starry eyes and hearts. Mesmerized by food, shiny things, or extreme excitement.",
+  neruru_eating: "Munching happily on a cookie.",
+  neruru_sad: "Tearing up with a small raincloud 🌧️ overhead. Very sad or feeling pitiful.",
+  neruru_angry: "Pouting with arms crossed and a red anger mark 💢. Cute but mad.",
+  neruru_shock: "Blank white eyes, jaw dropped with an exclamation mark ❗. Total shock.",
+  neruru_nervous: "Sweating profusely 💧, looking worried or guilty.",
+  neruru_confused: "Tilting head with a question mark ❓. Not understanding the situation.",
+  neruru_sleepy: "Dozing off while standing, featuring a classic sleepy snot bubble.",
+  neruru_charge: "Zooming forward with speed lines, looking brave and determined to protect.",
+  neruru_exhausted: "Melted flat on the ground, dizzy eyes with gloomy vertical lines. Out of energy."
+};
+const DEFAULT_MAMA_MASCOT_EXPRESSION = "neruru_default";
+const MASCOT_EXPRESSION_ALIASES = {
+  default: "neruru_default",
+  neutral: "neruru_default"
+};
 const DEFAULT_MAMA_STATE = {
   affection: 0,
   week: 1,
@@ -7,9 +30,8 @@ const DEFAULT_MAMA_STATE = {
   timePhase: "morning",
   location: "unknown",
   outfit: "streetwear_full",
-  mascotEmotion: "neutral",
-  mascotComment: "唔噜噜，绘奈今天还撑得住噜。别太欺负她，涅露露可是在看着的噜。",
-  enaDialogue: "……你太吵了。顺毛刚好顺得我要睡着了，你安静点待一会儿嘛。"
+  mascotEmotion: DEFAULT_MAMA_MASCOT_EXPRESSION,
+  mascotComment: "唔噜噜，绘奈今天还撑得住噜。别太欺负她，涅露露可是在看着的噜。"
 };
 function normalizeMamaState(value) {
   const source = isRecord(value) ? value : {};
@@ -20,9 +42,8 @@ function normalizeMamaState(value) {
     timePhase: normalizeTimePhase(source.timePhase, DEFAULT_MAMA_STATE.timePhase),
     location: normalizeString(source.location, DEFAULT_MAMA_STATE.location),
     outfit: normalizeString(source.outfit, DEFAULT_MAMA_STATE.outfit),
-    mascotEmotion: normalizeString(source.mascotEmotion, DEFAULT_MAMA_STATE.mascotEmotion),
-    mascotComment: normalizeString(source.mascotComment, DEFAULT_MAMA_STATE.mascotComment),
-    enaDialogue: normalizeString(source.enaDialogue, DEFAULT_MAMA_STATE.enaDialogue)
+    mascotEmotion: normalizeMascotExpression(source.mascotEmotion, DEFAULT_MAMA_STATE.mascotEmotion),
+    mascotComment: normalizeString(source.mascotComment, DEFAULT_MAMA_STATE.mascotComment)
   };
 }
 function isRecord(value) {
@@ -38,6 +59,12 @@ function normalizeString(value, fallback = "") {
 }
 function normalizeTimePhase(value, fallback = DEFAULT_MAMA_STATE.timePhase) {
   return typeof value === "string" && MAMA_TIME_PHASES.includes(value) ? value : fallback;
+}
+function normalizeMascotExpression(value, fallback = DEFAULT_MAMA_MASCOT_EXPRESSION) {
+  if (typeof value !== "string") return fallback;
+  const key = value.trim();
+  if (key in MAMA_MASCOT_EXPRESSIONS) return key;
+  return MASCOT_EXPRESSION_ALIASES[key] || fallback;
 }
 function cloneJson(value, fallback) {
   if (value === void 0 || value === null) return fallback;

@@ -1,28 +1,33 @@
-# ==============================================================================
-# SYSTEM PROMPT INSTRUCTION: EXPRESSION & OUTFIT MATRIX
-# ==============================================================================
-# You are an ENA-only emotion & visual rendering engine. When generating ENA responses, 
-# you MUST select exactly ONE expression key for each ENA line and ONE outfit key
-# only when ENA's persistent clothing state actually changes.
-#
-# This expression/outfit matrix applies ONLY to ENA / 天羽绘奈.
-# Do NOT apply these expression keys, outfit keys, or portrait tags to any other character.
-# Instant ENA portrait tags must use <ena-exp>...</ena-exp>.
-# Do NOT use the legacy generic <exp>...</exp> tag.
-# <ena-exp> selects only ENA's instant expression; status MVU stores no expression field.
-# The portrait outfit base follows /mama/outfit.
-# ==============================================================================
-
+<matrix>
 Outfits_Matrix:
-  school_uniform: "School setting, uniform. Used for daily student life."
-  streetwear_inner: "Casual indoor look without jacket. Relaxed, at-home vibe."
-  streetwear_full: "Full casual streetwear with jacket. Used for going out/dates."
-  outfit_winter: "Thick winter clothes/coat. For cold environments outside."
-  nightwear: "Pajamas/Sleepwear. For late night, sleeping, or waking up."
-  underwear: "Lingerie/Underwear only. For changing clothes or intimate scenes."
-  nude: "Nude/Bare. For bath, hot springs, or extreme intimacy."
-  seraphim: "Holy white magical girl form. Used for healing or pure magic combat."
-  nephilim: "Dark/Fallen gothic form. Used when enraged, overprotective, or going berserk."
+  outfit_winter: "Cozy oversized sweater and a thick red scarf. Used for cold weather, snowy days, or winter outdoor dates."
+  school_uniform: "School uniform with a loose beige cardigan, unbuttoned white shirt, blue tie, and plaid skirt. Used for daily school life and after-school activities."
+  nightwear: "Cute loungewear with a white camisole, striped shorts, and an oversized pink hoodie slipping off her shoulders. For late nights, sleepovers, or waking up."
+  streetwear_inner: "Harajuku-style split black/white T-shirt with a broken heart, pleated skirt, and asymmetrical socks. Relaxed, indoors vibe."
+  streetwear_full: "Adds an oversized holographic sports jacket slipping off one shoulder to the streetwear look. Lazy and stylish."
+  seraphim: "Holy magical girl form. Pure white/blue ruffled dress, glowing ribbons, and a Moon-Star Wand. Used for healing and protection."
+  nephilim: "Fallen dark gothic form. Black/white shattered dress, glowing cyan neon cracks, and a thorny dark wand. Highly aggressive and dangerous."
+  underwear: "Just plain white daily underwear. Used for changing clothes or accidental walk-in scenes."
+  nude: "Completely bare/flat. Used purely for bathhouse, hot springs, or extreme intimacy."
+
+Mascot_Expressions (Neruru):
+  # Use these keys only for /mama/mascotEmotion.
+  neruru_default: "Cute, neutral smiling mascot."
+  neruru_happy: "Big happy smile, radiating joyful energy."
+  neruru_laughing: "Laughing out loud with (> <) eyes and crossed arms."
+  neruru_playful: "Cheeky wink with a star popping out. Playful and energetic."
+  neruru_confident: "Eyes closed, chin up, shining with sparkles. Very proud."
+  neruru_shy: "Heavy blush, holding hands together with floating hearts."
+  neruru_starstruck: "Starry eyes and hearts. Mesmerized by food, shiny things, or extreme excitement."
+  neruru_eating: "Munching happily on a cookie."
+  neruru_sad: "Tearing up with a small raincloud 🌧️ overhead. Very sad or feeling pitiful."
+  neruru_angry: "Pouting with arms crossed and a red anger mark 💢. Cute but mad."
+  neruru_shock: "Blank white eyes, jaw dropped with an exclamation mark ❗. Total shock."
+  neruru_nervous: "Sweating profusely 💧, looking worried or guilty."
+  neruru_confused: "Tilting head with a question mark ❓. Not understanding the situation."
+  neruru_sleepy: "Dozing off while standing, featuring a classic sleepy snot bubble."
+  neruru_charge: "Zooming forward with speed lines, looking brave and determined to protect."
+  neruru_exhausted: "Melted flat on the ground, dizzy eyes with gloomy vertical lines. Out of energy."
 
 Expressions_Matrix:
 
@@ -131,3 +136,4 @@ Expressions_Matrix:
   exp_sadistic: "Face shadowed, sadistic smirk, looking down like stepping on trash."
   exp_repulsed: "Face shadowed, shivering open mouth, extreme physical disgust."
   exp_smile_hollow: "Dead eyes, shadowed face, broken and empty smile."
+</matrix>
