@@ -1,5 +1,5 @@
 {
-  "count": 93,
+  "count": 95,
   "expressions": [
     {
       "id": 1,
@@ -282,6 +282,27 @@
       "name": "exp_blush_drowsy",
       "face": "face_blush_light",
       "mouth": "mouth_huh",
+      "eye": "eye_slit",
+      "brow": "brow_normal",
+      "emotion": "Emotion_Sleepy"
+    },
+    {
+      "id": 95,
+      "name": "exp_drowsy_pout",
+      "face": "face_default",
+      "mouth": "mouth_pout_2",
+      "eye": "eye_slit",
+      "brow": "brow_up",
+      "emotion": [
+        "Emotion_Sleepy",
+        "Emotion_Angry"
+      ]
+    },
+    {
+      "id": 96,
+      "name": "exp_drowsy_awawa",
+      "face": "face_default",
+      "mouth": "mouth_awawa",
       "eye": "eye_slit",
       "brow": "brow_normal",
       "emotion": "Emotion_Sleepy"
@@ -790,9 +811,9 @@
       "name": "exp_sleep_peaceful",
       "face": "face_default",
       "mouth": "mouth_smile",
-      "eye": "eye_closed_1",
+      "eye": "eye_closed_2",
       "brow": "brow_normal",
-      "emotion": "Emotion_zzz"
+      "emotion": "Emotion_Sleepy"
     },
     {
       "id": 88,

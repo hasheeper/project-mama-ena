@@ -99,7 +99,7 @@ async function boot() {
   try {
     const loaded = await loadExpressionData();
     assetBase = loaded.assetBase;
-    expressions = loaded.data.expressions || [];
+    expressions = sortExpressionsById(loaded.data.expressions || []);
     expressionMap = new Map(expressions.map((expression) => [expression.name, expression]));
     state.outfit = OUTFITS.includes(state.outfit) ? state.outfit : DEFAULT_OUTFIT;
     state.expression = expressionMap.has(state.expression) ? state.expression : DEFAULT_EXPRESSION;
@@ -113,12 +113,17 @@ async function loadExpressionData() {
   const bases = [SOURCE_ASSET_BASE, DIST_ASSET_BASE];
   for (const base of bases) {
     try {
-      const response = await fetch(`${base}/expression/exp.json`, { cache: 'no-cache' });
+      const cacheBust = `v=${Date.now()}`;
+      const response = await fetch(`${base}/expression/exp.json?${cacheBust}`, { cache: 'reload' });
       if (!response.ok) continue;
       return { assetBase: base, data: await response.json() };
     } catch (_) {}
   }
   throw new Error('Failed to load exp.json from source or built assets.');
+}
+
+function sortExpressionsById(items) {
+  return [...items].sort((a, b) => Number(a.id || 0) - Number(b.id || 0));
 }
 
 function renderLoading() {
@@ -458,9 +463,12 @@ function renderBaseCard(outfit) {
 
 function renderExpressionPanel() {
   const filtered = expressions.filter((expression) => matchesQuery(expression, state.query));
+  const title = state.query
+    ? `Exp Presets · ${filtered.length}/${expressions.length}`
+    : `Exp Presets · ${expressions.length}`;
   return el('section', { className: 'browser-panel' }, [
     el('div', { className: 'toolbar' }, [
-      el('div', { className: 'toolbar-title', text: 'Exp Presets' }),
+      el('div', { className: 'toolbar-title', text: title }),
       el('div', { className: 'toolbar-controls' }, [renderOutfitSelect(), renderSearch()])
     ]),
     renderEmotionPanel(),

@@ -69,6 +69,7 @@ const CANVAS_ZOOM_STEP = 0.14;
 const root = document.querySelector<HTMLElement>('[data-app-id="layer-debug"]');
 const outfitNames = sortOutfits(Object.keys(outfitAssets));
 const emotionNames = sortEmotionNames(Object.keys(emotionAssets));
+const expressionPresets = sortExpressionsById(expressions);
 const assetNameByUrl = buildAssetNameMap();
 
 let mode = readMode();
@@ -469,13 +470,21 @@ function renderBaseDiffLine(outfit: string): HTMLElement {
 
 function renderExpressionBrowser(): HTMLElement {
   const section = createElement('section', { className: 'browser-panel' });
-  section.append(renderExpressionToolbar(), renderEmotionPanel(), renderExpressionList());
+  const filteredExpressions = expressionPresets.filter((expression) => expressionMatchesSearch(expression, searchQuery));
+  section.append(
+    renderExpressionToolbar(filteredExpressions.length),
+    renderEmotionPanel(),
+    renderExpressionList(filteredExpressions)
+  );
   return section;
 }
 
-function renderExpressionToolbar(): HTMLElement {
+function renderExpressionToolbar(filteredCount: number): HTMLElement {
+  const titleText = searchQuery
+    ? `Exp Presets · ${filteredCount}/${expressionPresets.length}`
+    : `Exp Presets · ${expressionPresets.length}`;
   const toolbar = createElement('div', { className: 'toolbar' });
-  const title = createElement('div', { className: 'toolbar-title', text: 'Exp Presets' });
+  const title = createElement('div', { className: 'toolbar-title', text: titleText });
   const controls = createElement('div', { className: 'toolbar-controls' });
   controls.append(renderOutfitSelect(), renderSearchInput());
   toolbar.append(title, controls);
@@ -513,14 +522,17 @@ function renderSearchInput(): HTMLInputElement {
   return input;
 }
 
-function renderExpressionList(): HTMLElement {
+function renderExpressionList(filtered: ExpressionLayerRef[]): HTMLElement {
   const list = createElement('div', { className: 'expression-list' });
-  const filtered = expressions.filter((expression) => expressionMatchesSearch(expression, searchQuery));
   filtered.forEach((expression) => list.append(renderExpressionRow(expression)));
   if (!filtered.length) {
     list.append(createElement('div', { className: 'empty-state', text: 'No presets' }));
   }
   return list;
+}
+
+function sortExpressionsById(items: ExpressionLayerRef[]): ExpressionLayerRef[] {
+  return [...items].sort((a, b) => a.id - b.id);
 }
 
 function renderExpressionRow(expression: ExpressionLayerRef): HTMLButtonElement {

@@ -117,7 +117,7 @@ Expressions_Matrix:
 
   # 💤 CATEGORY 6B: Sleep / ZZZ Variants (Dedicated sleeping diff)
   exp_sleep_neutral: "Actually asleep or dozing quietly, neutral mouth, closed eyes, ZZZ sleep marker."
-  exp_sleep_peaceful: "Peacefully asleep with a soft smile, calm safe sleep, ZZZ sleep marker."
+  exp_sleep_peaceful: "Peacefully sleepy with a soft smile, calm safe rest, sleepy aura only."
   exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura only."
   exp_sleep_drool: "Deep lazy sleep, drooling or totally out, ZZZ sleep marker."
   exp_sleep_nightmare: "Uncomfortable sleep or mild nightmare, tense closed eyes, confusion aura plus ZZZ."
@@ -128,6 +128,8 @@ Expressions_Matrix:
   exp_drowsy_neutral: "Eyes half-open, mouth closed shut. Quietly dozing off, nodding off, or desperately fighting the urge to sleep."
   exp_drowsy_smile: "Sleepy, soft smile with half-open eyes. Extremely relaxed, feeling safe, waking up gracefully, or lazily greeting."
   exp_blush_drowsy: "Flushed red cheeks, half-open eyes. Used for cute morning clumsiness, taking a warm nap, or being embarrassed about waking up messy."
+  exp_drowsy_pout: "Sleepy but annoyed, pouting mouth and raised brows. The classic 'grumpy morning' or 'five more minutes' bedhead face."
+  exp_drowsy_awawa: "Sleepy eyes with a trembling wavy mouth. Used when sleep-talking, shivering in the cold morning, or groggily mumbling nonsense."
 
   # ⚫ CATEGORY 7: Drama, Tears & Dark Mode (Handle with care)
   exp_pleading: "Puppy eyes, trembling lip, begging or feeling bullied."
