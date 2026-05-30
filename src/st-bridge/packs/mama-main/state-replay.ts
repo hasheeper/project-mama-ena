@@ -72,6 +72,18 @@ import {
     return patch;
   }
 
+  function buildMamaFieldPatch(path, beforeValue, afterValue) {
+    if (beforeValue === undefined) return buildReplayPatch('add', path, afterValue);
+    if (path === '/mama/affection') {
+      const beforeNumber = Number(beforeValue);
+      const afterNumber = Number(afterValue);
+      if (Number.isFinite(beforeNumber) && Number.isFinite(afterNumber)) {
+        return buildReplayPatch('delta', path, Math.round(afterNumber) - Math.round(beforeNumber));
+      }
+    }
+    return buildReplayPatch('replace', path, afterValue);
+  }
+
   function buildMamaStatePatches(beforeStatData, afterStatData) {
     const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
     const afterMama = normalizeMamaState(afterStatData?.[MAMA_KEY]);
@@ -82,7 +94,7 @@ import {
       const beforeValue = readJsonPointer(beforeStatData, path);
       const afterValue = readJsonPointer(afterStatData, path);
       if (afterValue === undefined || areJsonValuesEqual(beforeValue, afterValue)) continue;
-      patches.push(buildReplayPatch(beforeValue === undefined ? 'add' : 'replace', path, afterValue));
+      patches.push(buildMamaFieldPatch(path, beforeValue, afterValue));
     }
     return patches;
   }

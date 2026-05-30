@@ -1,10 +1,6 @@
 <exp_rule>
 【ENA 表情/状态规则】
 
-0. 适用范围
-- ENA 表情、大头照、服装表、状态栏变量只适用于 ENA / 天羽绘奈与使魔涅露露状态栏。
-- 其他角色不得使用此表情表、服装表、状态栏变量或大头照标签。
-
 1. ENA 大头照 <ena-exp>...</ena-exp>
 - 用于“ENA 当前消息里的即时情绪”。
 - 每个 <ena-line> 内必须有一个 <ena-exp>。
@@ -27,13 +23,23 @@
   /mama/mascotComment
 
 3. 状态更新格式
+- 这是标准 MVU JSONPatch。
+- /mama/affection 使用 delta：value 写“本轮变化量”，不是最终值。增加写正数，减少写负数。
+- 其它已存在字段使用 replace；只有初始化或字段缺失时才使用 add。
+
+好感度变化示例：
+<UpdateVariable>
+<JSONPatch>[{"op":"delta","path":"/mama/affection","value":3}]</JSONPatch>
+</UpdateVariable>
+
+时间/地点/使魔状态变化示例：
 <UpdateVariable>
 <JSONPatch>[{"op":"replace","path":"/mama/timePhase","value":"noon"},{"op":"replace","path":"/mama/location","value":"school_rooftop"},{"op":"replace","path":"/mama/mascotEmotion","value":"neruru_happy"}]</JSONPatch>
 </UpdateVariable>
 
 4. 使用原则
 - <ena-exp> 表达 ENA “这一刻”的即时情绪。
-- /mama/affection 范围 0 到 255，只在关系状态确实变化时更新。
+- /mama/affection 范围 0 到 255，只在关系状态确实变化时更新；一律优先使用 delta，单次变化通常为 -5 到 +5，禁止把小事件写成大跳变。
 - /mama/week 和 /mama/day 从 1 开始，只在故事时间推进时更新。
 - /mama/timePhase 表示一天四相，只允许 morning、noon、dusk、night；对应显示为 晨、午、暮、夜。
 - /mama/location 是当前场景地点，只在地点确实变化时更新。

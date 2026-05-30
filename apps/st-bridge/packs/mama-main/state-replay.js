@@ -150,6 +150,17 @@
       if (op !== "remove") patch.value = clone(value, value);
       return patch;
     }
+    function buildMamaFieldPatch(path, beforeValue, afterValue) {
+      if (beforeValue === void 0) return buildReplayPatch("add", path, afterValue);
+      if (path === "/mama/affection") {
+        const beforeNumber = Number(beforeValue);
+        const afterNumber = Number(afterValue);
+        if (Number.isFinite(beforeNumber) && Number.isFinite(afterNumber)) {
+          return buildReplayPatch("delta", path, Math.round(afterNumber) - Math.round(beforeNumber));
+        }
+      }
+      return buildReplayPatch("replace", path, afterValue);
+    }
     function buildMamaStatePatches(beforeStatData, afterStatData) {
       const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
       const afterMama = normalizeMamaState$1(afterStatData?.[MAMA_KEY]);
@@ -159,7 +170,7 @@
         const beforeValue = readJsonPointer(beforeStatData, path);
         const afterValue = readJsonPointer(afterStatData, path);
         if (afterValue === void 0 || areJsonValuesEqual(beforeValue, afterValue)) continue;
-        patches.push(buildReplayPatch(beforeValue === void 0 ? "add" : "replace", path, afterValue));
+        patches.push(buildMamaFieldPatch(path, beforeValue, afterValue));
       }
       return patches;
     }
