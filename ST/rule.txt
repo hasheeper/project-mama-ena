@@ -2,7 +2,11 @@
 Outfits_Matrix:
   outfit_winter: "Cozy oversized sweater and a thick red scarf. Used for cold weather, snowy days, or winter outdoor dates."
   school_uniform: "School uniform with a loose beige cardigan, unbuttoned white shirt, blue tie, and plaid skirt. Used for daily school life and after-school activities."
-  nightwear: "Cute loungewear with a white camisole, striped shorts, and an oversized pink hoodie slipping off her shoulders. For late nights, sleepovers, or waking up."
+  outfit_gym: "Standard white gym T-shirt with blue piping and a name tag, paired with blue gym shorts. For sports or extreme exhaustion."
+  outfit_maid_jersey: "A quirky 'Jersey Maid' look: a pink track jacket worn under a white frilled maid apron. Subculture, awkward, and tsundere vibe."
+  nightwear: "Hair completely let down. White camisole, striped shorts, and an oversized pink hoodie slipping off her shoulder. Sleepy and deeply intimate."
+  outfit_swimsuit: "A pure white, heavily frilled two-piece bikini that highlights her petite and flat figure. For beach and pool events."
+  outfit_yukata: "A light blue floral Yukata with a dark navy sash, holding a traditional round fan (uchiwa). Worn slightly loose. For summer festivals."
   streetwear_inner: "Harajuku-style split black/white T-shirt with a broken heart, pleated skirt, and asymmetrical socks. Relaxed, indoors vibe."
   streetwear_full: "Adds an oversized holographic sports jacket slipping off one shoulder to the streetwear look. Lazy and stylish."
   seraphim: "Holy magical girl form. Pure white/blue ruffled dress, glowing ribbons, and a Moon-Star Wand. Used for healing and protection."
@@ -73,8 +77,9 @@ Expressions_Matrix:
   exp_laugh_awkward: "Sweatdrop, awkward forced laughter, covering up guilt."
   exp_sparkle: "Extreme fascination, starry eyes, mouth agape."
   exp_starstruck: "Mind-blown, dropping jaw, starry-eyed awe (Sugoi!)."
+  exp_cry_pathetic: "Light blush, waterfall crying eyes, max downward brows, wide-open wailing mouth. A comedic SFW 'Aqua-style' face. Throwing a pathetic tantrum or crying without dignity."
 
-  # 🔴 CATEGORY 4: Romance, Blush & Panics (Face turning red! ///)
+  # 🔴 CATEGORY 4: Romance, Panics & Kisses (Face turning red! ///)
   exp_blush_huh: "Heart skips a beat. Subtle blush, slightly surprised (Eh?)."
   exp_blush_panic: "Total gay panic. Flustered, sweating, waving hands (Awawa!)."
   exp_blush_overload: "Overheated, steam coming out, dizzy from extreme embarrassment."
@@ -88,6 +93,8 @@ Expressions_Matrix:
   exp_lovestruck: "Melting, heart eyes, deeply infatuated or woozy."
   exp_obsessed: "Aggressively lovesick, predatory, heavy blush, heart eyes."
   exp_affectionate: "Pure love, cat mouth + heart eyes, melting over cute things."
+  exp_chu_xd: "Default face, tightly closed '> <' eyes, raised brows, puckered lips, floating heart. SFW energetic air kiss or playfully demanding a kiss."
+  exp_kiss_expectant: "Gently closed eyes, expectant brows, soft puckered lips, floating heart. SFW sweet, sincere kiss or waiting for a goodnight peck."
 
   # 🔵 CATEGORY 5: Deadpan, Smug & Tsundere (Judging vibes)
   exp_jitome_deadpan: "Flat stare, judging, deadpan, unimpressed."
@@ -115,14 +122,12 @@ Expressions_Matrix:
   exp_pout_closed: "Turning head away in anger, eyes shut (Hmph!)."
   exp_blush_pain_closed: "Pained blush or embarrassed discomfort, eyes squeezed shut uncomfortably."
 
-  # 💤 CATEGORY 6B: Sleep / ZZZ Variants (Dedicated sleeping diff)
+  # 💤 CATEGORY 6B & 6C: Sleep & Drowsy Universe
   exp_sleep_neutral: "Actually asleep or dozing quietly, neutral mouth, closed eyes, ZZZ sleep marker."
   exp_sleep_peaceful: "Peacefully sleepy with a soft smile, calm safe rest, sleepy aura only."
   exp_sleep_purr: "Comfortable catnap or being petted to sleep, purring face, sleepy aura only."
   exp_sleep_drool: "Deep lazy sleep, drooling or totally out, ZZZ sleep marker."
   exp_sleep_nightmare: "Uncomfortable sleep or mild nightmare, tense closed eyes, confusion aura plus ZZZ."
-
-  # 💤 CATEGORY 6C: The Drowsy Universe (Sleepy & Waking Up States)
   exp_drowsy_yawn: "Big loud yawn with sleepy slit eyes. Used when completely exhausted or stretching in the morning."
   exp_drowsy_huh: "Eyes half-open, mouth slightly parted. Sleepy and dazed, spacing out, brain loading very slowly."
   exp_drowsy_neutral: "Eyes half-open, mouth closed shut. Quietly dozing off, nodding off, or desperately fighting the urge to sleep."
@@ -143,4 +148,17 @@ Expressions_Matrix:
   exp_sadistic: "Face shadowed, sadistic smirk, looking down like stepping on trash."
   exp_repulsed: "Face shadowed, shivering open mouth, extreme physical disgust."
   exp_smile_hollow: "Dead eyes, shadowed face, broken and empty smile."
+
+  # 🔞 CATEGORY 8: Extreme Intimacy & Mind-break (NSFW / High Tension)
+  exp_blush_muffled: "Tearing up, downturned mouth. Stifling a sob, silently enduring intense intimacy."
+  exp_obsessed_melt: "Glowing heart-eyes, euphoric smile. Mind totally melted by infatuation and extreme pleasure. "
+  exp_blush_dazed: "Hazy half-open eyes, soft smirk. Passively melting into your touch in a dazed trance."
+  exp_blush_bliss: "Half-closed eyes, blank parted mouth. Brain completely empty, lost in pure floating bliss."
+  exp_blush_ecstasy: "Drooling, pleading brows. Severe sensory overload, physically and mentally melting."
+  exp_ahegao: "Eyes rolled back, gaping mouth. The ultimate mind-break climax and peak overstimulation."
+  exp_blush_woozy: "Spiraling dizzy eyes (@_@), panicked mouth. Brain entirely scrambled or 'blue-screening' from pleasure."
+  exp_blush_sensitive: "Squeezed shut (> <) eyes, shouting mouth. Cute sudden pain, hitting a highly sensitive spot."
+  exp_blush_hypnotized: "Vacant spiral eyes (@_@), blank mouth. Deep trance, Mind Control and absolute obedience."
+  exp_blush_enduring: "Tight wincing eyes, pained brows. Silently enduring a deep, overwhelming 'sweet pain'."
+  exp_blush_climax_cry: "Tight eyes, wide-open yelling mouth. An explosive, loud cry during a shattering climax."
 </matrix>

@@ -30,7 +30,11 @@ const OUTFIT_ORDER = [
   'streetwear_inner',
   'school_uniform',
   'outfit_winter',
+  'outfit_gym',
+  'outfit_maid_jersey',
   'nightwear',
+  'outfit_swimsuit',
+  'outfit_yukata',
   'underwear',
   'nude',
   'seraphim',
@@ -308,6 +312,13 @@ function renderTagSummary(expression: ExpressionLayerRef): HTMLElement {
     renderTag(`brow:${expression.brow}`)
   );
 
+  if (expression.nsfw) wrapper.append(renderTag('nsfw', 'debug'));
+  if (expression.synthetic) {
+    wrapper.append(renderTag('fallback:synthetic', 'debug'));
+    if (expression.sourceName) wrapper.append(renderTag(`source:${expression.sourceName}`, 'debug'));
+    expression.matchedTokens?.forEach((tag) => wrapper.append(renderTag(`match:${tag}`, 'debug')));
+    expression.unmatchedTokens?.forEach((tag) => wrapper.append(renderTag(`miss:${tag}`, 'auto')));
+  }
   getOtherTags(expression).forEach((tag) => wrapper.append(renderTag(`other:${tag}`)));
   getEmotionTags(expression).forEach((tag) => wrapper.append(renderTag(`emotion:${tag}`, 'debug')));
   getAutoDiffTags(selectedOutfit, expression).forEach((tag) => wrapper.append(renderTag(tag, 'auto')));
@@ -607,6 +618,8 @@ function getExpressionTags(expression: ExpressionLayerRef): string[] {
     expression.mouth,
     expression.eye,
     expression.brow,
+    ...(expression.nsfw ? ['nsfw'] : []),
+    ...(expression.synthetic ? ['synthetic', expression.sourceName || '', ...(expression.matchedTokens || []), ...(expression.unmatchedTokens || [])] : []),
     ...getOtherTags(expression),
     ...getEmotionTags(expression)
   ];
@@ -672,7 +685,10 @@ function expressionMatchesSearch(expression: ExpressionLayerRef, query: string):
     expression.mouth,
     expression.eye,
     expression.brow,
-    ...getOtherTags(expression)
+    ...(expression.nsfw ? ['nsfw'] : []),
+    ...(expression.synthetic ? ['synthetic', expression.sourceName || '', ...(expression.matchedTokens || []), ...(expression.unmatchedTokens || [])] : []),
+    ...getOtherTags(expression),
+    ...getEmotionTags(expression)
   ].some((value) => value.toLowerCase().includes(needle));
 }
 

@@ -279,7 +279,7 @@
     const bridgeUrl = new URL(getCurrentScriptUrl());
     const bridgeRoot = new URL(".", bridgeUrl);
     const params = bridgeUrl.searchParams;
-    const buildCacheKey = "6be0a5fc98ee";
+    const buildCacheKey = "0bec9484df00";
     const cacheBust = params.get("v") || params.get("cache") || normalizeString2(getGlobalValue("ST_BRIDGE_CACHE_BUST")) || buildCacheKey;
     const forceReload = params.get("force") === "1";
     publishHostInfo({

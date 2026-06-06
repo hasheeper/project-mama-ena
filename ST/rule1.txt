@@ -23,9 +23,7 @@
   /mama/mascotComment
 
 3. 状态更新格式
-- 这是标准 MVU JSONPatch。
-- /mama/affection 使用 delta：value 写“本轮变化量”，不是最终值。增加写正数，减少写负数。
-- 其它已存在字段使用 replace；只有初始化或字段缺失时才使用 add。
+- /mama/affection 使用 delta：value 写“本轮变化量”，不是最终值。需要用<UpdateVariable><JSONPatch>两层包裹。
 
 好感度变化示例：
 <UpdateVariable>

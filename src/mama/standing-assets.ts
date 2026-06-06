@@ -1,16 +1,12 @@
 import expressionData from '../assets/png/standing/expression/exp.json';
+import {
+  resolveExpressionWithFallback,
+  type ExpressionFallbackAssets,
+  type ExpressionLayerRef
+} from './expression-fallback';
 import { DEFAULT_MAMA_STATE, normalizeString } from './state';
 
-export interface ExpressionLayerRef {
-  id: number;
-  name: string;
-  face: string;
-  mouth: string;
-  eye: string;
-  brow: string;
-  other?: string | string[];
-  emotion?: string | string[];
-}
+export type { ExpressionLayerRef } from './expression-fallback';
 
 export interface StandingLayers {
   outfit: string;
@@ -41,7 +37,15 @@ interface ExpressionFile {
 
 type AssetMap = Record<string, string>;
 
-const baseModules = import.meta.glob<string>('../assets/png/standing/base/*.png', {
+const EMOTION_LAYER_RANK: Record<string, number> = {
+  Emotion_HeartBurst: 10,
+  Emotion_HeartBubble: 20
+};
+
+const baseModules = import.meta.glob<string>([
+  '../assets/png/standing/base/*.png',
+  '!../assets/png/standing/base/*_old.png'
+], {
   eager: true,
   query: '?url',
   import: 'default'
@@ -95,6 +99,14 @@ export const emotionAssets = buildAssetMap(emotionModules);
 
 export const expressions: ExpressionLayerRef[] = (expressionData as ExpressionFile).expressions;
 export const DEFAULT_EXPRESSION = 'exp_smile_soft';
+const expressionFallbackAssets: ExpressionFallbackAssets = {
+  face: Object.keys(expressionAssets.face),
+  mouth: Object.keys(expressionAssets.mouth),
+  eye: Object.keys(expressionAssets.eye),
+  brow: Object.keys(expressionAssets.brow),
+  other: Object.keys(expressionAssets.other),
+  emotion: Object.keys(emotionAssets)
+};
 
 export function resolveStandingLayers(outfitInput: unknown, expressionInput: unknown): StandingLayers {
   const expression = isExpressionRef(expressionInput) ? normalizeExpressionRef(expressionInput) : resolveExpression(expressionInput);
@@ -142,6 +154,11 @@ function normalizeExpressionRef(expression: ExpressionLayerRef): ExpressionLayer
     mouth: normalizeString(expression.mouth, 'mouth_neutral'),
     eye: normalizeString(expression.eye, 'eye_normal'),
     brow: normalizeString(expression.brow, 'brow_normal'),
+    nsfw: expression.nsfw,
+    synthetic: expression.synthetic,
+    sourceName: expression.sourceName,
+    matchedTokens: expression.matchedTokens,
+    unmatchedTokens: expression.unmatchedTokens,
     other: expression.other,
     emotion: expression.emotion
   };
@@ -182,12 +199,19 @@ function resolveMoodLayers(outfit: string, faceName: string): { under: StandingL
 }
 
 function resolveEmotionLayers(value: string | string[] | undefined): StandingLayer[] {
-  const names = Array.isArray(value) ? value : value ? [value] : [];
+  const names = sortEmotionLayerNames(Array.isArray(value) ? value : value ? [value] : []);
   return names.reduce<StandingLayer[]>((layers, name) => {
     const url = emotionAssets[name];
     if (url) layers.push({ kind: 'emotion', url });
     return layers;
   }, []);
+}
+
+function sortEmotionLayerNames(names: string[]): string[] {
+  return names
+    .map((name, index) => ({ name, index }))
+    .sort((a, b) => (EMOTION_LAYER_RANK[a.name] || 0) - (EMOTION_LAYER_RANK[b.name] || 0) || a.index - b.index)
+    .map((item) => item.name);
 }
 
 export function resolveOutfitName(value: unknown): string {
@@ -196,23 +220,21 @@ export function resolveOutfitName(value: unknown): string {
 }
 
 export function resolveExpression(value: unknown): ExpressionLayerRef {
-  const requested = normalizeString(value, DEFAULT_EXPRESSION);
-  const byId = Number(requested);
-  const resolved = Number.isFinite(byId)
-    ? expressions.find((expression) => expression.id === Math.round(byId))
-    : expressions.find((expression) => expression.name === requested);
-
-  return resolved || expressions.find((expression) => expression.name === DEFAULT_EXPRESSION) || expressions[0];
+  return resolveExpressionWithFallback(value, expressions, DEFAULT_EXPRESSION, expressionFallbackAssets);
 }
 
 function buildAssetMap(modules: Record<string, string>): AssetMap {
   return Object.entries(modules).reduce<AssetMap>((map, [path, url]) => {
     const key = getBasename(path);
-    if (key) map[key] = url;
+    if (key && !isIgnoredAssetKey(key)) map[key] = url;
     return map;
   }, {});
 }
 
 function getBasename(path: string): string {
   return path.split('/').pop()?.replace(/\.png$/i, '') || '';
+}
+
+function isIgnoredAssetKey(key: string): boolean {
+  return key.endsWith('_old');
 }

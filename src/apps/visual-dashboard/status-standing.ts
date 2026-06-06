@@ -5,7 +5,10 @@ import mouthNeutralUrl from '../../assets/png/standing/expression/mouth/mouth_ne
 import { createStandingCanvas } from '../../mama/standing-canvas';
 import { DEFAULT_MAMA_STATE, normalizeString } from '../../mama/state';
 
-const baseModules = import.meta.glob<string>('../../assets/png/standing/base/*.png', {
+const baseModules = import.meta.glob<string>([
+  '../../assets/png/standing/base/*.png',
+  '!../../assets/png/standing/base/*_old.png'
+], {
   eager: true,
   query: '?url',
   import: 'default'
@@ -52,7 +55,7 @@ function resolveOutfitName(value: unknown): string {
 function buildAssetMap(modules: Record<string, string>): Record<string, string> {
   return Object.entries(modules).reduce<Record<string, string>>((map, [path, url]) => {
     const key = path.split('/').pop()?.replace(/\.png$/i, '');
-    if (key) map[key] = url;
+    if (key && !key.endsWith('_old')) map[key] = url;
     return map;
   }, {});
 }

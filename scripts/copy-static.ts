@@ -12,6 +12,6 @@ await mkdir('dist', { recursive: true });
 for (const [source, target] of pairs) {
   await cp(source, target, {
     recursive: true,
-    filter: (path) => !path.endsWith('.DS_Store')
+    filter: (path) => !path.endsWith('.DS_Store') && !path.endsWith('_old.png')
   });
 }

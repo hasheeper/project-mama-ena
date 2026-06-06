@@ -21,11 +21,35 @@ export const MAMA_OUTFIT_DETAILS = {
     triggers: 'School scenes, classrooms, lunch breaks, or walking home together after school.',
     action_cues: 'Fiddling with her loose tie, grabbing the edge of her oversized cardigan, sleeves slipping down her shoulders slightly, walking with a light bounce.'
   },
+  outfit_gym: {
+    visuals: 'A classic Japanese P.E. uniform. White T-shirt with dark blue piping around the collar and sleeves, a name tag on the chest, and dark blue gym shorts.',
+    vibe: 'Energetic but easily exhausted. Has a cute, dutiful student feel.',
+    triggers: 'Physical education, school sports festivals, or running away/getting physically tired.',
+    action_cues: 'Panting heavily, wiping sweat from her forehead, tugging at the edge of her tight gym shorts.'
+  },
+  outfit_maid_jersey: {
+    visuals: "A unique 'Jersey Maid' outfit. She wears a vibrant pink zipped track jacket, with a white heavily-frilled maid apron tied around her waist. A classic maid headdress sits on her head.",
+    vibe: "Awkward, subculture, clumsy, and extremely reluctant. The ultimate 'forced to work' tsundere look.",
+    triggers: 'School festival cafes, forced part-time jobs, or losing a bet.',
+    action_cues: 'Looking away in embarrassment, hiding her hands in the sleeves of the track jacket, nervously holding the edge of her apron.'
+  },
   nightwear: {
-    visuals: 'White ruffled camisole with one spaghetti strap slipping down, light blue and white striped shorts, and a loose pink zip-up hoodie half-falling off her shoulders.',
-    vibe: 'Intimate, unguarded, sleepy, and effortlessly cute. Shows complete trust in the viewer.',
-    triggers: 'Late night conversations, waking up in the morning, sleepovers, or relaxing in her bedroom.',
-    action_cues: 'Sleepily pulling her falling camisole strap back up, huddling into the oversized pink hoodie, rubbing her sleepy eyes, lazily stretching her arms.'
+    visuals: 'Her signature double-buns are undone, leaving extremely long, messy, fluffy hair flowing down like a waterfall. She wears a white ruffled camisole (with one strap slipping), light blue striped shorts, and a loose pink hoodie falling off her shoulders.',
+    vibe: 'Zero defenses, incredibly sleepy, soft, and radiating pure intimacy.',
+    triggers: 'Waking up in the morning, late-night sleepovers, or answering the door at 2 AM.',
+    action_cues: 'Yawning sleepily through her messy waterfall hair, rubbing her eyes, lazily pulling her slipped camisole strap back up.'
+  },
+  outfit_swimsuit: {
+    visuals: 'A pure white, two-piece bikini with two layers of heavy frills/ruffles on the top and bottom. Openly reveals her flat chest, pale skin, and navel.',
+    vibe: 'Summery, delicate, and slightly self-conscious about her modest figure.',
+    triggers: 'Beach episodes, pool parties, or summer vacations.',
+    action_cues: 'Fidgeting with the frills on her top, attempting to hide her flat chest with her arms or a towel when people stare.'
+  },
+  outfit_yukata: {
+    visuals: 'A beautiful light blue/periwinkle Yukata adorned with white floral patterns. Secured with a dark navy obi (sash) and a white cord knot. She holds a traditional semi-transparent Uchiwa (round fan) depicting a fish. Worn slightly loose around the shoulders.',
+    vibe: 'Festive, elegant, cooling, and deeply romantic.',
+    triggers: 'Summer festivals, shrine visits, scooping goldfish, and watching fireworks.',
+    action_cues: 'Gently fanning herself with the Uchiwa, walking with small steps in wooden sandals, looking up at the fireworks with glowing eyes.'
   },
   streetwear_inner: {
     visuals: "A black-and-white split T-shirt with a 'broken heart' graphic, grey pleated mini-skirt. Asymmetrical legs: loose white slouch sock on the right, and a tight pink/white striped thigh-high on the left.",
