@@ -71,7 +71,8 @@ const Z_INDEX = {
   mood_under: 45,
   brow: 50,
   mood_top: 60,
-  emotion: 70
+  emotion: 70,
+  expression_overlay: 80
 };
 const LABELS = {
   face_fx: 'face fx',
@@ -82,8 +83,10 @@ const LABELS = {
   mood_under: 'mood under',
   brow: 'brow',
   mood_top: 'mood top',
-  emotion: 'emotion'
+  emotion: 'emotion',
+  expression_overlay: 'exp overlay'
 };
+const TOP_EXPRESSION_OTHER_NAMES = new Set(['mist']);
 const FOLDERS = {
   base: 'base',
   face: 'expression/face_fx',
@@ -896,18 +899,25 @@ function currentExpression() {
 
 function resolveLayers(outfit, expression) {
   const mood = expression.face === 'face_shadow' ? 'shadow' : expression.face === 'face_pale' ? 'pale' : '';
+  const expressionOtherLayers = otherTags(expression)
+    .filter((name) => !TOP_EXPRESSION_OTHER_NAMES.has(name))
+    .map((name) => layer('expression_other', 'other', name));
+  const expressionOverlayLayers = otherTags(expression)
+    .filter((name) => TOP_EXPRESSION_OTHER_NAMES.has(name))
+    .map((name) => layer('expression_overlay', 'other', name));
   const layers = [
     layer('face_fx', 'face', 'face_default'),
     expression.face !== 'face_default' ? layer('face_fx', 'face', expression.face) : null,
     layer('mouth', 'mouth', expression.mouth || 'mouth_neutral'),
-    ...otherTags(expression).map((name) => layer('expression_other', 'other', name)),
+    ...expressionOtherLayers,
     layer('base', 'base', outfit || DEFAULT_OUTFIT),
     layer('eyes', 'eye', expression.eye || 'eye_normal'),
     mood ? layer('mood_under', 'other', moodUnder(outfit, mood)) : null,
     layer('brow', 'brow', expression.brow || 'brow_normal'),
     mood ? layer('mood_top', 'other', `${mood}_1`) : null,
     ...emotionTags(expression).map((name) => layer('emotion', 'emotion', name)),
-    state.emotion !== 'none' ? layer('emotion', 'emotion', state.emotion) : null
+    state.emotion !== 'none' ? layer('emotion', 'emotion', state.emotion) : null,
+    ...expressionOverlayLayers
   ];
   return layers.filter(Boolean);
 }
@@ -973,6 +983,7 @@ function layerSource(layer, expression) {
   if (layer.kind === 'brow') return 'exp.brow';
   if (layer.kind === 'mood_under' || layer.kind === 'mood_top') return expression.face === 'face_pale' ? 'auto pale' : 'auto shadow';
   if (layer.kind === 'emotion') return emotionTags(expression).includes(layer.name) ? 'exp.emotion' : 'debug emotion';
+  if (layer.kind === 'expression_overlay') return 'exp.other top';
   return 'layer';
 }
 

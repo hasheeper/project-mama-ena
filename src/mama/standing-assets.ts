@@ -23,7 +23,8 @@ export type StandingLayerKind =
   | 'mood_under'
   | 'brow'
   | 'mood_top'
-  | 'emotion';
+  | 'emotion'
+  | 'expression_overlay';
 
 export interface StandingLayer {
   kind: StandingLayerKind;
@@ -41,6 +42,7 @@ const EMOTION_LAYER_RANK: Record<string, number> = {
   Emotion_HeartBurst: 10,
   Emotion_HeartBubble: 20
 };
+const TOP_EXPRESSION_OTHER_NAMES = new Set(['mist']);
 
 const baseModules = import.meta.glob<string>([
   '../assets/png/standing/base/*.png',
@@ -118,16 +120,19 @@ export function resolveStandingLayersForExpression(outfitInput: unknown, express
   const expression = normalizeExpressionRef(expressionInput);
   const baseUrl = outfitAssets[outfit] || outfitAssets[DEFAULT_MAMA_STATE.outfit] || '';
   const moodLayers = resolveMoodLayers(outfit, expression.face);
+  const expressionOtherLayers = resolveExpressionOtherLayers(expression.other, 'under');
+  const expressionOverlayLayers = resolveExpressionOtherLayers(expression.other, 'overlay');
   const layers = [
     ...resolveFaceLayers(expression.face),
     { kind: 'mouth', url: expressionAssets.mouth[expression.mouth] || expressionAssets.mouth.mouth_neutral },
-    ...resolveExpressionOtherLayers(expression.other),
+    ...expressionOtherLayers,
     { kind: 'base', url: baseUrl },
     { kind: 'eyes', url: expressionAssets.eye[expression.eye] || expressionAssets.eye.eye_normal },
     moodLayers.under,
     { kind: 'brow', url: expressionAssets.brow[expression.brow] || expressionAssets.brow.brow_normal },
     moodLayers.top,
-    ...resolveEmotionLayers(expression.emotion)
+    ...resolveEmotionLayers(expression.emotion),
+    ...expressionOverlayLayers
   ].filter((layer): layer is StandingLayer => Boolean(layer?.url));
 
   return {
@@ -173,11 +178,14 @@ function resolveFaceLayers(faceName: string): StandingLayer[] {
   ].filter((layer): layer is StandingLayer => Boolean(layer?.url));
 }
 
-function resolveExpressionOtherLayers(value: string | string[] | undefined): StandingLayer[] {
+function resolveExpressionOtherLayers(value: string | string[] | undefined, placement: 'under' | 'overlay'): StandingLayer[] {
   const names = Array.isArray(value) ? value : value ? [value] : [];
   return names.reduce<StandingLayer[]>((layers, name) => {
+    const isOverlay = TOP_EXPRESSION_OTHER_NAMES.has(name);
+    if ((placement === 'overlay') !== isOverlay) return layers;
+
     const url = expressionAssets.other[name];
-    if (url) layers.push({ kind: 'expression_other', url });
+    if (url) layers.push({ kind: isOverlay ? 'expression_overlay' : 'expression_other', url });
     return layers;
   }, []);
 }

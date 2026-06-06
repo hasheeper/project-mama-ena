@@ -33,11 +33,6 @@ interface KeywordEffect {
   priority: number;
 }
 
-interface KeywordRule {
-  alias: string;
-  effects: KeywordEffect[];
-}
-
 interface SlotState {
   value: string;
   priority: number;

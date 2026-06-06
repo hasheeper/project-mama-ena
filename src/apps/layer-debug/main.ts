@@ -50,7 +50,8 @@ const LAYER_Z_INDEX: Record<StandingLayerKind, number> = {
   mood_under: 45,
   brow: 50,
   mood_top: 60,
-  emotion: 70
+  emotion: 70,
+  expression_overlay: 80
 };
 
 const LAYER_LABELS: Record<StandingLayerKind, string> = {
@@ -62,7 +63,8 @@ const LAYER_LABELS: Record<StandingLayerKind, string> = {
   mood_under: 'mood under',
   brow: 'brow',
   mood_top: 'mood top',
-  emotion: 'emotion'
+  emotion: 'emotion',
+  expression_overlay: 'exp overlay'
 };
 
 const DEFAULT_CANVAS_ZOOM = 0.82;
@@ -652,6 +654,7 @@ function getLayerSource(layer: StandingLayer, asset: string, expression: Express
   if (layer.kind === 'emotion') return getEmotionTags(expression).some((name) => asset.endsWith(`/${name}`))
     ? 'exp.emotion'
     : 'debug emotion';
+  if (layer.kind === 'expression_overlay') return 'exp.other top';
   return 'layer';
 }
 

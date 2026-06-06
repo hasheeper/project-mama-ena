@@ -79,3 +79,7 @@
 .mama-standing__layer--emotion {
   z-index: 70;
 }
+
+.mama-standing__layer--expression-overlay {
+  z-index: 80;
+}

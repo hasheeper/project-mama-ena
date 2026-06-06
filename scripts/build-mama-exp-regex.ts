@@ -198,6 +198,7 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         Emotion_HeartBurst: 10,
         Emotion_HeartBubble: 20
       };
+      const TOP_EXPRESSION_OTHER_NAMES = new Set(['mist']);
       const FALLBACK_DEFAULTS = {
         face: 'face_default',
         mouth: 'mouth_neutral',
@@ -547,13 +548,14 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         };
       }
 
-      function resolveExpressionOtherUrls(expression) {
+      function resolveExpressionOtherUrls(expression, placement) {
         const names = Array.isArray(expression.other)
           ? expression.other
           : expression.other
             ? [expression.other]
             : [];
         return names
+          .filter((name) => placement === 'overlay' ? TOP_EXPRESSION_OTHER_NAMES.has(name) : !TOP_EXPRESSION_OTHER_NAMES.has(name))
           .filter((name) => ASSET_REFS.other.includes(name))
           .map((name) => assetUrl('other', name));
       }
@@ -588,13 +590,14 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           assetUrl('face', 'face_default'),
           expression.face !== 'face_default' ? assetUrl('face', expression.face) : '',
           assetUrl('mouth', expression.mouth || 'mouth_neutral'),
-          ...resolveExpressionOtherUrls(expression),
+          ...resolveExpressionOtherUrls(expression, 'under'),
           assetUrl('base', outfit || DEFAULT_OUTFIT),
           assetUrl('eye', expression.eye || 'eye_normal'),
           moodLayers.under,
           assetUrl('brow', expression.brow || 'brow_normal'),
           moodLayers.top,
-          ...resolveExpressionEmotionUrls(expression)
+          ...resolveExpressionEmotionUrls(expression),
+          ...resolveExpressionOtherUrls(expression, 'overlay')
         ];
         return urls.filter(Boolean);
       }
@@ -673,7 +676,7 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           makeLayer(assetUrl('face', 'face_default')),
           expression.face !== 'face_default' ? makeLayer(assetUrl('face', expression.face)) : null,
           makeLayer(assetUrl('mouth', expression.mouth || 'mouth_neutral')),
-          ...resolveExpressionOtherUrls(expression).map(function (url) {
+          ...resolveExpressionOtherUrls(expression, 'under').map(function (url) {
             return makeLayer(url);
           }),
           makeLayer(assetUrl('base', outfit || DEFAULT_OUTFIT)),
@@ -682,6 +685,9 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           makeLayer(assetUrl('brow', expression.brow || 'brow_normal')),
           makeLayer(moodLayers.top),
           ...resolveExpressionEmotionUrls(expression).map(function (url) {
+            return makeLayer(url);
+          }),
+          ...resolveExpressionOtherUrls(expression, 'overlay').map(function (url) {
             return makeLayer(url);
           })
         ].filter(Boolean);
