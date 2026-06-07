@@ -236,7 +236,7 @@ function renderPinnedNameTag(): HTMLElement {
   const paper = createElement('div', { className: 'pinned-name-paper' });
 
   paper.append(
-    createElement('div', { className: 'pinned-name-cn', text: '天宫 绘奈' }),
+    createElement('div', { className: 'pinned-name-cn', text: '天羽 绘奈' }),
     createElement('div', { className: 'pinned-name-en', text: 'AMAHA ENA' })
   );
   tag.append(renderPaperclip(), paper);
