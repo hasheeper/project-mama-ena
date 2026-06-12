@@ -53,6 +53,11 @@ interface BridgeState {
   packId: string;
   product: string;
   label: string;
+  env: 'prod' | 'local';
+  appBaseUrl: string;
+  appUrl: string;
+  statusUrl: string;
+  assetBaseUrl: string;
   loaded: LoadedScript[];
   loadedAt: string;
 }
@@ -83,6 +88,8 @@ interface RegisteredBridgeSchema {
   const VERSION = '0.1.0';
   const DEFAULT_MANIFEST = './manifest.json';
   const FALLBACK_BRIDGE_URL = 'https://hasheeper.github.io/project-mama-ena/apps/st-bridge/bridge.js';
+  const PROD_APP_BASE_URL = 'https://hasheeper.github.io/project-mama-ena';
+  const LOCAL_APP_BASE_URL = 'http://127.0.0.1:4173';
 
   function pushWindowCandidate(candidates: BridgeRoot[], value: unknown): void {
     try {
@@ -254,6 +261,10 @@ interface RegisteredBridgeSchema {
     return typeof value === 'string' && value.trim() ? value.trim() : fallback;
   }
 
+  function trimTrailingSlash(value: unknown): string {
+    return normalizeString(value, '').replace(/\/+$/, '');
+  }
+
   function isUsableBridgeUrl(value: unknown): value is string {
     if (!value || typeof value !== 'string') return false;
     if (!/^https?:\/\//i.test(value)) return false;
@@ -276,13 +287,29 @@ interface RegisteredBridgeSchema {
       if (matched && isUsableBridgeUrl(matched.src)) return matched.src;
     } catch (_) {}
     try {
+      const resources = performance.getEntriesByType?.('resource') || [];
+      const matched = resources
+        .map((entry) => entry.name)
+        .reverse()
+        .find((name) => isUsableBridgeUrl(name));
+      if (matched) return matched;
+    } catch (_) {}
+    try {
       const configuredUrl = getGlobalValue('ST_BRIDGE_URL');
       if (isUsableBridgeUrl(configuredUrl)) return configuredUrl;
     } catch (_) {}
     return FALLBACK_BRIDGE_URL;
   }
 
-  const bridgeUrl = new URL(getCurrentScriptUrl());
+  function makeBridgeUrl(): URL {
+    try {
+      return new URL(getCurrentScriptUrl());
+    } catch (_) {
+      return new URL(FALLBACK_BRIDGE_URL);
+    }
+  }
+
+  const bridgeUrl = makeBridgeUrl();
   const bridgeRoot = new URL('.', bridgeUrl);
   const params = bridgeUrl.searchParams;
   const buildCacheKey = typeof __MAMA_BRIDGE_BUILD_CACHE_KEY__ === 'string'
@@ -297,6 +324,133 @@ interface RegisteredBridgeSchema {
     forceReload
   });
 
+  function isLocalBridgeUrl(url: URL): boolean {
+    try {
+      const hostname = String(url.hostname || '').toLowerCase();
+      return hostname === 'localhost'
+        || hostname === '127.0.0.1'
+        || hostname === '0.0.0.0'
+        || hostname === '[::1]'
+        || hostname === '::1';
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function normalizeEnv(value: unknown, fallback: 'prod' | 'local'): 'prod' | 'local' {
+    const normalized = normalizeString(value, '').toLowerCase();
+    if (normalized === 'local' || normalized === 'prod') return normalized;
+    return fallback;
+  }
+
+  function isLocalAppBaseUrl(value: string): boolean {
+    try {
+      const url = new URL(value);
+      return isLocalBridgeUrl(url);
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function shouldUseGlobalAppBaseUrl(value: string, env: 'prod' | 'local'): boolean {
+    if (!value) return false;
+    return env === 'local' ? isLocalAppBaseUrl(value) : !isLocalAppBaseUrl(value);
+  }
+
+  function resolveLocalAppBaseUrl(): string {
+    try {
+      const bridgePath = bridgeUrl.pathname || '';
+      const prefix = bridgePath.replace(/\/apps\/st-bridge\/bridge\.js$/i, '').replace(/\/+$/, '');
+      return trimTrailingSlash(`${bridgeUrl.origin}${prefix}`);
+    } catch (_) {
+      return LOCAL_APP_BASE_URL;
+    }
+  }
+
+  function resolveAppUrl(app: unknown, profile = bridgeProfile): string {
+    const key = normalizeString(app, '').toLowerCase();
+    const appBaseUrl = trimTrailingSlash(profile?.appBaseUrl || PROD_APP_BASE_URL) || PROD_APP_BASE_URL;
+    if (key === 'visual-dashboard' || key === 'status' || key === 'dashboard') {
+      return `${appBaseUrl}/apps/visual-dashboard/index.html`;
+    }
+    if (key === 'app' || key === 'shell') return `${appBaseUrl}/index.html?app=visual-dashboard`;
+    if (key === 'expression-portrait' || key === 'portrait') return `${appBaseUrl}/apps/expression-portrait/index.html`;
+    if (key === 'layer-debug' || key === 'debug') return `${appBaseUrl}/apps/layer-debug/index.html`;
+    throw new Error(`Unknown MAMA app "${String(app)}"`);
+  }
+
+  function resolveBridgeProfile() {
+    const env = normalizeEnv(
+      params.get('env') || getGlobalValue('ST_BRIDGE_ENV'),
+      isLocalBridgeUrl(bridgeUrl) ? 'local' : 'prod'
+    );
+    const fallbackAppBaseUrl = env === 'local' ? resolveLocalAppBaseUrl() || LOCAL_APP_BASE_URL : PROD_APP_BASE_URL;
+    const queryAppBaseUrl = trimTrailingSlash(params.get('appBase'));
+    const globalAppBaseUrl = trimTrailingSlash(getGlobalValue('MAMA_APP_BASE_URL'));
+    const appBaseUrl = (
+      queryAppBaseUrl
+      || (shouldUseGlobalAppBaseUrl(globalAppBaseUrl, env) ? globalAppBaseUrl : '')
+      || fallbackAppBaseUrl
+    )
+      || fallbackAppBaseUrl;
+    return {
+      env,
+      appBaseUrl,
+      appUrl: `${appBaseUrl}/index.html?app=visual-dashboard`,
+      statusUrl: `${appBaseUrl}/apps/visual-dashboard/index.html`,
+      assetBaseUrl: `${appBaseUrl}/mama-assets/standing`
+    };
+  }
+
+  const bridgeProfile = resolveBridgeProfile();
+  const BRIDGE_STARTED_AT = Date.now();
+  const BRIDGE_FETCH_TIMEOUT_MS = readPositiveMs('MAMA_BRIDGE_FETCH_TIMEOUT_MS', 25000);
+  const BRIDGE_SCRIPT_TIMEOUT_MS = readPositiveMs('MAMA_BRIDGE_SCRIPT_TIMEOUT_MS', 25000);
+
+  function readPositiveMs(key: string, fallback: number): number {
+    const value = Number(getGlobalValue(key));
+    return Number.isFinite(value) && value > 0 ? value : fallback;
+  }
+
+  function formatErrorMessage(error: unknown): string {
+    if (!error) return 'unknown error';
+    if (error instanceof Error && error.message) return error.message;
+    if (isObject(error) && typeof error.message === 'string' && error.message) return error.message;
+    return String(error);
+  }
+
+  function setBridgeLoadStatus(status: string, detail: Record<string, unknown> = {}) {
+    const next = {
+      status,
+      env: bridgeProfile.env,
+      bridgeUrl: bridgeUrl.href,
+      appBaseUrl: bridgeProfile.appBaseUrl,
+      startedAt: new Date(BRIDGE_STARTED_AT).toISOString(),
+      elapsedMs: Date.now() - BRIDGE_STARTED_AT,
+      ...detail
+    };
+    getBridgeTargets().forEach((target) => {
+      try { target.__MAMA_BRIDGE_LOAD_STATUS__ = next; } catch (_) {}
+    });
+    return next;
+  }
+
+  function withTimeout<T>(promise: Promise<T>, timeoutMs: number, timeoutMessage: string): Promise<T> {
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+      Promise.resolve(promise).then(
+        (value) => {
+          clearTimeout(timeout);
+          resolve(value);
+        },
+        (error) => {
+          clearTimeout(timeout);
+          reject(error);
+        }
+      );
+    });
+  }
+
   function withCache(url) {
     if (!cacheBust) return url;
     const next = new URL(url);
@@ -309,13 +463,21 @@ interface RegisteredBridgeSchema {
   }
 
   async function fetchJson(url) {
-    const response = await fetch(withCache(url), { cache: cacheBust ? 'reload' : 'no-cache' });
+    const response = await withTimeout(
+      fetch(withCache(url), { cache: cacheBust ? 'reload' : 'no-cache' }),
+      BRIDGE_FETCH_TIMEOUT_MS,
+      `HTTP request timed out after ${Math.round(BRIDGE_FETCH_TIMEOUT_MS / 1000)}s while loading ${url}`
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status} while loading ${url}`);
     return response.json();
   }
 
   async function fetchText(url) {
-    const response = await fetch(withCache(url), { cache: cacheBust ? 'reload' : 'no-cache' });
+    const response = await withTimeout(
+      fetch(withCache(url), { cache: cacheBust ? 'reload' : 'no-cache' }),
+      BRIDGE_FETCH_TIMEOUT_MS,
+      `HTTP request timed out after ${Math.round(BRIDGE_FETCH_TIMEOUT_MS / 1000)}s while loading ${url}`
+    );
     if (!response.ok) throw new Error(`HTTP ${response.status} while loading ${url}`);
     return response.text();
   }
@@ -335,7 +497,7 @@ interface RegisteredBridgeSchema {
     return { id: requested, pack };
   }
 
-  function applyGlobals(pack, packId) {
+  function applyGlobals(pack, packId, profile = bridgeProfile) {
     getBridgeTargets().forEach((target) => {
       try {
         target.ST_BRIDGE_PACK = packId;
@@ -345,6 +507,11 @@ interface RegisteredBridgeSchema {
             target[key] = value;
           });
         }
+        target.ST_BRIDGE_ENV = profile.env;
+        target.MAMA_APP_BASE_URL = profile.appBaseUrl;
+        target.MAMA_APP_URL = profile.appUrl;
+        target.MAMA_STATUS_URL = profile.statusUrl;
+        target.MAMA_ASSET_BASE_URL = profile.assetBaseUrl;
       } catch (_) {}
     });
   }
@@ -485,6 +652,11 @@ interface RegisteredBridgeSchema {
       host: publishHostInfo({
         bridgeUrl: bridgeUrl.href,
         bridgeRoot: bridgeRoot.href,
+        env: state?.env || bridgeProfile.env,
+        appBaseUrl: state?.appBaseUrl || bridgeProfile.appBaseUrl,
+        appUrl: state?.appUrl || bridgeProfile.appUrl,
+        statusUrl: state?.statusUrl || bridgeProfile.statusUrl,
+        assetBaseUrl: state?.assetBaseUrl || bridgeProfile.assetBaseUrl,
         cacheBust,
         forceReload
       }),
@@ -500,7 +672,14 @@ interface RegisteredBridgeSchema {
         patch: patchNamespace,
         migrate: migrateNamespace
       },
-      utils: { resolveUrl, withCache, bridgeRoot: bridgeRoot.href },
+      utils: {
+        resolveUrl,
+        resolveAppUrl,
+        withCache,
+        bridgeRoot: bridgeRoot.href,
+        env: state?.env || bridgeProfile.env,
+        appBaseUrl: state?.appBaseUrl || bridgeProfile.appBaseUrl
+      },
       registerActions(namespace, handlers) {
         if (!namespace || !isObject(handlers)) return;
         actionHandlers[namespace] = { ...(actionHandlers[namespace] || {}), ...handlers };
@@ -524,19 +703,33 @@ interface RegisteredBridgeSchema {
 
   async function runClassicScript(url, scriptId) {
     const source = await fetchText(url);
-    (0, eval)(`${source}\n//# sourceURL=${url}`);
+    // Direct eval keeps JS-Slash-Runner's script scope in the lexical chain.
+    // That lets pack scripts resolve Runner APIs such as eventOn/injectPrompts,
+    // matching the pkm/ace-zero tavern-script execution model.
+    eval(`${source}\n//# sourceURL=${url}`);
     return { id: scriptId, type: 'script', url };
   }
 
   async function loadScript(entry, manifestUrl) {
     const type = entry.type || 'script';
     const url = resolveUrl(entry.url, manifestUrl);
+    setBridgeLoadStatus('loading-script', { scriptId: entry.id || type, scriptUrl: url });
     console.log(`${BRIDGE_NAME} loading ${entry.id || type}: ${url}`);
     if (type === 'module') {
-      await import(withCache(url));
+      await withTimeout(
+        import(withCache(url)),
+        BRIDGE_SCRIPT_TIMEOUT_MS,
+        `Script "${entry.id || url}" timed out after ${Math.round(BRIDGE_SCRIPT_TIMEOUT_MS / 1000)}s`
+      );
       return { id: entry.id, type, url };
     }
-    if (type === 'script' || type === 'classic') return runClassicScript(url, entry.id);
+    if (type === 'script' || type === 'classic') {
+      return withTimeout(
+        runClassicScript(url, entry.id),
+        BRIDGE_SCRIPT_TIMEOUT_MS,
+        `Script "${entry.id || url}" timed out after ${Math.round(BRIDGE_SCRIPT_TIMEOUT_MS / 1000)}s`
+      );
+    }
     throw new Error(`Unsupported script type "${type}" for ${entry.id || entry.url}`);
   }
 
@@ -548,15 +741,31 @@ interface RegisteredBridgeSchema {
     return API_ROOT.__MAMA_ST_BRIDGE_LOADED__;
   }
 
+  function publishBridgeReady(ready: Promise<unknown>): Promise<unknown> {
+    getBridgeTargets().forEach((target) => {
+      try { target.__MAMA_ST_BRIDGE_READY__ = ready; } catch (_) {}
+    });
+    return ready;
+  }
+
   async function main() {
     const manifestUrl = getManifestUrl();
+    setBridgeLoadStatus('loading-manifest', { manifestUrl });
     const manifest = await fetchJson(manifestUrl);
     const { id: packId, pack } = selectPack(manifest);
+    setBridgeLoadStatus('loading-pack', { manifestUrl, packId });
     const registry = getLoadedRegistry();
-    const registryKey = `${manifestUrl}::${packId}::${cacheBust || 'default'}`;
+    const registryKey = [
+      manifestUrl,
+      packId,
+      cacheBust || 'default',
+      bridgeProfile.env,
+      bridgeProfile.appBaseUrl
+    ].join('::');
 
     if (registry[registryKey] && !forceReload) {
       exposeApi(registry[registryKey]);
+      setBridgeLoadStatus('ready', { manifestUrl, packId, cached: true });
       return registry[registryKey];
     }
 
@@ -567,7 +776,7 @@ interface RegisteredBridgeSchema {
       normalize: normalizeMamaState
     });
 
-    applyGlobals(pack, packId);
+    applyGlobals(pack, packId, bridgeProfile);
     const state: any = {
       bridgeVersion: VERSION,
       manifestUrl,
@@ -575,6 +784,11 @@ interface RegisteredBridgeSchema {
       packId,
       product: pack.product || packId,
       label: pack.label || packId,
+      env: bridgeProfile.env,
+      appBaseUrl: bridgeProfile.appBaseUrl,
+      appUrl: bridgeProfile.appUrl,
+      statusUrl: bridgeProfile.statusUrl,
+      assetBaseUrl: bridgeProfile.assetBaseUrl,
       loaded: [],
       loadedAt: new Date().toISOString()
     };
@@ -586,6 +800,13 @@ interface RegisteredBridgeSchema {
         state.loaded.push(await loadScript(entry, manifestUrl));
       } catch (error) {
         console.error(`${BRIDGE_NAME} failed to load ${entry.id || entry.url}:`, error);
+        setBridgeLoadStatus('script-error', {
+          manifestUrl,
+          packId,
+          scriptId: entry.id || entry.type || 'script',
+          scriptUrl: entry.url,
+          error: formatErrorMessage(error)
+        });
         if (entry.required !== false) throw error;
       }
     }
@@ -596,8 +817,19 @@ interface RegisteredBridgeSchema {
       } catch (_) {}
     });
     console.log(`${BRIDGE_NAME} loaded ${packId}`, state);
+    setBridgeLoadStatus('ready', { manifestUrl, packId, loadedCount: state.loaded.length });
     return state;
   }
 
-  await main();
+  const ready = main();
+  publishBridgeReady(ready);
+
+  try {
+    await ready;
+  } catch (error) {
+    const message = formatErrorMessage(error);
+    setBridgeLoadStatus('error', { manifestUrl: getManifestUrl(), error: message });
+    console.error(`${BRIDGE_NAME} failed`, error);
+    throw error;
+  }
 })();

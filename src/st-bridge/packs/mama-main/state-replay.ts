@@ -5,6 +5,7 @@ import {
   MAMA_ALLOWED_FIELD_PATHS,
   MAMA_NAMESPACE,
   MAMA_STAT_KEY,
+  MAMA_TIME_PHASES,
   cloneJson,
   normalizeMamaState as normalizeSharedMamaState
 } from '../../shared/mama';
@@ -32,6 +33,19 @@ import {
   const MAMA_KEY = MAMA_NAMESPACE;
   const REPLAY_PREFIX = 'MAMA_REPLAY';
   const ALLOWED_FIELD_PATHS = [...MAMA_ALLOWED_FIELD_PATHS];
+  const TIME_PHASE_ORDER = MAMA_TIME_PHASES.reduce((order, phase, index) => {
+    order[phase] = index;
+    return order;
+  }, {} as Record<string, number>);
+  const TIME_PHASE_PASSIVE_CORRUPTION_GAIN = {
+    morning: 2,
+    noon: 2,
+    dusk: 2,
+    night: 4
+  };
+  const FULL_DAY_PASSIVE_CORRUPTION_GAIN = MAMA_TIME_PHASES.reduce((total, phase) => {
+    return total + (TIME_PHASE_PASSIVE_CORRUPTION_GAIN[phase] || 0);
+  }, 0);
 
   function isObject(value) {
     return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
@@ -49,6 +63,108 @@ import {
       return ROOT.STBridge.mvuz.normalize('mama', value);
     }
     return normalizeSharedMamaState(value);
+  }
+
+  function getTimePhaseOrder(value) {
+    const phase = typeof value === 'string' ? value.trim() : '';
+    return Object.prototype.hasOwnProperty.call(TIME_PHASE_ORDER, phase) ? TIME_PHASE_ORDER[phase] : -1;
+  }
+
+  function readSafeDay(value) {
+    const day = readFiniteNumber(value);
+    if (!Number.isFinite(day)) return null;
+    return Math.max(1, Math.min(9999, Math.round(day)));
+  }
+
+  function readSafeWeek(value) {
+    const week = readFiniteNumber(value);
+    if (!Number.isFinite(week)) return null;
+    return Math.max(1, Math.min(9999, Math.round(week)));
+  }
+
+  function clampCorruption(value) {
+    const number = readFiniteNumber(value);
+    const safeValue = Number.isFinite(number) ? Math.round(number) : 0;
+    return Math.max(0, Math.min(100, safeValue));
+  }
+
+  function readFiniteNumber(value) {
+    if (typeof value === 'number') return value;
+    if (typeof value !== 'string') return Number(value);
+    const trimmed = value.trim();
+    if (!trimmed) return Number.NaN;
+    const normalized = trimmed.replace(/,/g, '');
+    const exact = Number(normalized);
+    if (Number.isFinite(exact)) return exact;
+    const match = normalized.match(/-?\d+(?:\.\d+)?/);
+    return match ? Number(match[0]) : Number.NaN;
+  }
+
+  function hasCalendarAdvanced(beforeMama, afterMama) {
+    const beforeWeek = readSafeWeek(beforeMama?.week);
+    const afterWeek = readSafeWeek(afterMama?.week);
+    const beforeDay = readSafeDay(beforeMama?.day);
+    const afterDay = readSafeDay(afterMama?.day);
+    if (beforeWeek !== null && afterWeek !== null && afterWeek > beforeWeek) return true;
+    if (beforeDay !== null && afterDay !== null && afterDay > beforeDay) return true;
+    return false;
+  }
+
+  function getPhaseByIndex(index) {
+    const normalizedIndex = ((index % MAMA_TIME_PHASES.length) + MAMA_TIME_PHASES.length) % MAMA_TIME_PHASES.length;
+    return MAMA_TIME_PHASES[normalizedIndex];
+  }
+
+  function computePassiveCorruptionGain(beforeMama, afterMama) {
+    const beforePhaseIndex = getTimePhaseOrder(beforeMama?.timePhase);
+    const afterPhaseIndex = getTimePhaseOrder(afterMama?.timePhase);
+    if (beforePhaseIndex < 0 || afterPhaseIndex < 0) {
+      return hasCalendarAdvanced(beforeMama, afterMama) ? FULL_DAY_PASSIVE_CORRUPTION_GAIN : 0;
+    }
+
+    if (beforePhaseIndex === afterPhaseIndex) {
+      return hasCalendarAdvanced(beforeMama, afterMama) ? FULL_DAY_PASSIVE_CORRUPTION_GAIN : 0;
+    }
+
+    let total = 0;
+    let index = beforePhaseIndex;
+    let guard = 0;
+    while (guard < MAMA_TIME_PHASES.length) {
+      index = (index + 1) % MAMA_TIME_PHASES.length;
+      const phase = getPhaseByIndex(index);
+      total += TIME_PHASE_PASSIVE_CORRUPTION_GAIN[phase] || 0;
+      if (index === afterPhaseIndex) return total;
+      guard += 1;
+    }
+    return 0;
+  }
+
+  function normalizeMamaTransition(beforeMama, nextMama) {
+    const normalized = normalizeMamaState(nextMama);
+    if (!isObject(beforeMama)) return normalized;
+
+    const beforePhaseIndex = getTimePhaseOrder(beforeMama.timePhase);
+    const nextPhaseIndex = getTimePhaseOrder(nextMama?.timePhase);
+    let transitioned = normalized;
+    if (beforePhaseIndex >= 0 && nextPhaseIndex >= 0 && nextPhaseIndex < beforePhaseIndex) {
+      const beforeDay = readSafeDay(beforeMama.day);
+      if (beforeDay !== null) {
+        const expectedDay = Math.min(9999, beforeDay + 1);
+        const normalizedDay = readSafeDay(normalized.day);
+        if (normalizedDay === null || normalizedDay < expectedDay) {
+          transitioned = { ...transitioned, day: expectedDay };
+        }
+      }
+    }
+
+    const passiveGain = computePassiveCorruptionGain(beforeMama, transitioned);
+    if (passiveGain <= 0) return transitioned;
+    return {
+      ...transitioned,
+      corruptionLevel: clampCorruption(transitioned.corruptionLevel) + passiveGain > 100
+        ? 100
+        : clampCorruption(transitioned.corruptionLevel) + passiveGain
+    };
   }
 
   function areJsonValuesEqual(left, right) {
@@ -74,7 +190,7 @@ import {
 
   function buildMamaFieldPatch(path, beforeValue, afterValue) {
     if (beforeValue === undefined) return buildReplayPatch('add', path, afterValue);
-    if (path === '/mama/affection') {
+    if (path === '/mama/affection' || path === '/mama/livingExpense') {
       const beforeNumber = Number(beforeValue);
       const afterNumber = Number(afterValue);
       if (Number.isFinite(beforeNumber) && Number.isFinite(afterNumber)) {
@@ -86,13 +202,14 @@ import {
 
   function buildMamaStatePatches(beforeStatData, afterStatData) {
     const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
-    const afterMama = normalizeMamaState(afterStatData?.[MAMA_KEY]);
+    const afterMama = normalizeMamaTransition(beforeMama, afterStatData?.[MAMA_KEY]);
     if (!beforeMama) return [buildReplayPatch('add', '/mama', afterMama)];
 
+    const normalizedAfterStatData = { ...afterStatData, [MAMA_KEY]: afterMama };
     const patches: any[] = [];
     for (const path of ALLOWED_FIELD_PATHS) {
       const beforeValue = readJsonPointer(beforeStatData, path);
-      const afterValue = readJsonPointer(afterStatData, path);
+      const afterValue = readJsonPointer(normalizedAfterStatData, path);
       if (afterValue === undefined || areJsonValuesEqual(beforeValue, afterValue)) continue;
       patches.push(buildMamaFieldPatch(path, beforeValue, afterValue));
     }
@@ -425,7 +542,8 @@ import {
     }
     const vars = await getMessageVariableBundle(messageId);
     const beforeStatData = isObject(vars?.[STAT_KEY]) ? vars[STAT_KEY] : {};
-    const normalized = normalizeMamaState(nextState);
+    const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
+    const normalized = normalizeMamaTransition(beforeMama, nextState);
     const afterStatData = { ...beforeStatData, [MAMA_KEY]: normalized };
     const result = await commitMamaReplayPatch({
       messageId,

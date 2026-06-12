@@ -1,3 +1,5 @@
+import { EXPRESSION_FALLBACK_CONFIG } from './expression-fallback-config.js';
+
 export interface ExpressionLayerRef {
   id: number;
   name: string;
@@ -33,23 +35,36 @@ interface KeywordEffect {
   priority: number;
 }
 
+interface KeywordRule {
+  alias: string;
+  effects: KeywordEffect[];
+}
+
+interface RuleMatch {
+  alias: string;
+  effects: KeywordEffect[];
+  length: number;
+  fuzzy: boolean;
+}
+
 interface SlotState {
   value: string;
   priority: number;
   order: number;
 }
 
-const DEFAULT_SYNTHETIC_EXPRESSION = {
-  face: 'face_default',
-  mouth: 'mouth_neutral',
-  eye: 'eye_normal',
-  brow: 'brow_normal'
-} as const;
-
-const EXPLICIT_COMPONENT_PRIORITY = 90;
-const VISUAL_KEYWORD_PRIORITY = 50;
-const SECONDARY_KEYWORD_PRIORITY = 40;
-const EMOTION_KEYWORD_PRIORITY = 30;
+const FALLBACK_DEFAULTS = EXPRESSION_FALLBACK_CONFIG.defaults;
+const FALLBACK_PRIORITIES = EXPRESSION_FALLBACK_CONFIG.priorities;
+const FALLBACK_THRESHOLDS = EXPRESSION_FALLBACK_CONFIG.thresholds;
+const FALLBACK_STOP_TOKENS = new Set<string>(EXPRESSION_FALLBACK_CONFIG.stopTokens);
+const KEYWORD_RULES: KeywordRule[] = EXPRESSION_FALLBACK_CONFIG.keywordRules.map((rule) => ({
+  alias: rule.alias,
+  effects: rule.effects.map((effect) => ({
+    slot: effect.slot,
+    value: effect.value,
+    priority: effect.priority
+  }))
+}));
 
 export function resolveExpressionWithFallback(
   value: unknown,
@@ -125,16 +140,19 @@ function findTypoExpression(canonical: string, expressions: readonly ExpressionL
   const ranked = expressions
     .map((expression) => ({
       expression,
-      distance: levenshteinDistance(canonical, canonicalizeExpressionName(expression.name))
+      distance: damerauLevenshteinDistance(canonical, canonicalizeExpressionName(expression.name))
     }))
     .sort((a, b) => a.distance - b.distance);
   const best = ranked[0];
   const second = ranked[1];
   if (!best) return null;
 
-  const allowed = best.distance <= 1 || (canonical.length >= 8 && best.distance <= 2);
+  const target = canonicalizeExpressionName(best.expression.name);
+  const confidence = normalizedEditConfidence(canonical, target, best.distance);
+  const allowedDistance = best.distance <= 1 || (canonical.length >= 8 && best.distance <= 2);
+  const allowedConfidence = confidence >= FALLBACK_THRESHOLDS.presetMinConfidence;
   const unique = !second || second.distance > best.distance;
-  return allowed && unique ? best.expression : null;
+  return allowedDistance && allowedConfidence && unique ? best.expression : null;
 }
 
 function buildSyntheticExpression(
@@ -142,19 +160,21 @@ function buildSyntheticExpression(
   canonical: string,
   assets: ExpressionFallbackAssets
 ): ExpressionLayerRef | null {
-  const tokens = canonical.split('_').filter(Boolean);
+  const rawTokens = canonical.split('_').filter(Boolean);
+  const tokens = rawTokens.filter((token) => !FALLBACK_STOP_TOKENS.has(token));
   if (!tokens.length) return null;
 
   const rules = buildKeywordRuleMap(assets);
   const slots: Record<SingularSlot, SlotState> = {
-    face: { value: DEFAULT_SYNTHETIC_EXPRESSION.face, priority: 0, order: -1 },
-    mouth: { value: DEFAULT_SYNTHETIC_EXPRESSION.mouth, priority: 0, order: -1 },
-    eye: { value: DEFAULT_SYNTHETIC_EXPRESSION.eye, priority: 0, order: -1 },
-    brow: { value: DEFAULT_SYNTHETIC_EXPRESSION.brow, priority: 0, order: -1 }
+    face: { value: FALLBACK_DEFAULTS.face, priority: 0, order: -1 },
+    mouth: { value: FALLBACK_DEFAULTS.mouth, priority: 0, order: -1 },
+    eye: { value: FALLBACK_DEFAULTS.eye, priority: 0, order: -1 },
+    brow: { value: FALLBACK_DEFAULTS.brow, priority: 0, order: -1 }
   };
   const listSlots: Record<ListSlot, string[]> = { other: [], emotion: [] };
   const matchedTokens: string[] = [];
   const matchedIndexes = new Set<number>();
+  let meaningfulMatches = 0;
   let order = 0;
 
   for (let index = 0; index < tokens.length;) {
@@ -167,11 +187,14 @@ function buildSyntheticExpression(
     matchedTokens.push(match.alias);
     for (let offset = 0; offset < match.length; offset += 1) matchedIndexes.add(index + offset);
     match.effects.forEach((effect) => applyKeywordEffect(effect, slots, listSlots, order));
+    if (hasVisualEffect(match.effects)) meaningfulMatches += match.length;
     order += 1;
     index += match.length;
   }
 
   if (!matchedTokens.length) return null;
+  if (!meaningfulMatches) return null;
+  if (meaningfulMatches / tokens.length < FALLBACK_THRESHOLDS.syntheticMinTokenMatchRatio) return null;
 
   const expression: ExpressionLayerRef = {
     id: 0,
@@ -217,84 +240,7 @@ function buildKeywordRuleMap(assets: ExpressionFallbackAssets): Map<string, Keyw
   addExplicitAssetRules(rules, 'other', '', assets.other);
   addExplicitAssetRules(rules, 'emotion', 'Emotion_', assets.emotion);
 
-  addRuleIfAvailable(rules, assets, 'jitome', [{ slot: 'eye', value: 'eye_jitome', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'pout', [
-    { slot: 'mouth', value: 'mouth_pout_2', priority: VISUAL_KEYWORD_PRIORITY },
-    { slot: 'brow', value: 'brow_up_max', priority: SECONDARY_KEYWORD_PRIORITY }
-  ]);
-  addRuleIfAvailable(rules, assets, 'smile', [{ slot: 'mouth', value: 'mouth_smile', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'smirk', [{ slot: 'mouth', value: 'mouth_smirk_1', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'laugh', [{ slot: 'mouth', value: 'mouth_laugh', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'cat', [{ slot: 'mouth', value: 'mouth_cat', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'huh', [{ slot: 'mouth', value: 'mouth_huh', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'drool', [{ slot: 'mouth', value: 'mouth_drool', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'chu', [{ slot: 'mouth', value: 'mouth_chu', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'shock', [{ slot: 'mouth', value: 'mouth_shock', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'panic', [{ slot: 'mouth', value: 'mouth_panic_open', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'awawa', [{ slot: 'mouth', value: 'mouth_awawa', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'tremble', [{ slot: 'mouth', value: 'mouth_tremble_1', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'blank', [{ slot: 'mouth', value: 'mouth_blank_1', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'fang', [{ slot: 'mouth', value: 'mouth_fang_open', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'tongue', [{ slot: 'mouth', value: 'mouth_tongue_2', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'neutral', [{ slot: 'mouth', value: 'mouth_neutral', priority: SECONDARY_KEYWORD_PRIORITY }]);
-
-  addRuleIfAvailable(rules, assets, 'closed', [{ slot: 'eye', value: 'eye_closed_1', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'wink', [{ slot: 'eye', value: 'eye_wink_2', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'line', [{ slot: 'eye', value: 'eye_line', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'slit', [{ slot: 'eye', value: 'eye_slit', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'drowsy', [
-    { slot: 'eye', value: 'eye_slit', priority: VISUAL_KEYWORD_PRIORITY },
-    { slot: 'emotion', value: 'Emotion_Sleepy', priority: EMOTION_KEYWORD_PRIORITY }
-  ]);
-  addRuleIfAvailable(rules, assets, 'star', [
-    { slot: 'eye', value: 'eye_star', priority: VISUAL_KEYWORD_PRIORITY },
-    { slot: 'emotion', value: 'Emotion_Star', priority: EMOTION_KEYWORD_PRIORITY }
-  ]);
-  addRuleIfAvailable(rules, assets, 'heart', [
-    { slot: 'eye', value: 'eye_heart', priority: VISUAL_KEYWORD_PRIORITY },
-    { slot: 'emotion', value: 'Emotion_Heart', priority: EMOTION_KEYWORD_PRIORITY }
-  ]);
-  addRuleIfAvailable(rules, assets, 'xd', [{ slot: 'eye', value: 'eye_xd', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'wide', [{ slot: 'eye', value: 'eye_wide', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'cry', [{ slot: 'eye', value: 'eye_cry_2', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'dizzy', [{ slot: 'eye', value: 'eye_dizzy_2', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'puppy', [{ slot: 'eye', value: 'eye_puppy', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'dark', [{ slot: 'eye', value: 'eye_dark', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'disgust', [{ slot: 'eye', value: 'eye_disgust', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'roll', [{ slot: 'eye', value: 'eye_roll', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'avert', [{ slot: 'eye', value: 'eye_avert', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'half', [{ slot: 'eye', value: 'eye_half_1', priority: SECONDARY_KEYWORD_PRIORITY }]);
-
-  addRuleIfAvailable(rules, assets, 'up', [{ slot: 'brow', value: 'brow_up', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'down', [{ slot: 'brow', value: 'brow_down', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'up_max', [{ slot: 'brow', value: 'brow_up_max', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'down_max', [{ slot: 'brow', value: 'brow_down_max', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'question', [{ slot: 'brow', value: 'brow_question', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'normal', [{ slot: 'brow', value: 'brow_normal', priority: SECONDARY_KEYWORD_PRIORITY }]);
-
-  addRuleIfAvailable(rules, assets, 'default', [{ slot: 'face', value: 'face_default', priority: SECONDARY_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'shadow', [{ slot: 'face', value: 'face_shadow', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'pale', [{ slot: 'face', value: 'face_pale', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'blush', [{ slot: 'face', value: 'face_blush_light', priority: SECONDARY_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'heavy', [{ slot: 'face', value: 'face_blush_heavy', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'light', [{ slot: 'face', value: 'face_blush_light', priority: VISUAL_KEYWORD_PRIORITY }]);
-
-  addRuleIfAvailable(rules, assets, 'sweat', [{ slot: 'other', value: 'sweat', priority: VISUAL_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'mist', [{ slot: 'other', value: 'mist', priority: VISUAL_KEYWORD_PRIORITY }]);
-
-  addRuleIfAvailable(rules, assets, 'angry', [{ slot: 'emotion', value: 'Emotion_Angry', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'sleepy', [{ slot: 'emotion', value: 'Emotion_Sleepy', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'sparkle', [{ slot: 'emotion', value: 'Emotion_Sparkle', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'confusion', [{ slot: 'emotion', value: 'Emotion_Confusion', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'confused', [{ slot: 'emotion', value: 'Emotion_Confusion', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'fearful', [{ slot: 'emotion', value: 'Emotion_Fearful', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'surprise', [{ slot: 'emotion', value: 'Emotion_Surprise', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'cloud', [{ slot: 'emotion', value: 'Emotion_Cloud', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'heartbubble', [{ slot: 'emotion', value: 'Emotion_HeartBubble', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'heart_bubble', [{ slot: 'emotion', value: 'Emotion_HeartBubble', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'heartburst', [{ slot: 'emotion', value: 'Emotion_HeartBurst', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'heart_burst', [{ slot: 'emotion', value: 'Emotion_HeartBurst', priority: EMOTION_KEYWORD_PRIORITY }]);
-  addRuleIfAvailable(rules, assets, 'zzz', [{ slot: 'emotion', value: 'Emotion_zzz', priority: EMOTION_KEYWORD_PRIORITY }]);
+  KEYWORD_RULES.forEach((rule) => addRuleIfAvailable(rules, assets, rule.alias, rule.effects));
 
   return rules;
 }
@@ -308,7 +254,7 @@ function addExplicitAssetRules(
   names.forEach((name) => {
     const canonical = canonicalizeAssetName(name);
     const stripped = prefix ? canonicalizeAssetName(name.replace(new RegExp(`^${prefix}`, 'i'), '')) : canonical;
-    const effect = { slot, value: name, priority: EXPLICIT_COMPONENT_PRIORITY };
+    const effect = { slot, value: name, priority: FALLBACK_PRIORITIES.explicitComponent };
     addRule(rules, canonical, [effect]);
     addRule(rules, stripped, [effect]);
   });
@@ -338,30 +284,31 @@ function findRuleMatch(
   tokens: string[],
   index: number,
   rules: Map<string, KeywordEffect[]>
-): { alias: string; effects: KeywordEffect[]; length: number } | null {
+): RuleMatch | null {
   const maxLength = Math.min(4, tokens.length - index);
   for (let length = maxLength; length >= 1; length -= 1) {
     const alias = tokens.slice(index, index + length).join('_');
     const effects = rules.get(alias);
-    if (effects) return { alias, effects, length };
+    if (effects) return { alias, effects, length, fuzzy: false };
   }
 
   const fuzzyAlias = findFuzzyRuleAlias(tokens[index], rules);
   const fuzzyEffects = fuzzyAlias ? rules.get(fuzzyAlias) : null;
-  return fuzzyAlias && fuzzyEffects ? { alias: fuzzyAlias, effects: fuzzyEffects, length: 1 } : null;
+  return fuzzyAlias && fuzzyEffects ? { alias: fuzzyAlias, effects: fuzzyEffects, length: 1, fuzzy: true } : null;
 }
 
 function findFuzzyRuleAlias(token: string, rules: Map<string, KeywordEffect[]>): string | null {
   if (token.length < 4) return null;
   const ranked = Array.from(rules.keys())
     .filter((alias) => !alias.includes('_') && alias.length >= 4)
-    .map((alias) => ({ alias, distance: levenshteinDistance(token, alias) }))
+    .map((alias) => ({ alias, distance: damerauLevenshteinDistance(token, alias) }))
     .sort((a, b) => a.distance - b.distance);
   const best = ranked[0];
   const second = ranked[1];
   if (!best) return null;
 
-  const allowed = best.distance <= 1 || (token.length >= 6 && best.distance <= 2);
+  const allowed = best.distance <= FALLBACK_THRESHOLDS.shortTokenMaxDistance ||
+    (token.length >= FALLBACK_THRESHOLDS.longTokenMinLength && best.distance <= FALLBACK_THRESHOLDS.longTokenMaxDistance);
   const unique = !second || second.distance > best.distance;
   return allowed && unique ? best.alias : null;
 }
@@ -378,21 +325,50 @@ function resolveDefaultExpression(expressions: readonly ExpressionLayerRef[], de
   return expressions.find((expression) => expression.name === defaultExpression) || expressions[0];
 }
 
-function levenshteinDistance(a: string, b: string): number {
+function normalizedEditConfidence(a: string, b: string, distance: number): number {
+  const maxLength = Math.max(a.length, b.length);
+  return maxLength ? 1 - distance / maxLength : 1;
+}
+
+function hasVisualEffect(effects: KeywordEffect[]): boolean {
+  return effects.some((effect) => (
+    effect.slot === 'face' ||
+    effect.slot === 'mouth' ||
+    effect.slot === 'eye' ||
+    effect.slot === 'brow' ||
+    effect.slot === 'other' ||
+    effect.slot === 'emotion'
+  ));
+}
+
+function damerauLevenshteinDistance(a: string, b: string): number {
   const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
   const current = Array.from({ length: b.length + 1 }, () => 0);
+  const transposed = Array.from({ length: b.length + 1 }, () => 0);
 
   for (let row = 1; row <= a.length; row += 1) {
     current[0] = row;
     for (let column = 1; column <= b.length; column += 1) {
       const cost = a[row - 1] === b[column - 1] ? 0 : 1;
-      current[column] = Math.min(
+      let distance = Math.min(
         current[column - 1] + 1,
         previous[column] + 1,
         previous[column - 1] + cost
       );
+      if (
+        row > 1 &&
+        column > 1 &&
+        a[row - 1] === b[column - 2] &&
+        a[row - 2] === b[column - 1]
+      ) {
+        distance = Math.min(distance, transposed[column - 2] + 1);
+      }
+      current[column] = distance;
     }
-    for (let column = 0; column <= b.length; column += 1) previous[column] = current[column];
+    for (let column = 0; column <= b.length; column += 1) {
+      transposed[column] = previous[column];
+      previous[column] = current[column];
+    }
   }
 
   return previous[b.length];

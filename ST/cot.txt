@@ -3,9 +3,10 @@
 <planning>
 在输出正文前，先完成以下推演，必须逐项一步一步的检查和输出，禁止遗漏！并将其包裹在 <planning></planning> 中输出：
 
-1. 根据当前的场景，时间大致是？是否需要推进时间？（下一阶段？）
-2. 场景是否有变更？场景是？是否需要更新地点？根据当前场景，是否需要更换可用适配的着装？
-3. [演绎校准]
+1. 根据当前的场景，时间大致是？是否需要计划推进时间？
+2. 场景是？{{user}} 与 ENA 是否同地？是否需要分别更新 userLocation / enaLocation？根据当前场景，是否需要更换可用适配的着装？
+3. 当前是否有厄兽事件？当前处于什么事件状态？
+4. [演绎校准]
    1.[角色演绎]
       *(对当前场景下对主要角色进行以下分析)*
       -------------------- [LOOP: 角色名] --------------------
@@ -22,7 +23,7 @@
          - 禁止机器人味/机械AI/计量/生硬战术化、长解释、过度术语化
    -------------------- [END LOOP] --------------------
 
-4.【语言协议】
+5.【语言协议】
    - 在 planning 内先复述预热以下格式，再输出正文：
      1. ENA 台词必须严格使用 ena-line 格式
      * 例：
@@ -40,3 +41,39 @@
         </neruru-line>
      3. 保留日文原文的语癖、片假名习惯与口语缩略，不要预热复述内容
 </planning>
+
+<!-- 后置 COT：正文结束后，根据刚刚写出的正文事实检查变量更新。 -->
+
+<UpdateVariable>
+<Analysis>
+只根据本轮正文已经发生的事实更新变量。逐项判断是否需要更新：
+
+1. 数值更新
+- affection：长期关系变化？
+- fatigueLevel：当前疲劳档位？
+- manaLevel：当前魔力档位？
+- livingExpense：本轮是否发生明确收入、采购、交通、医疗或生活费支出？
+- corruptionLevel：本轮正文是否明确出现 {{user}} 痛苦加剧、城市异常加重、污染、净化、失控缓解、长时间暴露或解除结界？
+
+2. 场景更新
+- timePhase / week / day：正文明确出现时间流逝时更新。
+- timePhase 顺序为 morning → noon → dusk → night；如果新 timePhase 早于当前 timePhase，表示进入下一天，day 同步 +1。
+- userLocation：{{user}} 在正文中明确移动或到达时更新
+- enaLocation：ENA 在正文中明确移动、到达或分开行动时更新
+- outfit：服装底座或变身形态真实改变时更新。
+
+3. 厄兽警报更新
+- 如果存在 <mama_monster_alert> 且 monsterAlert.status 是 active，只有正文明确完成净化、或者危机结束，replace 为 cleared。
+- 只是听说警报、赶路、侦察、对峙、战斗尚未结束时，不写 cleared。
+
+4. 使魔状态更新
+- mascotEmotion：涅露露情绪明显变化时更新，值必须来自 Mascot_Expressions key。
+- mascotComment：结合当前的小槽点进行涅露露风格的吐槽。
+
+5. 输出规则
+- 有变化：在正文末尾输出 <UpdateVariable>，内部只包含 <Analysis> 和 <JSONPatch>。
+- 无变化：输出 Skipping，不输出 <UpdateVariable>。
+- JSONPatch 只写本轮真实变化项，使用 delta 或 replace，不整段覆写 mama 对象。
+</Analysis>
+<JSONPatch>[本轮真实变化项]</JSONPatch>
+</UpdateVariable>

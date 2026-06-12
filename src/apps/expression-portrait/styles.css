@@ -13,8 +13,9 @@ html,
 body {
   margin: 0;
   width: 100%;
+  height: 100%;
   min-width: 0;
-  min-height: 100%;
+  min-height: 0;
   overflow: hidden;
   background: transparent;
 }
@@ -25,21 +26,24 @@ body {
 }
 
 .expression-portrait {
-  width: 100vw;
-  height: 100vh;
-  min-width: 160px;
-  min-height: 160px;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
   display: grid;
   place-items: center;
   overflow: hidden;
   background: transparent;
+  container-type: size;
 }
 
 .portrait-frame {
-  width: min(100vw, 100vh);
-  height: min(100vw, 100vh);
-  min-width: 160px;
-  min-height: 160px;
+  width: min(100%, 100vh);
+  aspect-ratio: 1 / 1;
+  max-width: 100%;
+  max-height: 100%;
+  min-width: 0;
+  min-height: 0;
   position: relative;
   overflow: hidden;
   border-radius: 18px;
@@ -49,6 +53,13 @@ body {
   box-shadow:
     inset 0 0 0 1px rgba(64, 31, 44, 0.1),
     0 8px 24px rgba(45, 35, 50, 0.12);
+}
+
+@supports (width: 100cqw) {
+  .portrait-frame {
+    width: min(100cqw, 100cqh);
+    height: min(100cqw, 100cqh);
+  }
 }
 
 .portrait-crop {

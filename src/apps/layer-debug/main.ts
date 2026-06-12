@@ -558,11 +558,11 @@ function renderExpressionRow(expression: ExpressionLayerRef): HTMLButtonElement 
   const main = createElement('span', { className: 'exp-main' });
   const chips = createElement('span', { className: 'exp-chips' });
 
-  main.append(createElement('strong', { text: expression.name }));
+  main.append(createElement('strong', { text: expression.name }), chips);
   getExpressionTags(expression).forEach((tag) => chips.append(renderMiniTag(tag)));
   getAutoDiffTags(selectedOutfit, expression).forEach((tag) => chips.append(renderMiniTag(tag)));
 
-  button.append(id, main, chips);
+  button.append(id, main);
   button.addEventListener('click', () => {
     selectedExpression = expression.name;
     render();

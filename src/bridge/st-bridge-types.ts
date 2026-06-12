@@ -5,6 +5,11 @@ export interface MamaSTBridgeState {
   packId: string;
   product: string;
   label: string;
+  env: 'prod' | 'local';
+  appBaseUrl: string;
+  appUrl: string;
+  statusUrl: string;
+  assetBaseUrl: string;
   loaded: Array<{ id?: string; type?: string; url: string }>;
   loadedAt: string;
 }
@@ -12,7 +17,16 @@ export interface MamaSTBridgeState {
 export interface MamaSTBridgeApi {
   version: string;
   state: MamaSTBridgeState;
+  host?: Record<string, unknown>;
   actionHandlers: Record<string, Record<string, (payload?: unknown) => unknown | Promise<unknown>>>;
+  utils?: {
+    resolveUrl(path: string, base?: string): string;
+    resolveAppUrl(app: string, profile?: Partial<MamaSTBridgeState>): string;
+    withCache(url: string): string;
+    bridgeRoot: string;
+    env: 'prod' | 'local';
+    appBaseUrl: string;
+  };
   mvu: {
     readVariables(options?: { type?: string }): Promise<Record<string, unknown>>;
     writeVariables(data: Record<string, unknown>, options?: { type?: string }): Promise<Record<string, unknown>>;
@@ -50,6 +64,7 @@ declare global {
     ST_BRIDGE_PACK?: string;
     ST_BRIDGE_URL?: string;
     ST_BRIDGE_MANIFEST_URL?: string;
+    __MAMA_ST_BRIDGE_READY__?: Promise<unknown>;
     MAMAPlugin?: any;
   }
 }

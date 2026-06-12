@@ -10,6 +10,14 @@
   const ASSET_REFS = {"base":["nephilim","nightwear","nude","outfit_gym","outfit_maid_jersey","outfit_swimsuit","outfit_winter","outfit_yukata","school_uniform","seraphim","streetwear_full","streetwear_inner","underwear"],"face":["face_blush_heavy","face_blush_light","face_default","face_pale","face_shadow"],"eye":["eye_avert","eye_closed_1","eye_closed_2","eye_closed_3","eye_cry_1","eye_cry_2","eye_cry_3","eye_cry_4","eye_cry_5","eye_dark","eye_disgust","eye_dizzy_1","eye_dizzy_2","eye_dizzy_3","eye_half_1","eye_half_2","eye_half_3","eye_half_4","eye_heart","eye_heart_2","eye_jitome","eye_line","eye_normal","eye_puppy","eye_roll","eye_shock","eye_slit","eye_smile","eye_star","eye_wide","eye_wink_2","eye_xd","eye_xd_2"],"mouth":["mouth_awawa","mouth_bite_lip","mouth_blank_1","mouth_blank_2","mouth_cat","mouth_chu","mouth_down","mouth_drool","mouth_drool_2","mouth_fang_open","mouth_huh","mouth_laugh","mouth_laugh_happy","mouth_neutral","mouth_panic_open","mouth_panic_open_2","mouth_pout_2","mouth_shock","mouth_smile","mouth_smirk_1","mouth_smirk_2","mouth_smirk_3","mouth_tongue_2","mouth_tremble_1"],"brow":["brow_down","brow_down_max","brow_normal","brow_question","brow_up","brow_up_max"],"other":["mist","pale_1","pale_2","pale_3","shadow_1","shadow_2","shadow_3","sweat"],"emotion":["Emotion_Amazed","Emotion_Angry","Emotion_Cloud","Emotion_Confusion","Emotion_Curiosity","Emotion_Distress","Emotion_Excited","Emotion_Fearful","Emotion_Glee","Emotion_Heart","Emotion_HeartBubble","Emotion_HeartBurst","Emotion_Laughter","Emotion_Line","Emotion_Shocked","Emotion_Sigh","Emotion_Sleepy","Emotion_Sparkle","Emotion_Star","Emotion_Steam","Emotion_Surprise","Emotion_Surprise2","Emotion_Sweat","Emotion_zzz"]};
   const CACHE_KEY = '__MAMA_EXP_IMAGE_CACHE__';
 
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
   function readGlobalString(key) {
     const targets = [CURRENT_ROOT];
     try { targets.push(CURRENT_ROOT.parent); } catch (_) {}
@@ -27,9 +35,17 @@
   }
 
   function resolveAssetBaseUrl() {
+    const bridgeHost = resolveBridgeHost();
     const explicit = readGlobalString('MAMA_ASSET_BASE_URL');
     if (explicit) return trimTrailingSlash(explicit);
-    const appBase = trimTrailingSlash(readGlobalString('MAMA_APP_BASE_URL') || DEFAULT_APP_BASE_URL);
+    if (typeof bridgeHost.assetBaseUrl === 'string' && bridgeHost.assetBaseUrl.trim()) {
+      return trimTrailingSlash(bridgeHost.assetBaseUrl);
+    }
+    const appBase = trimTrailingSlash(
+      readGlobalString('MAMA_APP_BASE_URL')
+        || bridgeHost.appBaseUrl
+        || DEFAULT_APP_BASE_URL
+    );
     return appBase + '/mama-assets/standing';
   }
 

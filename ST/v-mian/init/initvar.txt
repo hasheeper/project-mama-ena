@@ -1,9 +1,17 @@
 mama:
   affection: 45
+  fatigueLevel: 3
+  manaLevel: 3
+  livingExpense: 52500
+  corruptionLevel: 65
   week: 1
   day: 1
   timePhase: night
-  location: LivingRoom
+  userLocation: home_living_room
+  enaLocation: home_living_room
+  monsterAlertStatus: none
+  monsterAlertLocation: ""
+  monsterAlertRollKey: ""
   outfit: streetwear_full
   mascotEmotion: neruru_exhausted
   mascotComment: "咕噜噜……真是没救了噜。明明是用来拯救世界的伟大的母性能量，结果每天都被拿来哄废柴大叔睡觉噜……"

@@ -47,6 +47,9 @@
     const TRIGGER_COLLAPSED_STORAGE_KEY = "mama.status.triggerCollapsed.v2";
     const DEFAULT_APP_BASE_URL = "https://hasheeper.github.io/project-mama-ena";
     const DEFAULT_STATUS_PATH = "apps/visual-dashboard/index.html";
+    const DEFAULT_BGM_PATH = "mama-assets/audio/ena_bgm.mp3";
+    const BGM_AUDIO_ID = "mama-host-bgm-audio";
+    const BGM_TITLE = "ENA THEME";
     function getBridgeTargets() {
       const targets = [];
       pushTarget(targets, CURRENT_ROOT);
@@ -97,9 +100,19 @@
     }
     function resolveStatusUrl(version) {
       const explicit = readGlobalString("MAMA_STATUS_URL");
-      const base = trimTrailingSlash(readGlobalString("MAMA_APP_BASE_URL") || DEFAULT_APP_BASE_URL);
+      const base = trimTrailingSlash(
+        readGlobalString("MAMA_APP_BASE_URL") || BRIDGE_HOST.appBaseUrl || DEFAULT_APP_BASE_URL
+      );
       const url = explicit || `${base}/${DEFAULT_STATUS_PATH}`;
       return appendQueryParams(url, { bridge: "st", v: version });
+    }
+    function resolveBgmUrl(version) {
+      const explicit = readGlobalString("MAMA_BGM_URL");
+      const base = trimTrailingSlash(
+        readGlobalString("MAMA_APP_BASE_URL") || BRIDGE_HOST.appBaseUrl || DEFAULT_APP_BASE_URL
+      );
+      const url = explicit || `${base}/${DEFAULT_BGM_PATH}`;
+      return appendQueryParams(url, { v: version });
     }
     function ensureStyle() {
       if (!DOC?.head || DOC.getElementById(STYLE_ID)) return;
@@ -235,6 +248,175 @@
         display: none;
       }
 
+      .mama-status-bgm-control {
+        position: absolute;
+        top: -30px;
+        right: 0;
+        appearance: none;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        box-sizing: border-box;
+        width: 66px;
+        height: 26px;
+        padding: 0 8px 0 4px;
+        background: rgba(255, 255, 255, 0.98);
+        border: 1.5px solid rgba(228, 124, 154, 0.3);
+        border-radius: 13px;
+        cursor: pointer;
+        pointer-events: auto;
+        z-index: 3;
+        overflow: hidden;
+        box-shadow: 0 4px 10px rgba(45, 35, 50, 0.05), inset 0 0 0 1px #ffffff;
+        transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      }
+
+      .mama-status-bgm-control:hover {
+        border-color: rgba(228, 124, 154, 0.6);
+        box-shadow: 0 6px 14px rgba(45, 35, 50, 0.08), inset 0 0 0 1px #ffffff;
+        transform: translateY(-1px);
+      }
+
+      .mama-status-bgm-control.is-playing {
+        border-color: rgba(228, 124, 154, 0.5);
+      }
+
+      .mama-status-bgm-control::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: calc(var(--mama-bgm-progress, 0) * 100%);
+        background: rgba(228, 124, 154, 0.15);
+        z-index: 0;
+        transition: width 0.15s linear;
+      }
+
+      .mama-status-bgm-vinyl {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background:
+          radial-gradient(circle at center,
+            #f5f2f7 0%, #f5f2f7 44%,
+            #332d36 45%, #332d36 74%,
+            #29242d 75%, #29242d 100%
+          );
+        box-shadow: 0 2px 4px rgba(45, 35, 50, 0.06), inset 0 0 0 1px rgba(0, 0, 0, 0.15);
+        transition: background 0.3s ease;
+      }
+
+      .mama-status-bgm-vinyl::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        border-radius: inherit;
+        background: conic-gradient(
+          from 45deg,
+          transparent 0deg,
+          rgba(255, 255, 255, 0.25) 45deg,
+          transparent 90deg,
+          transparent 180deg,
+          rgba(255, 255, 255, 0.25) 225deg,
+          transparent 270deg,
+          transparent 360deg
+        );
+        pointer-events: none;
+        z-index: 1;
+      }
+
+      .mama-status-bgm-vinyl svg {
+        position: relative;
+        z-index: 2;
+        display: block;
+        width: 8px;
+        height: 8px;
+        fill: rgba(141, 133, 146, 0.8);
+        transform: translate(0.5px, -0.5px);
+        transition: fill 0.3s ease;
+      }
+
+      .mama-status-bgm-eq {
+        position: relative;
+        z-index: 1;
+        display: flex;
+        align-items: flex-end;
+        gap: 1.5px;
+        height: 10px;
+        opacity: 0.6;
+        transition: opacity 0.2s ease;
+      }
+
+      .mama-status-bgm-eq span {
+        width: 2.5px;
+        height: 2.5px;
+        border-radius: 1.5px;
+        background: rgba(141, 133, 146, 0.58);
+        transition: height 0.2s ease, background 0.2s ease;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-vinyl {
+        background:
+          radial-gradient(circle at center,
+            var(--ena-pink) 0%, var(--ena-pink) 44%,
+            #332d36 45%, #332d36 74%,
+            #29242d 75%, #29242d 100%
+          );
+        animation: spinVinyl 3.5s linear infinite;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-vinyl svg {
+        fill: #ffffff;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq {
+        opacity: 1;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span {
+        background: var(--ena-pink);
+        animation: mamaBgmEqPulse 0.8s ease-in-out infinite alternate;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span:nth-child(1) {
+        animation-delay: 0.1s;
+        animation-duration: 0.5s;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span:nth-child(2) {
+        animation-delay: 0.4s;
+        animation-duration: 0.7s;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span:nth-child(3) {
+        animation-delay: 0s;
+        animation-duration: 0.6s;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span:nth-child(4) {
+        animation-delay: 0.3s;
+        animation-duration: 0.8s;
+      }
+
+      .mama-status-bgm-control.is-playing .mama-status-bgm-eq span:nth-child(5) {
+        animation-delay: 0.2s;
+        animation-duration: 0.55s;
+      }
+
+      @keyframes mamaBgmEqPulse {
+        0% { height: 20%; }
+        100% { height: 100%; }
+      }
+
+      @keyframes spinVinyl {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} {
         right: 0 !important;
         width: 26px;
@@ -310,6 +492,35 @@
 
       #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-trigger-fold-open {
         display: block;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-bgm-control {
+        top: -30px;
+        right: 0;
+        display: flex;
+        justify-content: center;
+        width: 26px;
+        height: 26px;
+        padding: 0;
+        border-radius: 12px 0 0 12px;
+        border-right: none;
+        transform: none;
+        box-shadow: -3px 3px 10px rgba(45, 35, 50, 0.08), inset 0 0 0 1px #ffffff;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-bgm-control::before {
+        background: var(--ena-pink);
+        opacity: 0.13;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-bgm-vinyl {
+        width: 20px;
+        height: 20px;
+        margin-left: 0;
+      }
+
+      #${TRIGGER_ID}.${TRIGGER_COLLAPSED_CLASS} .mama-status-bgm-eq {
+        display: none;
       }
 
       #${OVERLAY_ID} {
@@ -393,13 +604,297 @@
       let lastReason = "";
       let frameReadOptions = { persist: false };
       let eventsBound = false;
+      let hostAudio = null;
+      let bgmControl = null;
+      let bgmProgressTimer = null;
+      let bgmPlaying = false;
+      let bgmError = "";
       const inlineTargets = /* @__PURE__ */ new Map();
       const targetStates = /* @__PURE__ */ new Map();
       const messageTargets = [];
       const timeoutHandles = /* @__PURE__ */ new Set();
       const cleanupCallbacks = [];
       const version = config.cacheBust || config.version || "0.1.0";
+      const bgmUrl = resolveBgmUrl(version);
       const injectStatusHost = !isDisabled(config.injectFixedStatus) && !isEnabled(config.disableStatusHost) && !isEnabled(ROOT.MAMA_DISABLE_STATUS_HOST) && !isEnabled(UI_ROOT.MAMA_DISABLE_STATUS_HOST);
+      function getAudioTargets() {
+        const targets = [];
+        getBridgeTargets().forEach((target) => pushTarget(targets, target));
+        try {
+          pushTarget(targets, typeof unsafeWindow === "object" ? unsafeWindow : null);
+        } catch (_) {
+        }
+        targets.slice().forEach((target) => {
+          try {
+            pushTarget(targets, target.parent);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.top);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.MAMA_ST_API);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.audioPlayer);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.AudioPlayer);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.TavernHelper?.audio);
+          } catch (_) {
+          }
+          try {
+            pushTarget(targets, target.TavernHelper);
+          } catch (_) {
+          }
+        });
+        return targets;
+      }
+      function resolveAudioApi() {
+        for (const target of getAudioTargets()) {
+          try {
+            if (typeof target?.playAudio === "function") {
+              return {
+                provider: "runner",
+                playAudio: target.playAudio.bind(target),
+                pauseAudio: typeof target.pauseAudio === "function" ? target.pauseAudio.bind(target) : null,
+                stopAudio: typeof target.stopAudio === "function" ? target.stopAudio.bind(target) : null,
+                getCurrentAudio: typeof target.getCurrentAudio === "function" ? target.getCurrentAudio.bind(target) : null,
+                setAudioSettings: typeof target.setAudioSettings === "function" ? target.setAudioSettings.bind(target) : null
+              };
+            }
+          } catch (_) {
+          }
+        }
+        return null;
+      }
+      function ensureHostAudio() {
+        if (!DOC?.body) return null;
+        const existing = DOC.getElementById(BGM_AUDIO_ID);
+        if (existing) {
+          hostAudio = existing;
+          return hostAudio;
+        }
+        hostAudio = DOC.createElement("audio");
+        hostAudio.id = BGM_AUDIO_ID;
+        hostAudio.src = bgmUrl;
+        hostAudio.loop = true;
+        hostAudio.preload = "metadata";
+        hostAudio.volume = 0.45;
+        hostAudio.style.display = "none";
+        hostAudio.addEventListener("play", () => {
+          bgmPlaying = true;
+          bgmError = "";
+          broadcastBgmState();
+        });
+        hostAudio.addEventListener("pause", () => {
+          bgmPlaying = false;
+          broadcastBgmState();
+        });
+        hostAudio.addEventListener("ended", () => {
+          bgmPlaying = false;
+          broadcastBgmState();
+        });
+        hostAudio.addEventListener("error", () => {
+          bgmError = "hostAudioError";
+          bgmPlaying = false;
+          broadcastBgmState();
+        });
+        DOC.body.append(hostAudio);
+        return hostAudio;
+      }
+      function readRunnerPlaying(api) {
+        try {
+          const current = api?.getCurrentAudio?.("bgm");
+          if (!current) return bgmPlaying;
+          if (typeof current.playing === "boolean") return current.playing;
+          if (typeof current.isPlaying === "boolean") return current.isPlaying;
+          if (typeof current.paused === "boolean") return !current.paused;
+          if (typeof current.status === "string") return /play|running/i.test(current.status);
+        } catch (_) {
+        }
+        return bgmPlaying;
+      }
+      function readRunnerProgress(api) {
+        try {
+          const current = api?.getCurrentAudio?.("bgm");
+          if (!current || typeof current !== "object") return 0;
+          const rawProgress = Number(current.progress ?? current.progressRatio ?? current.percent);
+          if (Number.isFinite(rawProgress)) return Math.max(0, Math.min(1, rawProgress > 1 ? rawProgress / 100 : rawProgress));
+          const currentTime = Number(current.currentTime ?? current.time ?? current.position ?? current.seek);
+          const duration = Number(current.duration ?? current.totalDuration ?? current.length);
+          if (Number.isFinite(currentTime) && Number.isFinite(duration) && duration > 0) {
+            return Math.max(0, Math.min(1, currentTime / duration));
+          }
+        } catch (_) {
+        }
+        return 0;
+      }
+      function getBgmProgress(runnerApi = resolveAudioApi()) {
+        if (runnerApi) return readRunnerProgress(runnerApi);
+        const audio = hostAudio || DOC?.getElementById(BGM_AUDIO_ID);
+        const currentTime = Number(audio?.currentTime);
+        const duration = Number(audio?.duration);
+        if (Number.isFinite(currentTime) && Number.isFinite(duration) && duration > 0) {
+          return Math.max(0, Math.min(1, currentTime / duration));
+        }
+        return 0;
+      }
+      async function callRunnerPlay(api) {
+        const attempts = [
+          () => api.playAudio("bgm", { title: BGM_TITLE, url: bgmUrl }),
+          () => api.playAudio("bgm", BGM_TITLE, bgmUrl),
+          () => api.playAudio({ type: "bgm", title: BGM_TITLE, url: bgmUrl })
+        ];
+        let lastError = null;
+        for (const attempt of attempts) {
+          try {
+            return await attempt();
+          } catch (error) {
+            lastError = error;
+          }
+        }
+        throw lastError || new Error("runnerPlayAudioFailed");
+      }
+      function getBgmState() {
+        const runnerApi = resolveAudioApi();
+        if (runnerApi) {
+          bgmPlaying = readRunnerPlaying(runnerApi);
+          return {
+            available: true,
+            playing: bgmPlaying,
+            provider: "runner",
+            title: BGM_TITLE,
+            url: bgmUrl,
+            progress: getBgmProgress(runnerApi),
+            error: bgmError || ""
+          };
+        }
+        const audio = hostAudio || DOC?.getElementById(BGM_AUDIO_ID);
+        if (audio) bgmPlaying = !audio.paused && !audio.ended;
+        return {
+          available: Boolean(DOC?.body),
+          playing: bgmPlaying,
+          provider: "host",
+          title: BGM_TITLE,
+          url: bgmUrl,
+          progress: getBgmProgress(null),
+          error: bgmError || ""
+        };
+      }
+      function updateBgmControl(state = getBgmState()) {
+        if (!bgmControl) return;
+        const playing = state.playing === true;
+        const progress = Number.isFinite(Number(state.progress)) ? Math.max(0, Math.min(1, Number(state.progress))) : 0;
+        bgmControl.classList.toggle("is-playing", playing);
+        bgmControl.setAttribute("aria-pressed", String(playing));
+        bgmControl.title = playing ? "Pause ENA BGM" : "Play ENA BGM";
+        bgmControl.setAttribute("aria-label", playing ? "Pause ENA BGM" : "Play ENA BGM");
+        bgmControl.style.setProperty("--mama-bgm-progress", String(progress));
+        bgmControl.style.setProperty("--mama-bgm-progress-min", playing && progress <= 0 ? "7px" : "0");
+        if (playing) queueBgmProgressTick();
+      }
+      function postBgmStateTo(target) {
+        if (!isMessageTarget(target)) return false;
+        try {
+          target.postMessage({
+            type: "MAMA_BGM_STATE",
+            appId: "visual-dashboard",
+            state: getBgmState()
+          }, "*");
+          return true;
+        } catch (_) {
+          return false;
+        }
+      }
+      function broadcastBgmState() {
+        const state = getBgmState();
+        updateBgmControl(state);
+        if (frame?.contentWindow) postBgmStateTo(frame.contentWindow);
+        inlineTargets.forEach((_, target) => postBgmStateTo(target));
+      }
+      function queueBgmProgressTick() {
+        if (disposed || bgmProgressTimer) return;
+        bgmProgressTimer = schedule(() => {
+          bgmProgressTimer = null;
+          const state = getBgmState();
+          updateBgmControl(state);
+          if (state.playing) queueBgmProgressTick();
+        }, 1e3);
+      }
+      async function playBgm() {
+        const runnerApi = resolveAudioApi();
+        if (runnerApi) {
+          try {
+            runnerApi.setAudioSettings?.("bgm", { mode: "repeat_one" });
+          } catch (_) {
+          }
+          try {
+            await callRunnerPlay(runnerApi);
+            bgmPlaying = true;
+            bgmError = "";
+            broadcastBgmState();
+            return getBgmState();
+          } catch (error) {
+            bgmError = error?.message || String(error);
+            console.warn("[MAMA Status Host] runner BGM play failed:", error);
+          }
+        }
+        const audio = ensureHostAudio();
+        if (!audio) {
+          bgmError = "hostAudioUnavailable";
+          broadcastBgmState();
+          return getBgmState();
+        }
+        try {
+          audio.loop = true;
+          audio.volume = 0.45;
+          await audio.play();
+          bgmPlaying = true;
+          bgmError = "";
+        } catch (error) {
+          bgmPlaying = false;
+          bgmError = error?.message || String(error);
+          console.warn("[MAMA Status Host] host BGM play failed:", error);
+        }
+        broadcastBgmState();
+        return getBgmState();
+      }
+      async function pauseBgm() {
+        const runnerApi = resolveAudioApi();
+        if (runnerApi) {
+          try {
+            if (runnerApi.pauseAudio) await runnerApi.pauseAudio("bgm");
+            else if (runnerApi.stopAudio) await runnerApi.stopAudio("bgm");
+            bgmPlaying = false;
+            bgmError = "";
+            broadcastBgmState();
+            return getBgmState();
+          } catch (error) {
+            bgmError = error?.message || String(error);
+            console.warn("[MAMA Status Host] runner BGM pause failed:", error);
+          }
+        }
+        const audio = hostAudio || DOC?.getElementById(BGM_AUDIO_ID);
+        try {
+          audio?.pause?.();
+        } catch (_) {
+        }
+        bgmPlaying = false;
+        broadcastBgmState();
+        return getBgmState();
+      }
+      async function toggleBgm() {
+        const state = getBgmState();
+        if (state.playing) return pauseBgm();
+        return playBgm();
+      }
       function schedule(callback, delayMs = 0) {
         const handle = TIMER_ROOT.setTimeout(() => {
           timeoutHandles.delete(handle);
@@ -526,6 +1021,16 @@
           "</svg>",
           "</span>",
           "</span>",
+          '<button class="mama-status-bgm-control" type="button" title="Play ENA BGM" aria-label="Play ENA BGM" aria-pressed="false">',
+          '<span class="mama-status-bgm-vinyl" aria-hidden="true">',
+          '<svg viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">',
+          '<path d="M211.45,52.51l-80-24A12,12,0,0,0,116,40V140.22A52,52,0,1,0,140,184V104.13l64.55,19.36A12,12,0,0,0,220,112V64A12,12,0,0,0,211.45,52.51ZM88,212a28,28,0,1,1,28-28A28,28,0,0,1,88,212ZM196,95.87l-56-16.8V56.13l56,16.8Z"/>',
+          "</svg>",
+          "</span>",
+          '<span class="mama-status-bgm-eq" aria-hidden="true">',
+          "<span></span><span></span><span></span><span></span><span></span>",
+          "</span>",
+          "</button>",
           '<button class="mama-status-trigger-fold" type="button" title="收起悬浮球" aria-label="收起悬浮球">',
           '<svg class="mama-status-trigger-fold-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">',
           '<path d="m9 18 6-6-6-6" />',
@@ -540,6 +1045,12 @@
           if (event.key !== "Enter" && event.key !== " ") return;
           event.preventDefault();
           openStatus();
+        });
+        bgmControl = trigger.querySelector(".mama-status-bgm-control");
+        bgmControl?.addEventListener("click", (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          void toggleBgm();
         });
         triggerFoldButton = trigger.querySelector(".mama-status-trigger-fold");
         triggerFoldButton?.addEventListener("click", (event) => {
@@ -567,6 +1078,7 @@
           if (disposed) return;
           ready = true;
           postContainerReady();
+          postBgmStateTo(frame.contentWindow);
           schedule(() => refreshStatus(lastReason || "iframeLoad"), 40);
         });
         const close = DOC.createElement("button");
@@ -581,6 +1093,7 @@
         overlay.replaceChildren(wrapper);
         DOC.body.append(host, overlay);
         restoreTriggerCollapsed();
+        updateBgmControl();
         console.info("[MAMA Status Host] floating trigger injected into ST host:", {
           url: frame.dataset.mamaSrc,
           uiRoot: UI_ROOT === CURRENT_ROOT ? "current" : "host"
@@ -600,6 +1113,7 @@
           UI_ROOT.localStorage?.setItem(TRIGGER_COLLAPSED_STORAGE_KEY, collapsed ? "1" : "0");
         } catch (_) {
         }
+        updateBgmControl();
       }
       function restoreTriggerCollapsed() {
         let collapsed = false;
@@ -660,7 +1174,9 @@
         }
       }
       function postContainerReady(target = frame?.contentWindow) {
-        return postContainerReadyTo(target);
+        const sent = postContainerReadyTo(target);
+        postBgmStateTo(target);
+        return sent;
       }
       function readOptionsForTarget(target) {
         if (target === frame?.contentWindow) return frameReadOptions;
@@ -744,9 +1260,22 @@
         if (!data || typeof data !== "object") return;
         const isReady = data.type === "MAMA_STATUS_READY" || data.type === "mama:app-ready";
         const isRequest = data.type === "MAMA_STATUS_REQUEST";
-        if (!isReady && !isRequest) return;
+        const isBgmRequest = data.type === "MAMA_BGM_REQUEST";
+        const isBgmToggle = data.type === "MAMA_BGM_TOGGLE";
+        if (!isReady && !isRequest && !isBgmRequest && !isBgmToggle) return;
         const appId = typeof data.appId === "string" ? data.appId : data.app?.id;
         if (appId && appId !== "visual-dashboard" && appId !== "expression-portrait") return;
+        if (isBgmRequest || isBgmToggle) {
+          if (event.source !== frame?.contentWindow) {
+            registerInlineTarget(event.source, resolveReadOptions());
+          }
+          if (isBgmToggle) {
+            void toggleBgm().then(() => postBgmStateTo(event.source));
+            return;
+          }
+          postBgmStateTo(event.source);
+          return;
+        }
         if (event.source === frame?.contentWindow) {
           ready = true;
           postContainerReady();
@@ -848,6 +1377,8 @@
         frame = null;
         trigger = null;
         triggerFoldButton = null;
+        bgmControl = null;
+        bgmProgressTimer = null;
         lastState = null;
         lastReason = "";
         eventsBound = false;
@@ -875,6 +1406,7 @@
           statusUrl: frame?.dataset?.mamaSrc || "",
           scheduledWork: timeoutHandles.size,
           collapsed: Boolean(trigger?.classList?.contains(TRIGGER_COLLAPSED_CLASS)),
+          bgm: getBgmState(),
           hostRoot: UI_ROOT === CURRENT_ROOT ? "current" : "host",
           apiRoot: ROOT === CURRENT_ROOT ? "current" : "host"
         };
@@ -886,6 +1418,9 @@
         ensureHost,
         openStatus,
         closeStatus,
+        playBgm,
+        pauseBgm,
+        toggleBgm,
         debug
       };
     };

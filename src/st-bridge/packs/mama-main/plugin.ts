@@ -21,11 +21,13 @@
       } catch (_) {}
     };
     pushTarget(CURRENT_ROOT);
+    pushTarget(globalThis);
     pushTarget(host.root);
     pushTarget(host.uiRoot);
     pushTarget(host.apiRoot);
     pushTarget(root);
     pushTarget(uiRoot);
+    try { pushTarget(typeof unsafeWindow === 'object' ? unsafeWindow : null); } catch (_) {}
     (Array.isArray(host.candidates) ? host.candidates : []).forEach((target) => pushTarget(target));
     try { pushTarget(CURRENT_ROOT.parent); } catch (_) {}
     try { pushTarget(CURRENT_ROOT.top); } catch (_) {}
@@ -120,17 +122,65 @@
     return statusHost.refreshStatus(reason);
   }
 
+  function pushEventApi(apis, seen, api, thisArg, source) {
+    try {
+      if (!api || typeof api.eventOn !== 'function' || seen.includes(api.eventOn)) return;
+      seen.push(api.eventOn);
+      apis.push({
+        source,
+        target: api,
+        eventOn(eventName, handler) {
+          return api.eventOn.call(thisArg || api, eventName, handler);
+        }
+      });
+    } catch (_) {}
+  }
+
+  function findEventApi() {
+    const apis = [];
+    const seen = [];
+    try {
+      if (typeof eventOn === 'function') {
+        pushEventApi(apis, seen, { eventOn, tavern_events: typeof tavern_events === 'object' ? tavern_events : null }, null, 'direct');
+      }
+    } catch (_) {}
+    pluginTargets.forEach((target) => {
+      try { pushEventApi(apis, seen, target?.MAMA_ST_API, target?.MAMA_ST_API, 'MAMA_ST_API'); } catch (_) {}
+      try { pushEventApi(apis, seen, target, target, 'window'); } catch (_) {}
+    });
+    return apis[0] || null;
+  }
+
+  function getPromptEventName(eventApi) {
+    try {
+      return eventApi?.target?.tavern_events?.GENERATION_AFTER_COMMANDS || 'GENERATION_AFTER_COMMANDS';
+    } catch (_) {
+      return 'GENERATION_AFTER_COMMANDS';
+    }
+  }
+
   function bindPromptInjection() {
-    if (!promptRuntime || typeof ROOT.eventOn !== 'function') return;
+    if (!promptRuntime) return;
+    const eventApi = findEventApi();
+    if (!eventApi) {
+      console.warn('[MAMA Prompt] eventOn is unavailable. Expose JS-Slash-Runner APIs with window.MAMA_ST_API before loading MAMA bridge.');
+      return;
+    }
     const handler = (...args) => {
       if (disposed) return;
       try {
         if (ROOT[PROMPT_TOKEN_KEY] !== promptToken) return;
       } catch (_) {}
-      promptRuntime.injectCurrentState(...args);
+      return promptRuntime.injectCurrentState(...args);
     };
-    const stop = ROOT.eventOn('GENERATION_AFTER_COMMANDS', handler);
-    if (typeof stop === 'function') cleanupCallbacks.push(stop);
+    const stop = eventApi.eventOn(getPromptEventName(eventApi), handler);
+    cleanupCallbacks.push(() => {
+      try {
+        if (typeof stop === 'function') stop();
+        else if (stop && typeof stop.stop === 'function') stop.stop();
+      } catch (_) {}
+    });
+    console.log(`[MAMA Prompt] bound GENERATION_AFTER_COMMANDS via ${eventApi.source}`);
   }
 
   const actionHandlers = {
@@ -169,6 +219,25 @@
         ok: true,
         refreshed: await refreshStatus(payload?.reason || 'actionRefresh')
       };
+    },
+    async injectPrompt(payload) {
+      const result = await promptRuntime?.injectCurrentState?.(payload || {}, {}, false);
+      return {
+        ok: true,
+        injected: Boolean(result?.injected),
+        result
+      };
+    },
+    async clearPrompt() {
+      const result = promptRuntime?.clearPromptInjection?.('actionClearPrompt') || {
+        cleared: false,
+        reason: 'promptRuntimeUnavailable'
+      };
+      return {
+        ok: true,
+        cleared: Boolean(result?.cleared),
+        result
+      };
     }
   };
   bridge.registerActions('mama', actionHandlers);
@@ -185,6 +254,7 @@
   function unload() {
     if (disposed) return;
     disposed = true;
+    try { promptRuntime?.clearPromptInjection?.('pluginUnload'); } catch (_) {}
     try { statusHost?.unload?.(); } catch (_) {}
     cleanupCallbacks.splice(0).forEach((cleanup) => {
       try { cleanup(); } catch (_) {}
@@ -206,6 +276,19 @@
     saveState,
     patchState,
     refreshStatus,
+    async injectPrompt() {
+      return promptRuntime?.injectCurrentState?.({}, {}, false) || {
+        injected: false,
+        reason: 'promptRuntimeUnavailable'
+      };
+    },
+    clearPrompt() {
+      return promptRuntime?.clearPromptInjection?.('manualClearPrompt') || {
+        cleared: false,
+        reason: 'promptRuntimeUnavailable'
+      };
+    },
+    buildPromptPreview: promptRuntime?.buildMamaPrompt || null,
     openStatus() {
       return statusHost?.openStatus?.();
     },

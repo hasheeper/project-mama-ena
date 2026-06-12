@@ -1,4 +1,3 @@
-import { registerMvuSchema } from 'https://testingcf.jsdelivr.net/gh/StageDog/tavern_resource/dist/util/mvu_zod.js';
 import {
   DEFAULT_MAMA_STATE as SHARED_DEFAULT_MAMA_STATE,
   cloneJson,
@@ -24,22 +23,8 @@ import {
 
   const DEFAULT_MAMA_STATE = SHARED_DEFAULT_MAMA_STATE;
 
-  function isObject(value) {
-    return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
-  }
-
   function clone(value, fallback: any = null): any {
     return cloneJson(value, fallback);
-  }
-
-  function clampNumber(value, min, max, fallback = 0) {
-    const next = Number(value);
-    if (!Number.isFinite(next)) return fallback;
-    return Math.max(min, Math.min(max, Math.round(next)));
-  }
-
-  function normalizeString(value, fallback = '') {
-    return typeof value === 'string' && value.trim() ? value.trim() : fallback;
   }
 
   function makeDefaultMamaState() {
@@ -65,6 +50,20 @@ import {
       mama: normalizeMamaState(statData.mama)
     }));
     return { mamaSchema, statDataSchema };
+  }
+
+  function resolveRegisterMvuSchema() {
+    try {
+      if (typeof registerMvuSchema === 'function') return registerMvuSchema;
+    } catch (_) {}
+    try {
+      if (typeof ROOT.registerMvuSchema === 'function') return ROOT.registerMvuSchema.bind(ROOT);
+    } catch (_) {}
+    try {
+      const currentRoot = CURRENT_ROOT as any;
+      if (typeof currentRoot.registerMvuSchema === 'function') return currentRoot.registerMvuSchema.bind(currentRoot);
+    } catch (_) {}
+    return null;
   }
 
   const schemas = createStatDataSchema();
@@ -94,11 +93,12 @@ import {
       console.warn(`${PLUGIN_NAME} MVU-zod schema skipped: zod runtime unavailable`);
       return;
     }
-    if (typeof registerMvuSchema !== 'function') {
+    const register = resolveRegisterMvuSchema();
+    if (typeof register !== 'function') {
       console.warn(`${PLUGIN_NAME} registerMvuSchema unavailable`);
       return;
     }
-    registerMvuSchema(schemas.statDataSchema);
+    register(schemas.statDataSchema);
     console.info(`${PLUGIN_NAME} MVU-zod schema registered: stat_data.mama`);
   }
 

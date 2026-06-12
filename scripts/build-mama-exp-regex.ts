@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { EXPRESSION_FALLBACK_CONFIG } from '../src/mama/expression-fallback-config.js';
 
 interface ExpressionRef {
   id: number;
@@ -117,21 +118,24 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
     }
 
     #mama-exp-app {
-      width: 100vw;
-      height: 100vh;
-      min-width: 160px;
-      min-height: 160px;
+      width: 100%;
+      height: 100%;
+      min-width: 0;
+      min-height: 0;
       display: grid;
       place-items: center;
       overflow: hidden;
       background: transparent;
+      container-type: size;
     }
 
     .portrait-frame {
-      width: min(100vw, 100vh);
-      height: min(100vw, 100vh);
-      min-width: 160px;
-      min-height: 160px;
+      width: min(100%, 100vh);
+      aspect-ratio: 1 / 1;
+      max-width: 100%;
+      max-height: 100%;
+      min-width: 0;
+      min-height: 0;
       position: relative;
       overflow: hidden;
       border-radius: 18px;
@@ -141,6 +145,13 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
       box-shadow:
         inset 0 0 0 1px rgba(64, 31, 44, 0.1),
         0 8px 24px rgba(45, 35, 50, 0.12);
+    }
+
+    @supports (width: 100cqw) {
+      .portrait-frame {
+        width: min(100cqw, 100cqh);
+        height: min(100cqw, 100cqh);
+      }
     }
 
     .portrait-crop {
@@ -199,16 +210,12 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         Emotion_HeartBubble: 20
       };
       const TOP_EXPRESSION_OTHER_NAMES = new Set(['mist']);
-      const FALLBACK_DEFAULTS = {
-        face: 'face_default',
-        mouth: 'mouth_neutral',
-        eye: 'eye_normal',
-        brow: 'brow_normal'
-      };
-      const EXPLICIT_COMPONENT_PRIORITY = 90;
-      const VISUAL_KEYWORD_PRIORITY = 50;
-      const SECONDARY_KEYWORD_PRIORITY = 40;
-      const EMOTION_KEYWORD_PRIORITY = 30;
+      const FALLBACK_CONFIG = ${scriptJson(EXPRESSION_FALLBACK_CONFIG)};
+      const FALLBACK_DEFAULTS = FALLBACK_CONFIG.defaults;
+      const FALLBACK_PRIORITIES = FALLBACK_CONFIG.priorities;
+      const FALLBACK_THRESHOLDS = FALLBACK_CONFIG.thresholds;
+      const FALLBACK_STOP_TOKENS = new Set(FALLBACK_CONFIG.stopTokens);
+      const KEYWORD_RULES = FALLBACK_CONFIG.keywordRules;
       const app = document.getElementById('mama-exp-app');
       const hostFrame = window.frameElement;
       let currentExpression = resolveExpression(readExpression()).name;
@@ -294,7 +301,7 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         if (canonical.length < 5) return null;
         const ranked = EXP_DATA.expressions
           .map(function (item) {
-            return { expression: item, distance: levenshtein(canonical, canonicalizeExpressionName(item.name)) };
+            return { expression: item, distance: damerauLevenshteinDistance(canonical, canonicalizeExpressionName(item.name)) };
           })
           .sort(function (a, b) {
             return a.distance - b.distance;
@@ -302,13 +309,19 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         const best = ranked[0];
         const second = ranked[1];
         if (!best) return null;
-        const allowed = best.distance <= 1 || (canonical.length >= 8 && best.distance <= 2);
+        const target = canonicalizeExpressionName(best.expression.name);
+        const confidence = normalizedEditConfidence(canonical, target, best.distance);
+        const allowedDistance = best.distance <= 1 || (canonical.length >= 8 && best.distance <= 2);
+        const allowedConfidence = confidence >= FALLBACK_THRESHOLDS.presetMinConfidence;
         const uniqueBest = !second || second.distance > best.distance;
-        return allowed && uniqueBest ? best.expression : null;
+        return allowedDistance && allowedConfidence && uniqueBest ? best.expression : null;
       }
 
       function buildSyntheticExpression(sourceName, canonical) {
-        const tokens = canonical.split('_').filter(Boolean);
+        const rawTokens = canonical.split('_').filter(Boolean);
+        const tokens = rawTokens.filter(function (token) {
+          return !FALLBACK_STOP_TOKENS.has(token);
+        });
         if (!tokens.length) return null;
 
         const rules = buildKeywordRules();
@@ -321,6 +334,7 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         const listSlots = { other: [], emotion: [] };
         const matchedTokens = [];
         const matchedIndexes = new Set();
+        let meaningfulMatches = 0;
         let order = 0;
 
         for (let index = 0; index < tokens.length;) {
@@ -334,11 +348,14 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
           match.effects.forEach(function (effect) {
             applyKeywordEffect(effect, slots, listSlots, order);
           });
+          if (hasVisualEffect(match.effects)) meaningfulMatches += match.length;
           order += 1;
           index += match.length;
         }
 
         if (!matchedTokens.length) return null;
+        if (!meaningfulMatches) return null;
+        if (meaningfulMatches / tokens.length < FALLBACK_THRESHOLDS.syntheticMinTokenMatchRatio) return null;
         const expression = {
           id: 0,
           name: 'exp_' + canonical,
@@ -366,66 +383,17 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         addExplicitAssetRules(rules, 'brow', 'brow_', ASSET_REFS.brow);
         addExplicitAssetRules(rules, 'other', '', ASSET_REFS.other);
         addExplicitAssetRules(rules, 'emotion', 'Emotion_', ASSET_REFS.emotion);
-        addKeywordRules(rules);
+        KEYWORD_RULES.forEach(function (rule) {
+          addRuleIfAvailable(rules, rule.alias, rule.effects);
+        });
         return rules;
-      }
-
-      function addKeywordRules(rules) {
-        addRuleIfAvailable(rules, 'jitome', [{ slot: 'eye', value: 'eye_jitome', priority: VISUAL_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'pout', [
-          { slot: 'mouth', value: 'mouth_pout_2', priority: VISUAL_KEYWORD_PRIORITY },
-          { slot: 'brow', value: 'brow_up_max', priority: SECONDARY_KEYWORD_PRIORITY }
-        ]);
-        [
-          ['smile', 'mouth', 'mouth_smile'], ['smirk', 'mouth', 'mouth_smirk_1'], ['laugh', 'mouth', 'mouth_laugh'],
-          ['cat', 'mouth', 'mouth_cat'], ['huh', 'mouth', 'mouth_huh'], ['drool', 'mouth', 'mouth_drool'],
-          ['chu', 'mouth', 'mouth_chu'], ['shock', 'mouth', 'mouth_shock'], ['panic', 'mouth', 'mouth_panic_open'],
-          ['awawa', 'mouth', 'mouth_awawa'], ['tremble', 'mouth', 'mouth_tremble_1'], ['blank', 'mouth', 'mouth_blank_1'],
-          ['fang', 'mouth', 'mouth_fang_open'], ['tongue', 'mouth', 'mouth_tongue_2'], ['closed', 'eye', 'eye_closed_1'],
-          ['wink', 'eye', 'eye_wink_2'], ['line', 'eye', 'eye_line'], ['slit', 'eye', 'eye_slit'],
-          ['xd', 'eye', 'eye_xd'], ['wide', 'eye', 'eye_wide'], ['cry', 'eye', 'eye_cry_2'],
-          ['dizzy', 'eye', 'eye_dizzy_2'], ['puppy', 'eye', 'eye_puppy'], ['dark', 'eye', 'eye_dark'],
-          ['disgust', 'eye', 'eye_disgust'], ['roll', 'eye', 'eye_roll'], ['avert', 'eye', 'eye_avert'],
-          ['up', 'brow', 'brow_up'], ['down', 'brow', 'brow_down'], ['up_max', 'brow', 'brow_up_max'],
-          ['down_max', 'brow', 'brow_down_max'], ['question', 'brow', 'brow_question'], ['shadow', 'face', 'face_shadow'],
-          ['pale', 'face', 'face_pale'], ['heavy', 'face', 'face_blush_heavy'], ['light', 'face', 'face_blush_light'],
-          ['sweat', 'other', 'sweat'], ['mist', 'other', 'mist']
-        ].forEach(function (item) {
-          addRuleIfAvailable(rules, item[0], [{ slot: item[1], value: item[2], priority: VISUAL_KEYWORD_PRIORITY }]);
-        });
-        addRuleIfAvailable(rules, 'neutral', [{ slot: 'mouth', value: 'mouth_neutral', priority: SECONDARY_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'normal', [{ slot: 'brow', value: 'brow_normal', priority: SECONDARY_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'default', [{ slot: 'face', value: 'face_default', priority: SECONDARY_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'blush', [{ slot: 'face', value: 'face_blush_light', priority: SECONDARY_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'half', [{ slot: 'eye', value: 'eye_half_1', priority: SECONDARY_KEYWORD_PRIORITY }]);
-        addRuleIfAvailable(rules, 'drowsy', [
-          { slot: 'eye', value: 'eye_slit', priority: VISUAL_KEYWORD_PRIORITY },
-          { slot: 'emotion', value: 'Emotion_Sleepy', priority: EMOTION_KEYWORD_PRIORITY }
-        ]);
-        addRuleIfAvailable(rules, 'star', [
-          { slot: 'eye', value: 'eye_star', priority: VISUAL_KEYWORD_PRIORITY },
-          { slot: 'emotion', value: 'Emotion_Star', priority: EMOTION_KEYWORD_PRIORITY }
-        ]);
-        addRuleIfAvailable(rules, 'heart', [
-          { slot: 'eye', value: 'eye_heart', priority: VISUAL_KEYWORD_PRIORITY },
-          { slot: 'emotion', value: 'Emotion_Heart', priority: EMOTION_KEYWORD_PRIORITY }
-        ]);
-        [
-          ['angry', 'Emotion_Angry'], ['sleepy', 'Emotion_Sleepy'], ['sparkle', 'Emotion_Sparkle'],
-          ['confusion', 'Emotion_Confusion'], ['confused', 'Emotion_Confusion'], ['fearful', 'Emotion_Fearful'],
-          ['surprise', 'Emotion_Surprise'], ['cloud', 'Emotion_Cloud'], ['heartbubble', 'Emotion_HeartBubble'],
-          ['heart_bubble', 'Emotion_HeartBubble'], ['heartburst', 'Emotion_HeartBurst'],
-          ['heart_burst', 'Emotion_HeartBurst'], ['zzz', 'Emotion_zzz']
-        ].forEach(function (item) {
-          addRuleIfAvailable(rules, item[0], [{ slot: 'emotion', value: item[1], priority: EMOTION_KEYWORD_PRIORITY }]);
-        });
       }
 
       function addExplicitAssetRules(rules, slot, prefix, names) {
         names.forEach(function (name) {
           const canonical = canonicalizeAssetName(name);
           const stripped = prefix ? canonicalizeAssetName(name.replace(new RegExp('^' + prefix, 'i'), '')) : canonical;
-          const effect = { slot, value: name, priority: EXPLICIT_COMPONENT_PRIORITY };
+          const effect = { slot, value: name, priority: FALLBACK_PRIORITIES.explicitComponent };
           addRule(rules, canonical, [effect]);
           addRule(rules, stripped, [effect]);
         });
@@ -451,23 +419,24 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         for (let length = maxLength; length >= 1; length -= 1) {
           const alias = tokens.slice(index, index + length).join('_');
           const effects = rules.get(alias);
-          if (effects) return { alias, effects, length };
+          if (effects) return { alias, effects, length, fuzzy: false };
         }
         const fuzzyAlias = findFuzzyRuleAlias(tokens[index], rules);
         const fuzzyEffects = fuzzyAlias ? rules.get(fuzzyAlias) : null;
-        return fuzzyAlias && fuzzyEffects ? { alias: fuzzyAlias, effects: fuzzyEffects, length: 1 } : null;
+        return fuzzyAlias && fuzzyEffects ? { alias: fuzzyAlias, effects: fuzzyEffects, length: 1, fuzzy: true } : null;
       }
 
       function findFuzzyRuleAlias(token, rules) {
         if (token.length < 4) return null;
         const ranked = Array.from(rules.keys())
           .filter(function (alias) { return !alias.includes('_') && alias.length >= 4; })
-          .map(function (alias) { return { alias, distance: levenshtein(token, alias) }; })
+          .map(function (alias) { return { alias, distance: damerauLevenshteinDistance(token, alias) }; })
           .sort(function (a, b) { return a.distance - b.distance; });
         const best = ranked[0];
         const second = ranked[1];
         if (!best) return null;
-        const allowed = best.distance <= 1 || (token.length >= 6 && best.distance <= 2);
+        const allowed = best.distance <= FALLBACK_THRESHOLDS.shortTokenMaxDistance ||
+          (token.length >= FALLBACK_THRESHOLDS.longTokenMinLength && best.distance <= FALLBACK_THRESHOLDS.longTokenMaxDistance);
         const uniqueBest = !second || second.distance > best.distance;
         return allowed && uniqueBest ? best.alias : null;
       }
@@ -489,16 +458,45 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
         }) || EXP_DATA.expressions[0];
       }
 
-      function levenshtein(a, b) {
+      function normalizedEditConfidence(a, b, distance) {
+        const maxLength = Math.max(a.length, b.length);
+        return maxLength ? 1 - distance / maxLength : 1;
+      }
+
+      function hasVisualEffect(effects) {
+        return effects.some(function (effect) {
+          return effect.slot === 'face' ||
+            effect.slot === 'mouth' ||
+            effect.slot === 'eye' ||
+            effect.slot === 'brow' ||
+            effect.slot === 'other' ||
+            effect.slot === 'emotion';
+        });
+      }
+
+      function damerauLevenshteinDistance(a, b) {
         const previous = Array.from({ length: b.length + 1 }, function (_, index) { return index; });
         const current = Array.from({ length: b.length + 1 }, function () { return 0; });
+        const transposed = Array.from({ length: b.length + 1 }, function () { return 0; });
         for (let row = 1; row <= a.length; row += 1) {
           current[0] = row;
           for (let column = 1; column <= b.length; column += 1) {
             const cost = a[row - 1] === b[column - 1] ? 0 : 1;
-            current[column] = Math.min(current[column - 1] + 1, previous[column] + 1, previous[column - 1] + cost);
+            let distance = Math.min(current[column - 1] + 1, previous[column] + 1, previous[column - 1] + cost);
+            if (
+              row > 1 &&
+              column > 1 &&
+              a[row - 1] === b[column - 2] &&
+              a[row - 2] === b[column - 1]
+            ) {
+              distance = Math.min(distance, transposed[column - 2] + 1);
+            }
+            current[column] = distance;
           }
-          for (let column = 0; column <= b.length; column += 1) previous[column] = current[column];
+          for (let column = 0; column <= b.length; column += 1) {
+            transposed[column] = previous[column];
+            previous[column] = current[column];
+          }
         }
         return previous[b.length];
       }
@@ -657,13 +655,23 @@ function renderHtml({ title, assetBaseUrl }: OutputConfig): string {
 
       function resizeHostFrame() {
         if (!hostFrame) return;
-        hostFrame.style.width = '220px';
-        hostFrame.style.maxWidth = '70vw';
-        hostFrame.style.height = hostFrame.style.width;
+        const size = 'min(220px, 70vw)';
+        hostFrame.style.width = size;
+        hostFrame.style.maxWidth = '100%';
+        hostFrame.style.aspectRatio = '1 / 1';
         hostFrame.style.border = '0';
         hostFrame.style.display = 'block';
         hostFrame.style.margin = '8px 0';
         hostFrame.style.background = 'transparent';
+        const rect = hostFrame.getBoundingClientRect();
+        const renderedWidth = Math.round(rect.width);
+        if (renderedWidth > 0) {
+          hostFrame.style.height = renderedWidth + 'px';
+          hostFrame.style.maxHeight = renderedWidth + 'px';
+        } else {
+          hostFrame.style.height = size;
+          hostFrame.style.maxHeight = size;
+        }
       }
 
       function makeLayer(src) {
@@ -869,6 +877,14 @@ function renderAssetCacheScript(): string {
   const ASSET_REFS = ${scriptJson(assetRefs)};
   const CACHE_KEY = '__MAMA_EXP_IMAGE_CACHE__';
 
+  function resolveBridgeHost() {
+    try { if (CURRENT_ROOT.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.MAMA_ST_HOST_ROOT?.MAMA_ST_HOST) return CURRENT_ROOT.MAMA_ST_HOST_ROOT.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.parent?.MAMA_ST_HOST) return CURRENT_ROOT.parent.MAMA_ST_HOST; } catch (_) {}
+    try { if (CURRENT_ROOT.top?.MAMA_ST_HOST) return CURRENT_ROOT.top.MAMA_ST_HOST; } catch (_) {}
+    return {};
+  }
+
   function readGlobalString(key) {
     const targets = [CURRENT_ROOT];
     try { targets.push(CURRENT_ROOT.parent); } catch (_) {}
@@ -886,9 +902,17 @@ function renderAssetCacheScript(): string {
   }
 
   function resolveAssetBaseUrl() {
+    const bridgeHost = resolveBridgeHost();
     const explicit = readGlobalString('MAMA_ASSET_BASE_URL');
     if (explicit) return trimTrailingSlash(explicit);
-    const appBase = trimTrailingSlash(readGlobalString('MAMA_APP_BASE_URL') || DEFAULT_APP_BASE_URL);
+    if (typeof bridgeHost.assetBaseUrl === 'string' && bridgeHost.assetBaseUrl.trim()) {
+      return trimTrailingSlash(bridgeHost.assetBaseUrl);
+    }
+    const appBase = trimTrailingSlash(
+      readGlobalString('MAMA_APP_BASE_URL')
+        || bridgeHost.appBaseUrl
+        || DEFAULT_APP_BASE_URL
+    );
     return appBase + '/mama-assets/standing';
   }
 
