@@ -314,6 +314,7 @@
     const STAT_KEY = MAMA_STAT_KEY;
     const MAMA_KEY = MAMA_NAMESPACE;
     const REPLAY_PREFIX = "MAMA_REPLAY";
+    const PASSIVE_CORRUPTION_OPERATION_PREFIX = "corruption:passive";
     const ALLOWED_FIELD_PATHS = [...MAMA_ALLOWED_FIELD_PATHS];
     const TIME_PHASE_ORDER = MAMA_TIME_PHASES.reduce((order, phase, index) => {
       order[phase] = index;
@@ -328,6 +329,12 @@
     const FULL_DAY_PASSIVE_CORRUPTION_GAIN = MAMA_TIME_PHASES.reduce((total, phase) => {
       return total + (TIME_PHASE_PASSIVE_CORRUPTION_GAIN[phase] || 0);
     }, 0);
+    const PASSIVE_CORRUPTION_REPLAY_RETRY_DELAYS = [250, 750, 1500, 3e3, 5e3];
+    const PASSIVE_CORRUPTION_REPLAY_MAX_ATTEMPTS = PASSIVE_CORRUPTION_REPLAY_RETRY_DELAYS.length + 1;
+    let passiveCorruptionSyncDepth = 0;
+    let passiveCorruptionReplayFlushPromise = null;
+    let passiveCorruptionReplayRetryTimer = null;
+    const passiveCorruptionReplayQueue = /* @__PURE__ */ new Map();
     function isObject(value) {
       return Boolean(value) && typeof value === "object" && !Array.isArray(value);
     }
@@ -407,7 +414,7 @@
       }
       return 0;
     }
-    function normalizeMamaTransition(beforeMama, nextMama) {
+    function normalizeMamaTransition(beforeMama, nextMama, options = {}) {
       const normalized = normalizeMamaState$1(nextMama);
       if (!isObject(beforeMama)) return normalized;
       const beforePhaseIndex = getTimePhaseOrder(beforeMama.timePhase);
@@ -425,9 +432,206 @@
       }
       const passiveGain = computePassiveCorruptionGain(beforeMama, transitioned);
       if (passiveGain <= 0) return transitioned;
+      if (options.applyPassiveCorruption === false) return transitioned;
+      const nextCorruption = clampCorruption(transitioned.corruptionLevel);
       return {
         ...transitioned,
-        corruptionLevel: clampCorruption(transitioned.corruptionLevel) + passiveGain > 100 ? 100 : clampCorruption(transitioned.corruptionLevel) + passiveGain
+        corruptionLevel: nextCorruption + passiveGain > 100 ? 100 : nextCorruption + passiveGain
+      };
+    }
+    function computePassiveCorruptionTransition(nextVariables, beforeVariables) {
+      const nextStatData = isObject(nextVariables?.[STAT_KEY]) ? nextVariables[STAT_KEY] : null;
+      const beforeStatData = isObject(beforeVariables?.[STAT_KEY]) ? beforeVariables[STAT_KEY] : null;
+      const nextMama = isObject(nextStatData?.[MAMA_KEY]) ? nextStatData[MAMA_KEY] : null;
+      const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
+      if (!nextStatData || !nextMama || !beforeMama) return null;
+      const transitioned = normalizeMamaTransition(beforeMama, nextMama);
+      if (areJsonValuesEqual(nextMama, transitioned)) return null;
+      const patches = buildPassiveCorruptionReplayPatches(nextMama, transitioned);
+      if (!patches.length) return null;
+      return { nextStatData, nextMama, beforeMama, transitioned, patches };
+    }
+    function syncPassiveCorruptionTransition(nextVariables, beforeVariables) {
+      const transition = computePassiveCorruptionTransition(nextVariables, beforeVariables);
+      if (!transition) return false;
+      queuePassiveCorruptionReplay(transition, "sync");
+      return true;
+    }
+    function formatPassiveCorruptionOperationId(beforeMama, afterMama) {
+      const week = readSafeWeek(afterMama?.week) || readSafeWeek(beforeMama?.week) || 1;
+      const day = readSafeDay(afterMama?.day) || readSafeDay(beforeMama?.day) || 1;
+      const phase = typeof afterMama?.timePhase === "string" && afterMama.timePhase ? afterMama.timePhase : "unknown";
+      return `${PASSIVE_CORRUPTION_OPERATION_PREFIX}:W${week}D${day}:${phase}`;
+    }
+    function buildPassiveCorruptionReplayPatches(nextMama, transitioned) {
+      return buildMamaStatePatches(
+        { [MAMA_KEY]: nextMama },
+        { [MAMA_KEY]: transitioned }
+      ).filter((patch) => {
+        return patch?.path === "/mama/corruptionLevel" || patch?.path === "/mama/day";
+      });
+    }
+    async function writePassiveCorruptionReplay(transition) {
+      const operationId = formatPassiveCorruptionOperationId(transition.beforeMama, transition.transitioned);
+      return commitMamaReplayPatch({
+        messageId: transition.messageId,
+        operationId,
+        patches: transition.patches,
+        refresh: "affected",
+        suppressPassiveCorruptionSync: true
+      });
+    }
+    function clonePassiveCorruptionTransition(transition, reason = "event") {
+      const operationId = formatPassiveCorruptionOperationId(transition.beforeMama, transition.transitioned);
+      const messageId = resolveReplayMessageId({});
+      const hasMessageId = messageId !== null && messageId !== void 0;
+      return {
+        operationId,
+        reason,
+        attempts: 0,
+        messageId: hasMessageId && Number.isFinite(Number(messageId)) && Number(messageId) >= 0 ? Math.round(Number(messageId)) : null,
+        beforeMama: clone(transition.beforeMama, {}),
+        nextMama: clone(transition.nextMama, {}),
+        transitioned: clone(transition.transitioned, {}),
+        patches: clone(transition.patches, [])
+      };
+    }
+    function publishPassiveCorruptionReplayDebug(entry, result) {
+      try {
+        ROOT.__MAMA_LAST_PASSIVE_CORRUPTION_REPLAY__ = {
+          operationId: entry?.operationId || "",
+          reason: entry?.reason || "",
+          attempts: entry?.attempts || 0,
+          messageId: entry?.messageId ?? null,
+          patches: clone(entry?.patches, []),
+          result
+        };
+      } catch (_) {
+      }
+    }
+    function schedulePassiveCorruptionReplayFlush(delay = PASSIVE_CORRUPTION_REPLAY_RETRY_DELAYS[0]) {
+      if (passiveCorruptionReplayRetryTimer) return;
+      passiveCorruptionReplayRetryTimer = setTimeout(() => {
+        passiveCorruptionReplayRetryTimer = null;
+        flushPassiveCorruptionReplayQueue();
+      }, delay);
+    }
+    function queuePassiveCorruptionReplay(transition, reason = "event") {
+      const entry = clonePassiveCorruptionTransition(transition, reason);
+      const previous = passiveCorruptionReplayQueue.get(entry.operationId);
+      if (previous) {
+        entry.attempts = previous.attempts || 0;
+        entry.messageId = previous.messageId ?? entry.messageId;
+      }
+      passiveCorruptionReplayQueue.set(entry.operationId, entry);
+      schedulePassiveCorruptionReplayFlush();
+      return entry;
+    }
+    function getNextPassiveCorruptionReplayDelay() {
+      let attempts = 0;
+      passiveCorruptionReplayQueue.forEach((entry) => {
+        attempts = Math.max(attempts, Number(entry?.attempts) || 0);
+      });
+      const index = Math.max(0, Math.min(PASSIVE_CORRUPTION_REPLAY_RETRY_DELAYS.length - 1, attempts));
+      return PASSIVE_CORRUPTION_REPLAY_RETRY_DELAYS[index];
+    }
+    async function flushPassiveCorruptionReplayQueue() {
+      if (passiveCorruptionReplayFlushPromise) return passiveCorruptionReplayFlushPromise;
+      passiveCorruptionReplayFlushPromise = (async () => {
+        for (const entry of Array.from(passiveCorruptionReplayQueue.values())) {
+          if (!passiveCorruptionReplayQueue.has(entry.operationId)) continue;
+          entry.attempts = (Number(entry.attempts) || 0) + 1;
+          const result = await writePassiveCorruptionReplay(entry);
+          publishPassiveCorruptionReplayDebug(entry, result);
+          if (result?.ok) {
+            passiveCorruptionReplayQueue.delete(entry.operationId);
+            notifyStateChanged(normalizeMamaState$1(entry.transitioned));
+            continue;
+          }
+          if (entry.attempts >= PASSIVE_CORRUPTION_REPLAY_MAX_ATTEMPTS) {
+            passiveCorruptionReplayQueue.delete(entry.operationId);
+            console.warn("[MAMA State Replay] passive corruption replay skipped because the context block could not be written:", result);
+            continue;
+          }
+          passiveCorruptionReplayQueue.set(entry.operationId, entry);
+        }
+      })().finally(() => {
+        passiveCorruptionReplayFlushPromise = null;
+        if (passiveCorruptionReplayQueue.size > 0) {
+          schedulePassiveCorruptionReplayFlush(getNextPassiveCorruptionReplayDelay());
+        }
+      });
+      return passiveCorruptionReplayFlushPromise;
+    }
+    function clearPassiveCorruptionReplayQueue() {
+      passiveCorruptionReplayQueue.clear();
+      if (passiveCorruptionReplayRetryTimer) {
+        clearTimeout(passiveCorruptionReplayRetryTimer);
+        passiveCorruptionReplayRetryTimer = null;
+      }
+    }
+    function resolveEventOn() {
+      try {
+        if (typeof eventOn === "function") return eventOn;
+      } catch (_) {
+      }
+      try {
+        if (typeof ROOT.eventOn === "function") return ROOT.eventOn.bind(ROOT);
+      } catch (_) {
+      }
+      return null;
+    }
+    function resolveTavernEventName(name, fallback) {
+      try {
+        const value = tavern_events?.[name];
+        if (typeof value === "string" && value) return value;
+      } catch (_) {
+      }
+      try {
+        const value = ROOT.tavern_events?.[name];
+        if (typeof value === "string" && value) return value;
+      } catch (_) {
+      }
+      return fallback;
+    }
+    function startPassiveCorruptionSync() {
+      const eventOnApi = resolveEventOn();
+      if (!eventOnApi) return null;
+      const stops = [];
+      const handler = async (nextVariables, beforeVariables) => {
+        try {
+          if (passiveCorruptionSyncDepth > 0) return;
+          const transition = computePassiveCorruptionTransition(nextVariables, beforeVariables);
+          if (!transition) return;
+          queuePassiveCorruptionReplay(transition, "mag_variable_update_ended");
+        } catch (error) {
+          console.warn("[MAMA State Replay] passive corruption sync failed:", error);
+        }
+      };
+      const flushHandler = () => {
+        if (passiveCorruptionReplayQueue.size > 0) schedulePassiveCorruptionReplayFlush(50);
+      };
+      const bind = (eventName, listener) => {
+        if (!eventName) return;
+        try {
+          const stop = eventOnApi(eventName, listener);
+          stops.push(stop);
+        } catch (_) {
+        }
+      };
+      bind("mag_variable_update_ended", handler);
+      bind(resolveTavernEventName("MESSAGE_UPDATED", "message_updated"), flushHandler);
+      bind(resolveTavernEventName("MESSAGE_RECEIVED", "message_received"), flushHandler);
+      bind(resolveTavernEventName("CHARACTER_MESSAGE_RENDERED", "character_message_rendered"), flushHandler);
+      return () => {
+        stops.splice(0).forEach((stop) => {
+          try {
+            if (typeof stop === "function") stop();
+            else if (stop && typeof stop.stop === "function") stop.stop();
+          } catch (_) {
+          }
+        });
+        clearPassiveCorruptionReplayQueue();
       };
     }
     function areJsonValuesEqual(left, right) {
@@ -461,7 +665,9 @@
     }
     function buildMamaStatePatches(beforeStatData, afterStatData) {
       const beforeMama = isObject(beforeStatData?.[MAMA_KEY]) ? beforeStatData[MAMA_KEY] : null;
-      const afterMama = normalizeMamaTransition(beforeMama, afterStatData?.[MAMA_KEY]);
+      const afterMama = normalizeMamaTransition(beforeMama, afterStatData?.[MAMA_KEY], {
+        applyPassiveCorruption: false
+      });
       if (!beforeMama) return [buildReplayPatch("add", "/mama", afterMama)];
       const normalizedAfterStatData = { ...afterStatData, [MAMA_KEY]: afterMama };
       const patches = [];
@@ -498,7 +704,7 @@
       const id = sanitizeReplayOperationId(operationId);
       const text = typeof content === "string" ? content : "";
       const pattern = new RegExp(
-        `\\n*<UpdateVariable>\\s*(?:<Analyze>\\s*${REPLAY_PREFIX}:${escapeRegExp(id)}\\s*<\\/Analyze>\\s*)?<JSONPatch>[\\s\\S]*?<\\/JSONPatch>\\s*<\\/UpdateVariable>\\s*`,
+        `\\n*<UpdateVariable>\\s*<Analyze>\\s*${REPLAY_PREFIX}:${escapeRegExp(id)}\\s*<\\/Analyze>\\s*<JSONPatch>[\\s\\S]*?<\\/JSONPatch>\\s*<\\/UpdateVariable>\\s*`,
         "gi"
       );
       return text.replace(pattern, "\n\n").replace(/\n{4,}/g, "\n\n\n").trimEnd();
@@ -686,23 +892,29 @@ ${block}` : block;
       }
       return null;
     }
-    async function replayMessageThroughMvu(messageId) {
+    async function replayMessageThroughMvu(messageId, options = {}) {
       const replayHandler = resolveMvuReplayHandler();
-      if (typeof replayHandler === "function") {
-        await replayHandler(messageId);
-        return { ok: true, method: "handleVariablesInMessage" };
+      const suppressPassiveCorruptionSync = options.suppressPassiveCorruptionSync === true;
+      if (suppressPassiveCorruptionSync) passiveCorruptionSyncDepth += 1;
+      try {
+        if (typeof replayHandler === "function") {
+          await replayHandler(messageId);
+          return { ok: true, method: "handleVariablesInMessage" };
+        }
+        const mvuApi = resolveMvuApi();
+        if (!mvuApi) return { ok: false, reason: "mvu_replay_unavailable" };
+        const id = Math.round(Number(messageId) || 0);
+        const msg = typeof ROOT.getChatMessages === "function" ? ROOT.getChatMessages(id)?.[0] : null;
+        if (!msg || typeof msg.message !== "string") return { ok: false, reason: "message_not_found" };
+        const baseVars = await getMvuReplayBaseVariables(id);
+        if (!hasMvuReplayBase(baseVars)) return { ok: false, reason: "mvu_replay_missing_base" };
+        const nextVars = await mvuApi.parseMessage(msg.message, baseVars);
+        if (!hasMvuReplayBase(nextVars)) return { ok: false, reason: "mvu_replay_parse_failed" };
+        await mvuApi.replaceMvuData(nextVars, { type: "message", message_id: id });
+        return { ok: true, method: "Mvu.parseMessage" };
+      } finally {
+        if (suppressPassiveCorruptionSync) passiveCorruptionSyncDepth = Math.max(0, passiveCorruptionSyncDepth - 1);
       }
-      const mvuApi = resolveMvuApi();
-      if (!mvuApi) return { ok: false, reason: "mvu_replay_unavailable" };
-      const id = Math.round(Number(messageId) || 0);
-      const msg = typeof ROOT.getChatMessages === "function" ? ROOT.getChatMessages(id)?.[0] : null;
-      if (!msg || typeof msg.message !== "string") return { ok: false, reason: "message_not_found" };
-      const baseVars = await getMvuReplayBaseVariables(id);
-      if (!hasMvuReplayBase(baseVars)) return { ok: false, reason: "mvu_replay_missing_base" };
-      const nextVars = await mvuApi.parseMessage(msg.message, baseVars);
-      if (!hasMvuReplayBase(nextVars)) return { ok: false, reason: "mvu_replay_parse_failed" };
-      await mvuApi.replaceMvuData(nextVars, { type: "message", message_id: id });
-      return { ok: true, method: "Mvu.parseMessage" };
     }
     async function parseMvuVariablesFromMessage(messageId, messageText) {
       const mvuApi = resolveMvuApi();
@@ -781,7 +993,9 @@ ${block}` : block;
       if (!patchList.length) {
         if (stripped !== originalMessage) {
           await ROOT.setChatMessages([{ message_id: normalizedMessageId, message: stripped }], { refresh: options.refresh || "affected" });
-          const replayResult2 = await replayMessageThroughMvu(normalizedMessageId);
+          const replayResult2 = await replayMessageThroughMvu(normalizedMessageId, {
+            suppressPassiveCorruptionSync: options.suppressPassiveCorruptionSync === true || isObject(options.afterStatData)
+          });
           if (!replayResult2.ok) return { ok: false, reason: replayResult2.reason || "mvu_replay_failed", messageId: normalizedMessageId, floorKey: actualFloorKey, operationId };
           return { ok: true, messageId: normalizedMessageId, floorKey: actualFloorKey, operationId, patchCount: 0, removedReplayBlock: true, replayMethod: replayResult2.method || "" };
         }
@@ -790,7 +1004,9 @@ ${block}` : block;
       const block = buildMamaReplayBlock(operationId, patchList);
       const nextMessage = insertMamaReplayBlock(stripped, block);
       await ROOT.setChatMessages([{ message_id: normalizedMessageId, message: nextMessage }], { refresh: options.refresh || "affected" });
-      const replayResult = await replayMessageThroughMvu(normalizedMessageId);
+      const replayResult = await replayMessageThroughMvu(normalizedMessageId, {
+        suppressPassiveCorruptionSync: options.suppressPassiveCorruptionSync === true || isObject(options.afterStatData)
+      });
       if (!replayResult.ok) {
         return { ok: false, reason: replayResult.reason || "mvu_replay_failed", messageId: normalizedMessageId, floorKey: actualFloorKey, operationId };
       }
@@ -853,7 +1069,9 @@ ${block}` : block;
         notifyStateChanged,
         makeMessageFloorKey,
         commitMamaReplayPatch,
-        resolveReplayMessageId
+        resolveReplayMessageId,
+        syncPassiveCorruptionTransition,
+        startPassiveCorruptionSync
       };
     };
   })();

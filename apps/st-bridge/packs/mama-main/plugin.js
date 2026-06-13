@@ -105,6 +105,22 @@
     const statusCacheKey = typeof bridge.host?.cacheBust === "string" && bridge.host.cacheBust.trim() ? bridge.host.cacheBust.trim() : bridge.version || "0.1.0";
     const statusHost = stateService && typeof RUNTIME.createStatusHost === "function" ? RUNTIME.createStatusHost(stateService, { version: statusCacheKey, cacheBust: statusCacheKey }) : null;
     const cleanupCallbacks = [];
+    const passiveCorruptionStop = stateService?.startPassiveCorruptionSync?.();
+    if (typeof passiveCorruptionStop === "function") {
+      cleanupCallbacks.push(() => {
+        try {
+          passiveCorruptionStop();
+        } catch (_) {
+        }
+      });
+    } else if (passiveCorruptionStop && typeof passiveCorruptionStop.stop === "function") {
+      cleanupCallbacks.push(() => {
+        try {
+          passiveCorruptionStop.stop();
+        } catch (_) {
+        }
+      });
+    }
     let disposed = false;
     let pluginApi = null;
     const promptToken = {};

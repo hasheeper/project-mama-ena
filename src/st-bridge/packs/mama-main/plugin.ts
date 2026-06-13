@@ -86,6 +86,16 @@
     ? RUNTIME.createStatusHost(stateService, { version: statusCacheKey, cacheBust: statusCacheKey })
     : null;
   const cleanupCallbacks: Array<() => void> = [];
+  const passiveCorruptionStop = stateService?.startPassiveCorruptionSync?.();
+  if (typeof passiveCorruptionStop === 'function') {
+    cleanupCallbacks.push(() => {
+      try { passiveCorruptionStop(); } catch (_) {}
+    });
+  } else if (passiveCorruptionStop && typeof passiveCorruptionStop.stop === 'function') {
+    cleanupCallbacks.push(() => {
+      try { passiveCorruptionStop.stop(); } catch (_) {}
+    });
+  }
   let disposed = false;
   let pluginApi: any = null;
   const promptToken = {};

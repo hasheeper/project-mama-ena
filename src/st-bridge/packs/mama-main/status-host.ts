@@ -612,8 +612,15 @@
     let bgmProgressTimer: any = null;
     let bgmPlaying = false;
     let bgmError = '';
+    let lastStateSignature = '';
+    let refreshInFlight: Promise<boolean> | null = null;
+    let queuedRefreshReason = '';
+    let scheduledRefreshHandle: any = null;
+    let scheduledRefreshReason = '';
+    let scheduledRefreshAt = 0;
     const inlineTargets = new Map<any, any>();
     const targetStates = new Map<any, any>();
+    const targetStateSignatures = new Map<any, string>();
     const messageTargets: any[] = [];
     const timeoutHandles = new Set<any>();
     const cleanupCallbacks: Array<() => void> = [];
@@ -892,6 +899,7 @@
     function schedule(callback, delayMs = 0) {
       const handle = TIMER_ROOT.setTimeout(() => {
         timeoutHandles.delete(handle);
+        if (scheduledRefreshHandle === handle) scheduledRefreshHandle = null;
         if (disposed) return;
         callback();
       }, delayMs);
@@ -1069,6 +1077,7 @@
       frame.addEventListener('load', () => {
         if (disposed) return;
         ready = true;
+        targetStateSignatures.delete(frame?.contentWindow);
         postContainerReady();
         postBgmStateTo(frame.contentWindow);
         schedule(() => refreshStatus(lastReason || 'iframeLoad'), 40);
@@ -1186,10 +1195,20 @@
       return inlineTargets.get(target) || { persist: false };
     }
 
+    function stableStringify(value) {
+      try {
+        return JSON.stringify(value) || '';
+      } catch (_) {
+        return '';
+      }
+    }
+
     function postStateTo(target, reason, state) {
       if (disposed) return false;
       const nextState = state || lastState;
       if (!isMessageTarget(target) || !nextState) return false;
+      const signature = stableStringify(nextState);
+      if (signature && targetStateSignatures.get(target) === signature) return false;
       try {
         target.postMessage({
           type: 'MAMA_STATE_PUSH',
@@ -1197,10 +1216,12 @@
           floorKey: '',
           state: nextState
         }, '*');
+        if (signature) targetStateSignatures.set(target, signature);
         return true;
       } catch (_) {
         inlineTargets.delete(target);
         targetStates.delete(target);
+        targetStateSignatures.delete(target);
         return false;
       }
     }
@@ -1217,8 +1238,8 @@
 
       inlineTargets.forEach((_, target) => {
         postContainerReadyTo(target);
-        const cachedState = targetStates.get(target);
-        if (cachedState) sent = postStateTo(target, reason, cachedState) || sent;
+        targetStates.set(target, nextState);
+        sent = postStateTo(target, reason, nextState) || sent;
       });
 
       return sent;
@@ -1241,31 +1262,67 @@
       }
       lastState = state;
       lastReason = reason;
+      lastStateSignature = stableStringify(state);
       targetStates.set(target, state);
       return postDirectState(target, reason, state);
     }
 
-    async function refreshStatus(reason = 'refresh') {
+    function requestRefreshStatus(reason = 'refresh', delayMs = 0) {
+      scheduledRefreshReason = reason || scheduledRefreshReason || 'refresh';
+      const nextDueAt = Date.now() + Math.max(0, Number(delayMs) || 0);
+      if (scheduledRefreshHandle) {
+        if (scheduledRefreshAt && nextDueAt >= scheduledRefreshAt) return true;
+        try { TIMER_ROOT.clearTimeout?.(scheduledRefreshHandle); } catch (_) {}
+        try { CURRENT_ROOT.clearTimeout?.(scheduledRefreshHandle); } catch (_) {}
+        timeoutHandles.delete(scheduledRefreshHandle);
+        scheduledRefreshHandle = null;
+      }
+      scheduledRefreshAt = nextDueAt;
+      scheduledRefreshHandle = schedule(() => {
+        const nextReason = scheduledRefreshReason || 'refresh';
+        scheduledRefreshReason = '';
+        scheduledRefreshAt = 0;
+        void refreshStatus(nextReason);
+      }, delayMs);
+      return true;
+    }
+
+    async function performRefreshStatus(reason = 'refresh') {
       if (disposed) return false;
       if (injectStatusHost) waitForBodyAvailable(() => ensureHost());
-      let sent = false;
+      const hasFrameTarget = Boolean(frame?.contentWindow && ready);
+      const hasInlineTargets = inlineTargets.size > 0;
+      if (!hasFrameTarget && !hasInlineTargets) return false;
 
-      if (frame?.contentWindow && ready) {
-        try {
-          frameReadOptions = resolveReadOptions();
-          const state = await stateService.loadState(frameReadOptions);
-          lastState = state;
-          lastReason = reason;
-          sent = postState(reason, state) || sent;
-        } catch (error) {
-          console.warn('[MAMA Status Host] loadState failed:', error);
-        }
+      try {
+        frameReadOptions = resolveReadOptions();
+        const state = await stateService.loadState(frameReadOptions);
+        const signature = stableStringify(state);
+        lastState = state;
+        lastReason = reason;
+        lastStateSignature = signature || lastStateSignature;
+        return postState(reason, state);
+      } catch (error) {
+        console.warn('[MAMA Status Host] loadState failed:', error);
+        return false;
       }
+    }
 
-      const results = await Promise.all(Array.from(inlineTargets.entries()).map(([target, readOptions]) => {
-        return refreshTarget(target, reason, readOptions);
-      }));
-      return results.some(Boolean) || sent;
+    async function refreshStatus(reason = 'refresh') {
+      if (disposed) return false;
+      if (refreshInFlight) {
+        queuedRefreshReason = reason || queuedRefreshReason || 'refresh';
+        return refreshInFlight;
+      }
+      refreshInFlight = performRefreshStatus(reason).finally(() => {
+        refreshInFlight = null;
+        if (!disposed && queuedRefreshReason) {
+          const nextReason = queuedRefreshReason;
+          queuedRefreshReason = '';
+          requestRefreshStatus(nextReason, 60);
+        }
+      });
+      return refreshInFlight;
     }
 
     function handleMessage(event) {
@@ -1279,6 +1336,7 @@
       if (!isReady && !isRequest && !isBgmRequest && !isBgmToggle) return;
       const appId = typeof data.appId === 'string' ? data.appId : data.app?.id;
       if (appId && appId !== 'visual-dashboard' && appId !== 'expression-portrait') return;
+      if (isReady && event.source) targetStateSignatures.delete(event.source);
 
       if (isBgmRequest || isBgmToggle) {
         if (event.source !== frame?.contentWindow) {
@@ -1295,7 +1353,7 @@
       if (event.source === frame?.contentWindow) {
         ready = true;
         postContainerReady();
-        void refreshStatus(data.reason || (isRequest ? 'statusRequest' : 'appReady'));
+        requestRefreshStatus(data.reason || (isRequest ? 'statusRequest' : 'appReady'));
         return;
       }
 
@@ -1304,7 +1362,7 @@
       if (!target) return;
 
       if (targetStates.has(target)) postDirectState(target, isRequest ? 'statusRequest' : 'appReady', targetStates.get(target));
-      void refreshTarget(target, data.reason || (isRequest ? 'statusRequest' : 'appReady'), readOptions);
+      requestRefreshStatus(data.reason || (isRequest ? 'statusRequest' : 'appReady'), 40);
     }
 
     function bindWindowMessageTargets() {
@@ -1330,11 +1388,7 @@
       if (typeof target?.eventOn !== 'function') return;
       try {
         const stop = target.eventOn(eventName, () => {
-          if (delayMs > 0) {
-            schedule(() => refreshStatus(reason), delayMs);
-            return;
-          }
-          void refreshStatus(reason);
+          requestRefreshStatus(reason, delayMs);
         });
         if (typeof stop === 'function') cleanupCallbacks.push(stop);
       } catch (_) {}
@@ -1354,8 +1408,8 @@
         cleanupCallbacks.push(() => DOC?.removeEventListener?.('keydown', keydownHandler));
       } catch (_) {}
 
-      const stateChangedHandler = () => refreshStatus('stateChanged');
-      const mvuzWrittenHandler = () => refreshStatus('mvuzWritten');
+      const stateChangedHandler = () => requestRefreshStatus('stateChanged', 40);
+      const mvuzWrittenHandler = () => requestRefreshStatus('mvuzWritten', 40);
       getBridgeTargets().forEach((target) => {
         bindMamaEvent(target, 'mama:stateChanged', stateChangedHandler);
         bindMamaEvent(target, 'mama:mvuz-written', mvuzWrittenHandler);
@@ -1385,6 +1439,7 @@
       });
       inlineTargets.clear();
       targetStates.clear();
+      targetStateSignatures.clear();
       blankIframe(frame);
       removeExistingDom();
       host = null;
@@ -1397,6 +1452,12 @@
       bgmProgressTimer = null;
       lastState = null;
       lastReason = '';
+      lastStateSignature = '';
+      refreshInFlight = null;
+      queuedRefreshReason = '';
+      scheduledRefreshHandle = null;
+      scheduledRefreshReason = '';
+      scheduledRefreshAt = 0;
       eventsBound = false;
       clearUnloadExposure();
     }

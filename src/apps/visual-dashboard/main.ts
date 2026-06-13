@@ -7,6 +7,8 @@ import type { MamaBgmState, MamaBgmStateMessage, MamaStatePushMessage } from './
 let currentState = normalizeMamaState(getInitialState());
 let connectedHostName = '';
 let currentBgmState: MamaBgmState = { available: false, playing: false, provider: 'none' };
+let lastRenderSignature = '';
+let renderScheduled = false;
 
 const root = document.querySelector<HTMLElement>('[data-app-id="visual-dashboard"]');
 
@@ -22,26 +24,48 @@ if (window.parent && window.parent !== window) {
 function handleMessage(event: MessageEvent): void {
   if (isMamaMessage(event.data)) {
     if (event.data.type !== 'mama:container-ready') return;
+    const nextHostName = event.data.app.name;
+    if (connectedHostName === nextHostName && root?.getAttribute('data-host-app') === event.data.app.id) return;
     connectedHostName = event.data.app.name;
     root?.setAttribute('data-host-app', event.data.app.id);
-    render();
+    scheduleRender();
     return;
   }
 
   if (isMamaStatePushMessage(event.data)) {
-    currentState = normalizeMamaState(event.data.state);
-    render();
+    const nextState = normalizeMamaState(event.data.state);
+    if (stableStringify(currentState) === stableStringify(nextState)) return;
+    currentState = nextState;
+    scheduleRender();
     return;
   }
 
   if (isMamaBgmStateMessage(event.data)) {
-    currentBgmState = normalizeBgmState(event.data.state);
-    render();
+    const nextBgmState = normalizeBgmState(event.data.state);
+    if (stableStringify(currentBgmState) === stableStringify(nextBgmState)) return;
+    currentBgmState = nextBgmState;
+    scheduleRender();
   }
+}
+
+function scheduleRender(): void {
+  if (renderScheduled) return;
+  renderScheduled = true;
+  window.requestAnimationFrame(() => {
+    renderScheduled = false;
+    render();
+  });
 }
 
 function render(): void {
   if (!root) return;
+  const signature = stableStringify({
+    state: currentState,
+    connectedHostName,
+    bgm: currentBgmState
+  });
+  if (signature === lastRenderSignature) return;
+  lastRenderSignature = signature;
   renderVisualDashboard(root, {
     ...visualDashboardDefaults,
     state: currentState,
@@ -49,6 +73,10 @@ function render(): void {
     bgm: currentBgmState,
     onToggleBgm: toggleBgm
   });
+}
+
+function stableStringify(value: unknown): string {
+  return JSON.stringify(value);
 }
 
 function toggleBgm(): void {

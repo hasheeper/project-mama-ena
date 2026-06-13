@@ -487,7 +487,7 @@
     const bridgeUrl = makeBridgeUrl();
     const bridgeRoot = new URL(".", bridgeUrl);
     const params = bridgeUrl.searchParams;
-    const buildCacheKey = "404c7d5526c9";
+    const buildCacheKey = "f388f21358e1";
     const cacheBust = params.get("v") || params.get("cache") || normalizeString(getGlobalValue("ST_BRIDGE_CACHE_BUST")) || buildCacheKey;
     const forceReload = params.get("force") === "1";
     publishHostInfo({
