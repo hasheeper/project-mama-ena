@@ -215,16 +215,16 @@ import {
     const { affection, fatigue, mana } = getStatusLevels(state);
 
     if (fatigue >= 5) {
-      return '  combined: 极度疲劳主导了现在的状态。大脑迟钝，勉强应付完最基本的对话或动作后，随时都会控制不住闭上眼睡着。';
+      return '  combined: 强撑收尾主导了现在的状态。她很累也很烦躁，但还有事没做完，所以会尽量省动作、省台词，用最快方式把眼前的事情处理完再去休息。';
     }
-    if (fatigue >= 3 && mana >= 3) {
-      return '  combined: 身体很累但魔力充足。战斗时懒得多跑动，直接站在原地用魔法硬轰；照顾你时不想多说话，更倾向于直接靠在一起安静休息。';
+    if (fatigue >= 4 && mana >= 3) {
+      return '  combined: 身体疲惫但魔力充足。战斗时会减少多余跑动，更倾向于站在原地用魔法硬轰；照顾你时不想解释太多，更倾向于直接上手处理。';
     }
-    if (fatigue >= 3 && mana <= 1) {
+    if (fatigue >= 4 && mana <= 1) {
       return '  combined: 身体疲惫且魔力见底。行动能省则省，只用最不费力的基础魔法，并会主动要求靠近贴贴来紧急恢复体力。';
     }
-    if (affection >= 3 && fatigue >= 2) {
-      return '  combined: 因为关系亲密且感到疲惫，距离感大幅拉近。话变少了，虽然可能还会习惯性地随便嘟囔两句，但肢体接触变得非常自然且毫无防备。';
+    if (affection >= 3 && fatigue >= 3) {
+      return '  combined: 因为关系亲密且进入日常慵懒状态，距离感自然拉近。她可能会随口抱怨麻烦，但肢体接触会变得更随意、更不设防。';
     }
     if (mana >= 4 && affection >= 2) {
       return '  combined: 魔力充足且拿{{user}}当自己人。遇到危险时能毫不犹豫地火力全开把你护住，事情解决后也会非常顺手地凑过来继续待在一起。';
